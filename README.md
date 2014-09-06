@@ -10,3 +10,7 @@ src/compiler directory as you see fit.
 Happy parsing!
 
 Russell, Cam and Michael
+
+## Tests
+
+Public tests
