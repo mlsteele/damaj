@@ -55,10 +55,8 @@ ID options { paraphrase = "an identifier"; } :
 WS_ : (' ' | '\n' {newline();}) {_ttype = Token.SKIP; };
 SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
 
-CHARLITERAL : CHAR;
-CHAR : '\'' (ESC|~'\'') '\'';
-ESCAPEDCHAR : '\n' | '\t' | '\\' | '\"';
-STRING : '"' (ESC|~'"')* '"';
+CHARLITERAL : '\'' (ESC|~'\'') '\'';
+// STRING : '"' (ESC|~'"')* '"';
 
 protected
-ESC :  '\\' ('n'|'"');
+ESC :  '\\' ('n'|'t'|'"'|'\\');
