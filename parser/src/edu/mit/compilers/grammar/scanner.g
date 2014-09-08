@@ -18,6 +18,8 @@ options
 tokens 
 {
   "boolean";
+  "true";
+  "false";
   "callout";
   "else";
   "if";
@@ -55,10 +57,8 @@ tokens
 LCURLY options { paraphrase = "{"; } : "{";
 RCURLY options { paraphrase = "}"; } : "}";
 
-BOOLEANLITERAL : "false" | "true" ;
-
 // Literals are pulled from 'tokens' above.
-ID options { testLiterals=true; } :
+IDENTIFIER options { testLiterals=true; } :
   ('a'..'z' | 'A'..'Z')+;
 
 OP : BIN_OP ;

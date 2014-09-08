@@ -16,9 +16,10 @@ import edu.mit.compilers.grammar.{ DecafParser, DecafParserTokenTypes, DecafScan
 
 object Compiler {
   val tokenMap = Map(
-    DecafScannerTokenTypes.ID -> "IDENTIFIER",
+    DecafScannerTokenTypes.IDENTIFIER -> "IDENTIFIER",
     DecafScannerTokenTypes.CHARLITERAL -> "CHARLITERAL",
-    DecafScannerTokenTypes.BOOLEANLITERAL -> "BOOLEANLITERAL"
+    DecafScannerTokenTypes.TK_true -> "BOOLEANLITERAL",
+    DecafScannerTokenTypes.TK_false -> "BOOLEANLITERAL"
   )
   var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
     new java.io.FileOutputStream(CLI.outfile)))
@@ -52,6 +53,7 @@ object Compiler {
             outFile.println(
               head.getLine()
               + (if (tokenType ==  "") "" else " ")
+              // + " (" + head.getType() + ") "
               + tokenType
               + " "
               + head.getText())
