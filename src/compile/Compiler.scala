@@ -15,7 +15,10 @@ import antlr.Token
 import edu.mit.compilers.grammar.{ DecafParser, DecafParserTokenTypes, DecafScanner, DecafScannerTokenTypes }
 
 object Compiler {
-  val tokenMap = Map(DecafScannerTokenTypes.ID -> "IDENTIFIER")
+  val tokenMap = Map(
+    DecafScannerTokenTypes.ID -> "IDENTIFIER",
+    DecafScannerTokenTypes.CHARLITERAL -> "CHARLITERAL"
+  )
   var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
     new java.io.FileOutputStream(CLI.outfile)))
   def main(args: Array[String]): Unit = {
@@ -44,7 +47,13 @@ object Compiler {
             done = true
           } else {
             val tokenType = tokenMap.getOrElse(head.getType(), "")
-            outFile.println(head.getLine() + (if (tokenType ==  "") "" else " ") + tokenType + " " + head.getText())
+            // outFile.println(head.getLine() + (if (tokenType ==  "") "" else " ") + tokenType + " " + head.getText())
+            outFile.println(
+              head.getLine()
+              + (if (tokenType ==  "") "" else " ")
+              + tokenType
+              + " "
+              + head.getText())
           }
         } catch {
           case ex: Exception => {
