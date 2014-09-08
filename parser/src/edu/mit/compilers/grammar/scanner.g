@@ -52,7 +52,7 @@ ID options { paraphrase = "an identifier"; } :
 // Note that here, the {} syntax allows you to literally command the lexer
 // to skip mark this token as skipped, or to advance to the next line
 // by directly adding Java commands.
-WS_ : (' ' | '\n' {newline();}) {_ttype = Token.SKIP; };
+WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
 SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
 
 CHARLITERAL : '\'' (ESC|~'\'') '\'';
