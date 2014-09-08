@@ -17,7 +17,16 @@ options
 
 tokens 
 {
-  "class";
+  "boolean";
+  "callout";
+  "else";
+  "if";
+  "int";
+  "return";
+  "void";
+  "break";
+  "continue" ;
+  "for" ;
 }
 
 // Selectively turns on debug tracing mode.
@@ -46,7 +55,10 @@ tokens
 LCURLY options { paraphrase = "{"; } : "{";
 RCURLY options { paraphrase = "}"; } : "}";
 
-ID options { paraphrase = "an identifier"; } : 
+BOOLEANLITERAL : "false" | "true" ;
+
+// Literals are pulled from 'tokens' above.
+ID options { testLiterals=true; } :
   ('a'..'z' | 'A'..'Z')+;
 
 OP : BIN_OP ;
