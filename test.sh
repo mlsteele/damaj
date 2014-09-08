@@ -6,7 +6,8 @@ run_parser() {
 test_parser() {
   outfile=`mktemp`
   expectfile=tests/scanner/output/$1.out
-  run_parser tests/scanner/input/$1 2>&1 > $outfile
+  run_parser > $outfile 2>&1 tests/scanner/input/$1
+  sed -i -e "s/\/home\/miles\/Documents\/15th_Grade\/6.035\/parser\/tests\/scanner\/input\///g" $outfile
 
   echo "-- EXPECTED --"
   cat $expectfile
