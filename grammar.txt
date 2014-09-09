@@ -1,0 +1,46 @@
+program : callout_decl* field_decl* method_decl*
+callout_decl : callout id
+field_decl : type (id | id '[' int_literal ']' )+,
+method_decl : (type | "void") id '(' (type id)+, ')' block
+block : '{' field_decl* statement* '}'
+type : int | boolean
+statement : location assign_op expr ';'
+          | method_call ';'
+          | if '(' expr ')' block ("else" block)?
+          | for '(' id '=' expr ',' expr ')' block
+          | while '(' expr ')' (':' int_literal)? block
+          | return expr? ';'
+          | break ';'
+          | continue ';'
+assign_op : '=' "+=" "-="
+method_call : method_name '(' expr*, ')'
+            | method_name '(' callout_arg*, ')'
+method_name : id
+location : id | id '[' expr ']'
+expr : location
+     | method_call
+     | literal
+     | '@' id
+     | expr bin_op expr
+     | '-' expr
+     | '!' expr
+     | '(' expr ')'
+     | expr '?' expr ':' expr
+callout_arg : expr | string_literal
+bin_op : arith_op | rel_op | eq_op | cond_op
+arith_op : '+' | '-' | '*' | '/' | '%'
+rel_op : '<' | '>' | "<=" | ">="
+eq_op : "==" | "!="
+cond_op : "&&" | "||"
+literal : int_literal | char_literal | bool_literal
+id : alpha alpha_num*
+alpha_num : alpha | digit
+alpha : ('a'..'z') | ('A'..'Z')
+digit : '0'..'9'
+hex_digit : digit | ('a'..'f') | ('A'..'F')
+int_literal : decimal_literal | hex_literal
+decimal_literal : digit+
+hex_literal : "0x" hex_digit+
+bool_literal : "true" | "false"
+char_literal : ''' char '''
+string_literal : '"' char* '"'
