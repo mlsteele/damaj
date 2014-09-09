@@ -1,0 +1,42 @@
+// Decaf language example;
+
+// enable the ability to call out to printf
+callout printf;
+
+int func(int a) {
+    return 2;
+}
+
+int arrayfun() {
+    // statically allocated
+    // you can't pass arrays as argumens
+    int array[10];
+    array[2] = 3;
+    // Bound checking. (runtime?)
+    // array[13] = 3;
+}
+
+// main function entry point.
+void main() {
+    // 64 bit signed integers
+    int a, b, c;
+    a = 10;
+    b = 20;
+    c = 30;
+    d = (a + b);
+    e = (c * 3);
+    e = (e + 1);
+    if (2 > 4 * 3) {
+        printf("That's weird.\n");
+    } else {
+        printf("Hello, World.\n");
+    }
+
+    for(b = 0, 10) {
+        a += b;
+    }
+
+    while (a < 10) {
+        a = a + func(a)
+    }
+}
