@@ -15,8 +15,7 @@ options
   k = 2;
 }
 
-tokens 
-{
+tokens {
   "boolean";
   "true";
   "false";
@@ -56,16 +55,21 @@ tokens
 
 LCURLY options { paraphrase = "{"; } : "{";
 RCURLY options { paraphrase = "}"; } : "}";
+LSQUARE options { paraphrase = "["; } : "[";
+RSQUARE options { paraphrase = "]"; } : "]";
+COMMA options { paraphrase = ","; } : ",";
+SEMICOLON options { paraphrase = ";"; } : ";";
 
 // Literals are pulled from 'tokens' above.
-IDENTIFIER options { testLiterals=true; } : ALPHA ALPHA_NUM* ;
+IDENTIFIER options { testLiterals=true; } : ALPHA (ALPHANUM)* ;
 
-OP : BIN_OP ;
+OP : ASSIGN_OP | BIN_OP ;
 protected BIN_OP : ARITH_OP | REL_OP | EQ_OP | COND_OP ;
 protected ARITH_OP : '+' | '-' | '*' | '/' | '%' ;
 protected REL_OP : '<' | '>' | "<=" | ">=" ;
 protected EQ_OP : "==" | "!=" ;
 protected COND_OP : "&&" | "||" ;
+protected ASSIGN_OP : '=' | "+=" | "-=" ;
 
 // Note that here, the {} syntax allows you to literally command the lexer
 // to skip mark this token as skipped, or to advance to the next line
@@ -73,14 +77,14 @@ protected COND_OP : "&&" | "||" ;
 WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
 SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
 
-CHARLITERAL : '\'' (ESC|~'\'') '\'';
-STRINGLITERAL : '"' (ESC|~'"')* '"';
+CHARLITERAL : '\'' (ESC|~'\'') '\'' ;
+STRINGLITERAL : '"' (ESC|~'"')* '"' ;
 // my syntax highlighter is dumb, "
 INTLITERAL : DEC_LITERAL | HEX_LITERAL ;
-protected DEC_LITERAL : DIGIT+ ;
+protected DEC_LITERAL : (DIGIT)+ ;
 protected HEX_LITERAL : "0x" (DIGIT|ALPHA)+ ;
 
-protected ALPHANUM : ALPHA | DIGIT ;
-protected ALPHA : 'a'..'z' | 'A'..'Z' ;
-protected DIGIT : '0'..'9' ;
+protected ALPHANUM : (ALPHA | DIGIT) ;
+protected ALPHA : ('a'..'z' | 'A'..'Z') ;
+protected DIGIT : ('0'..'9') ;
 protected ESC :  '\\' ('n'|'t'|'"'|'\\');
