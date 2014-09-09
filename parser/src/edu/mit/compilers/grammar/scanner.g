@@ -57,19 +57,39 @@ LCURLY options { paraphrase = "{"; } : "{";
 RCURLY options { paraphrase = "}"; } : "}";
 LSQUARE options { paraphrase = "["; } : "[";
 RSQUARE options { paraphrase = "]"; } : "]";
+LPAREN options { paraphrase = "("; } : "(";
+RPAREN options { paraphrase = ")"; } : ")";
 COMMA options { paraphrase = ","; } : ",";
 SEMICOLON options { paraphrase = ";"; } : ";";
 
 // Literals are pulled from 'tokens' above.
 IDENTIFIER options { testLiterals=true; } : ALPHA (ALPHANUM)* ;
 
-OP : ASSIGN_OP | BIN_OP ;
-protected BIN_OP : ARITH_OP | REL_OP | EQ_OP | COND_OP ;
-protected ARITH_OP : '+' | '-' | '*' | '/' | '%' ;
-protected REL_OP : '<' | '>' | "<=" | ">=" ;
-protected EQ_OP : "==" | "!=" ;
-protected COND_OP : "&&" | "||" ;
-protected ASSIGN_OP : '=' | "+=" | "-=" ;
+// This is one giant rule to avoid lexical nondeterminism warnings.
+OP : '+'
+   | '-'
+   | '*'
+   | '/'
+   | '%' 
+   | '<'
+   | '>'
+   | '='
+   | "<="
+   | ">="
+   | "=="
+   | "!="
+   | "+="
+   | "-="
+   | "&&"
+   | "||" ;
+
+// OP : BIN_OP | ASSIGN_OP;
+// protected BIN_OP : ARITH_OP | REL_OP | EQ_OP | COND_OP ;
+// protected ARITH_OP : '+' | '-' | '*' | '/' | '%' ;
+// protected REL_OP : '<' | '>' | "<=" | ">=" ;
+// protected EQ_OP : "==" | "!=" ;
+// protected COND_OP : "&&" | "||" ;
+// protected ASSIGN_OP : '=' | "+=" | "-=" ;
 
 // Note that here, the {} syntax allows you to literally command the lexer
 // to skip mark this token as skipped, or to advance to the next line
