@@ -18,6 +18,8 @@ object Compiler {
   val tokenMap = Map(
     DecafScannerTokenTypes.IDENTIFIER -> "IDENTIFIER",
     DecafScannerTokenTypes.CHARLITERAL -> "CHARLITERAL",
+    DecafScannerTokenTypes.STRINGLITERAL -> "STRINGLITERAL",
+    DecafScannerTokenTypes.INTLITERAL -> "INTLITERAL",
     DecafScannerTokenTypes.TK_true -> "BOOLEANLITERAL",
     DecafScannerTokenTypes.TK_false -> "BOOLEANLITERAL"
   )

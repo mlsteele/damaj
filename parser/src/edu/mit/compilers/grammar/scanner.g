@@ -58,8 +58,7 @@ LCURLY options { paraphrase = "{"; } : "{";
 RCURLY options { paraphrase = "}"; } : "}";
 
 // Literals are pulled from 'tokens' above.
-IDENTIFIER options { testLiterals=true; } :
-  ('a'..'z' | 'A'..'Z')+;
+IDENTIFIER options { testLiterals=true; } : ALPHA ALPHA_NUM* ;
 
 OP : BIN_OP ;
 protected BIN_OP : ARITH_OP | REL_OP | EQ_OP | COND_OP ;
@@ -75,7 +74,13 @@ WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
 SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
 
 CHARLITERAL : '\'' (ESC|~'\'') '\'';
-// STRING : '"' (ESC|~'"')* '"';
+STRINGLITERAL : '"' (ESC|~'"')* '"';
+// my syntax highlighter is dumb, "
+INTLITERAL : DEC_LITERAL | HEX_LITERAL ;
+protected DEC_LITERAL : DIGIT+ ;
+protected HEX_LITERAL : "0x" (DIGIT|ALPHA)+ ;
 
-protected
-ESC :  '\\' ('n'|'t'|'"'|'\\');
+protected ALPHANUM : ALPHA | DIGIT ;
+protected ALPHA : 'a'..'z' | 'A'..'Z' ;
+protected DIGIT : '0'..'9' ;
+protected ESC :  '\\' ('n'|'t'|'"'|'\\');
