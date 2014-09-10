@@ -12,7 +12,7 @@ statement : location assign_op expr ';'
           | return expr? ';'
           | break ';'
           | continue ';'
-assign_op : '=' "+=" "-="
+assign_op : '=' | "+=" | "-="
 method_call : method_name '(' expr*, ')'
             | method_name '(' callout_arg*, ')'
 method_name : id
