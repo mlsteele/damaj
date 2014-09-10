@@ -60,6 +60,7 @@ RSQUARE options { paraphrase = "]"; } : "]";
 LPAREN options { paraphrase = "("; } : "(";
 RPAREN options { paraphrase = ")"; } : ")";
 COMMA options { paraphrase = ","; } : ",";
+COLON options { paraphrase = ":"; } : ":";
 SEMICOLON options { paraphrase = ";"; } : ";";
 
 // Literals are pulled from 'tokens' above.
