@@ -23,18 +23,21 @@ object Compiler {
     DecafScannerTokenTypes.TK_true -> "BOOLEANLITERAL",
     DecafScannerTokenTypes.TK_false -> "BOOLEANLITERAL"
   )
+
   var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
     new java.io.FileOutputStream(CLI.outfile)))
+
   def main(args: Array[String]): Unit = {
     CLI.parse(args, Array[String]());
     if (CLI.target == CLI.Action.SCAN) {
       scan(CLI.infile)
       System.exit(0)
     } else if (CLI.target == CLI.Action.PARSE) {
-        if(parse(CLI.infile) == null) {
-          System.exit(1)
-        }
-        System.exit(0)
+      val tree = parse(CLI.infile)
+      tree match {
+        case Some(tree) => System.exit(0)
+        case None => System.exit(1)
+      }
     }
   }
 
@@ -72,7 +75,7 @@ object Compiler {
     }
   }
 
-  def parse(fileName: String): CommonAST  = {
+  def parse(fileName: String): Option[CommonAST]  = {
     /** 
     Parse the file specified by the filename. Eventually, this method
     may return a type specific to your compiler.
@@ -83,23 +86,23 @@ object Compiler {
     } catch {
       case f: FileNotFoundException => { Console.err.println("File " + fileName + " does not exist"); return null }
     }
-    try {
-      val scanner = new DecafScanner(new DataInputStream(inputStream))
-      val parser = new DecafParser(scanner);
 
-      parser.setTrace(CLI.debug)
-      parser.program()
-      val t = parser.getAST().asInstanceOf[CommonAST]
-      if (parser.getError()) {
-        print("[ERROR] Parse failed\n")
-        return null
-      } else if (CLI.debug){
-        print(t.toStringList())
-      }
-      t
-    } catch {
-      case e: Exception => Console.err.println(CLI.infile + " " + e)
-      null
-    } 
+    val scanner = new DecafScanner(new DataInputStream(inputStream))
+    val parser = new DecafParser(scanner);
+    parser.setTrace(CLI.debug)
+    parser.program()
+    val tree = Option(parser.getAST().asInstanceOf[CommonAST])
+    val error: Boolean = parser.getError()
+
+    (error, tree) match {
+      case (true, _) =>
+        Console.err.println("[ERROR]: Parse error\n")
+      case (false, None) =>
+        Console.err.println("[ERROR] No parse tree but no error\n")
+      case (false, Some(tree)) =>
+        Console.err.println("[YAY] Parse succeeded\n")
+    }
+
+    tree
   }
 }
