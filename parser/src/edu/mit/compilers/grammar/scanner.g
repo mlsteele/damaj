@@ -108,5 +108,5 @@ protected HEX_LITERAL : "0x" (DIGIT|ALPHA)+ ;
 protected ALPHANUM : (ALPHA | DIGIT) ;
 protected ALPHA : ('a'..'z' | 'A'..'Z') | '_' ;
 protected DIGIT : ('0'..'9') ;
-protected CHAR : (ESC | ~('\'' | '"' | '\\')) ;
+protected CHAR : (ESC | ~('\'' | '"' | '\\' | '\t' | '\n' )) ;
 protected ESC : '\\' ('n'|'t'|'"'|'\\'|'\'') ;
