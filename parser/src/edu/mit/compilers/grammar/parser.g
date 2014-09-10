@@ -27,13 +27,15 @@ options
   @Override
   public void reportError (RecognitionException ex) {
     // Print the error via some kind of error reporting mechanism.
-    System.out.println("YO AN ERROR ex");
+    System.out.print("[ERROR] ");
+    System.out.println(ex);
     error = true;
   }
   @Override
   public void reportError (String s) {
     // Print the error via some kind of error reporting mechanism.
-    System.out.println("YO AN ERROR s");
+    System.out.print("[ERROR] ");
+    System.out.println(s);
     error = true;
   }
   public boolean getError () {
@@ -64,11 +66,12 @@ options
 
 program : (callout_decl)* (field_decl)* (method_decl)* ;
 callout_decl : TK_callout id SEMICOLON ;
-field_decl : type field_decl_right (COMMA field_decl_right)*  SEMICOLON ;
-field_decl_right : (id | id LSQAURE INTLITERAL RSQUARE ) ;
+// field_decl : type field_decl_right (COMMA field_decl_right)*  SEMICOLON ;
+field_decl : type field_decl_right SEMICOLON ;
+field_decl_right : id (LSQUARE INTLITERAL RSQUARE)? ;
 method_decl : (type | TK_void) id LPAREN (type id (COMMA type id)*)? RPAREN block ;
 block : LCURLY (field_decl)* (statement)* RCURLY ;
-type : INTLITERAL | bool_literal ;
+type : TK_int | TK_boolean ;
 statement : location assign_op expr SEMICOLON
           | method_call SEMICOLON
           | TK_if LPAREN expr RPAREN block (TK_else block)?
@@ -81,7 +84,7 @@ assign_op : SETEQ | SETINCR | SETDECR ;
 method_call : method_name LPAREN expr (COMMA expr)* RPAREN
             | method_name LPAREN callout_arg (COMMA callout_arg)* RPAREN ;
 method_name : id ;
-location : id | id LSQAURE expr RSQUARE ;
+location : id | id LSQUARE expr RSQUARE ;
 // expr : // Oh, brother.
        // expr BINOP expr ;
 expr : expr_prefix | expr_norec ;
