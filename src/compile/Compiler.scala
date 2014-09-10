@@ -94,15 +94,33 @@ object Compiler {
     val tree = Option(parser.getAST().asInstanceOf[CommonAST])
     val error: Boolean = parser.getError()
 
+    // error reporting
     (error, tree) match {
-      case (true, _) =>
+      case (true, None) =>
         Console.err.println("[ERROR]: Parse error\n")
+      case (true, Some(tree)) =>
+        Console.err.println("[ERROR]: Parse error with tree\n")
       case (false, None) =>
         Console.err.println("[ERROR] No parse tree but no error\n")
       case (false, Some(tree)) =>
         Console.err.println("[YAY] Parse succeeded\n")
     }
 
-    tree
+    // debug print
+    tree match {
+      case Some(tree) =>
+        Console.err.println("==list==")
+        Console.err.println(tree.toStringTree())
+        Console.err.println("==tree==")
+        Console.err.println(tree.toStringTree())
+        Console.err.println("==end==")
+      case _ =>
+    }
+
+    // return value
+    (error, tree) match {
+      case (false, Some(tree)) => Some(tree)
+      case _ => None
+    }
   }
 }
