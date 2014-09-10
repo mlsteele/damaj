@@ -66,7 +66,8 @@ SEMICOLON options { paraphrase = ";"; } : ";";
 IDENTIFIER options { testLiterals=true; } : ALPHA (ALPHANUM)* ;
 
 // This is one giant rule to avoid lexical nondeterminism warnings.
-OP : '+'
+OP : '?'
+   | '+'
    | '-'
    | '*'
    | '/'
@@ -105,6 +106,6 @@ protected DEC_LITERAL : (DIGIT)+ ;
 protected HEX_LITERAL : "0x" (DIGIT|ALPHA)+ ;
 
 protected ALPHANUM : (ALPHA | DIGIT) ;
-protected ALPHA : ('a'..'z' | 'A'..'Z') ;
+protected ALPHA : ('a'..'z' | 'A'..'Z') | '_' ;
 protected DIGIT : ('0'..'9') ;
 protected ESC :  '\\' ('n'|'t'|'"'|'\\');

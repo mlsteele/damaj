@@ -35,7 +35,7 @@ cond_op : "&&" | "||"
 literal : int_literal | char_literal | bool_literal
 id : alpha alpha_num*
 alpha_num : alpha | digit
-alpha : ('a'..'z') | ('A'..'Z')
+alpha : ('a'..'z') | ('A'..'Z') | '_'
 digit : '0'..'9'
 hex_digit : digit | ('a'..'f') | ('A'..'F')
 int_literal : decimal_literal | hex_literal
