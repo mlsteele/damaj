@@ -1,6 +1,6 @@
 program : callout_decl* field_decl* method_decl*
-callout_decl : callout id
-field_decl : type (id | id '[' int_literal ']' )+,
+callout_decl : callout id ';'
+field_decl : type (id | id '[' int_literal ']' )+, ';'
 method_decl : (type | "void") id '(' (type id)+, ')' block
 block : '{' field_decl* statement* '}'
 type : int | boolean
