@@ -8,10 +8,10 @@ runparser() {
   $(git rev-parse --show-toplevel)/run.sh -t parse --debug `pwd`/$1
 }
 
-
 infile=$1
 echo "-- TOKENS --"
 runscanner $infile
 echo "-- INPUT --"
 cat $infile
+echo "-- PARSE --"
 runparser $infile
