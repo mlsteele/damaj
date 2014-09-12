@@ -65,26 +65,25 @@ options
 }
 
 program : (callout_decl)* (field_decl)* (method_decl)* ;
-callout_decl : TK_callout id SEMICOLON ;
-// field_decl : type field_decl_right (COMMA field_decl_right)*  SEMICOLON ;
-field_decl : type field_decl_right SEMICOLON ;
-field_decl_right : id (LSQUARE INTLITERAL RSQUARE)? ;
-method_decl : (type | TK_void) id LPAREN (type id (COMMA type id)*)? RPAREN block ;
+callout_decl : TK_callout IDENTIFIER SEMICOLON ;
+field_decl : type field_decl_right (COMMA field_decl_right)* SEMICOLON ;
+field_decl_right : IDENTIFIER^ (LSQUARE INTLITERAL RSQUARE)? ;
+method_decl : (type | TK_void) IDENTIFIER^ LPAREN (type IDENTIFIER (COMMA type IDENTIFIER)*)? RPAREN block ;
 block : LCURLY (field_decl)* (statement)* RCURLY ;
 type : TK_int | TK_boolean ;
 statement : location assign_op expr SEMICOLON
           | method_call SEMICOLON
-          | TK_if LPAREN expr RPAREN block (TK_else block)?
-          | TK_for LPAREN id SETEQ expr COMMA expr RPAREN block
-          | TK_while LPAREN expr RPAREN (COLON INTLITERAL)? block
-          | TK_return (expr)? SEMICOLON
-          | TK_break SEMICOLON
-          | TK_continue SEMICOLON ;
-assign_op : SETEQ | SETINCR | SETDECR ;
+          | TK_if^ LPAREN expr RPAREN block (TK_else block)?
+          | TK_for^ LPAREN IDENTIFIER SETEQ expr COMMA expr RPAREN block
+          | TK_while^ LPAREN expr RPAREN (COLON INTLITERAL)? block
+          | TK_return^ (expr)? SEMICOLON
+          | TK_break^ SEMICOLON
+          | TK_continue^ SEMICOLON ;
+assign_op : OP_SET^ | OP_INC^ | OP_DEC^ | OP_INV^ ;
 method_call : method_name LPAREN expr (COMMA expr)* RPAREN
             | method_name LPAREN callout_arg (COMMA callout_arg)* RPAREN ;
-method_name : id ;
-location : id | id LSQUARE expr RSQUARE ;
+method_name : IDENTIFIER ;
+location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
 // expr : // Oh, brother.
        // expr BINOP expr ;
 expr : expr_prefix | expr_norec ;
@@ -98,8 +97,7 @@ expr_norec :
       location
     | method_call
     | literal
-    | AT id ;
+    | AT IDENTIFIER ;
 callout_arg : expr | STRINGLITERAL ;
 literal : INTLITERAL | CHARLITERAL | bool_literal ;
-id : IDENTIFIER ;
 bool_literal : TK_true | TK_false ;
