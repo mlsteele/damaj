@@ -129,12 +129,12 @@ object Compiler {
   }
 
   def print_tree(tree: AST, level: Int): Unit  = {
-    val prefix = "  " * level
+    val prefix = "    " * level
     val ttype = tree.getType()
     val token = tree.getText()
     val child = Option(tree.getFirstChild())
     val next = Option(tree.getNextSibling())
-    Console.err.println(prefix + token + " (" + ttype + ")")
+    Console.err.println(prefix + "| " + token + " (" + ttype + ")")
     child match {
       case Some(child) => print_tree(child, level + 1)
       case None =>
