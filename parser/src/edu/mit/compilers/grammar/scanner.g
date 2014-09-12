@@ -28,6 +28,31 @@ tokens {
   "break";
   "continue" ;
   "for" ;
+
+  // Operators
+  // Arithmetic
+  OP_PLUS="+";
+  OP_MINUS="-";
+  OP_STAR="*";
+  OP_SLASH="/";
+  OP_PERC="%";
+  // Relative
+  OP_LT="<";
+  OP_GT=">";
+  OP_LE="<=";
+  OP_GE=">=";
+  // Equality
+  OP_EQ="==";
+  OP_NEQ="!=";
+  // Conditional
+  OP_AND="&&";
+  OP_OR="||";
+  // Assignment Operators
+  OP_SET="=";
+  OP_INC="+=";
+  OP_DEC="-=";
+  // Other
+  OP_INV="!";
 }
 
 // Selectively turns on debug tracing mode.
@@ -62,37 +87,30 @@ RPAREN options { paraphrase = ")"; } : ")";
 COMMA options { paraphrase = ","; } : ",";
 COLON options { paraphrase = ":"; } : ":";
 SEMICOLON options { paraphrase = ";"; } : ";";
+QUESTION options { paraphrase = "?"; } : "?";
 
 // Literals are pulled from 'tokens' above.
-IDENTIFIER options { testLiterals=true; } : ALPHA (ALPHANUM)* ;
+IDENTIFIER : ALPHA (ALPHANUM)* ;
 
 // This is one giant rule to avoid lexical nondeterminism warnings.
-OP : '?'
-   | '!'
-   | '+'
+// They're broken up by 'tokens' above.
+OP : '+'
    | '-'
    | '*'
    | '/'
-   | '%' 
+   | '%'
    | '<'
    | '>'
-   | '='
    | "<="
    | ">="
    | "=="
    | "!="
+   | "&&"
+   | "||"
+   | '='
    | "+="
    | "-="
-   | "&&"
-   | "||" ;
-
-// OP : BIN_OP | ASSIGN_OP;
-// protected BIN_OP : ARITH_OP | REL_OP | EQ_OP | COND_OP ;
-// protected ARITH_OP : '+' | '-' | '*' | '/' | '%' ;
-// protected REL_OP : '<' | '>' | "<=" | ">=" ;
-// protected EQ_OP : "==" | "!=" ;
-// protected COND_OP : "&&" | "||" ;
-// protected ASSIGN_OP : '=' | "+=" | "-=" ;
+   | '!' ;
 
 // Note that here, the {} syntax allows you to literally command the lexer
 // to skip mark this token as skipped, or to advance to the next line
