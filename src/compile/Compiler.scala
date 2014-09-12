@@ -109,10 +109,14 @@ object Compiler {
     // debug print
     tree match {
       case Some(tree) =>
+        Console.err.println("==string==")
+        Console.err.println(tree.toString())
         Console.err.println("==list==")
         Console.err.println(tree.toStringTree())
         Console.err.println("==tree==")
         Console.err.println(tree.toStringTree())
+        Console.err.println("==custom-tree==")
+        print_tree(tree, 0)
         Console.err.println("==end==")
       case _ =>
     }
@@ -121,6 +125,23 @@ object Compiler {
     (error, tree) match {
       case (false, Some(tree)) => Some(tree)
       case _ => None
+    }
+  }
+
+  def print_tree(tree: AST, level: Int): Unit  = {
+    val prefix = "  " * level
+    val ttype = tree.getType()
+    val token = tree.getText()
+    val child = Option(tree.getFirstChild())
+    val next = Option(tree.getNextSibling())
+    Console.err.println(prefix + token + " (" + ttype + ")")
+    child match {
+      case Some(child) => print_tree(child, level + 1)
+      case None =>
+    }
+    next match {
+      case Some(next) => print_tree(next, level)
+      case None =>
     }
   }
 }
