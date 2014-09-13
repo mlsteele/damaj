@@ -109,15 +109,15 @@ object Compiler {
     // debug print
     tree match {
       case Some(tree) =>
-        Console.err.println("==string==")
-        Console.err.println(tree.toString())
-        Console.err.println("==list==")
-        Console.err.println(tree.toStringTree())
-        Console.err.println("==tree==")
-        Console.err.println(tree.toStringTree())
-        Console.err.println("==custom-tree==")
-        print_tree(tree, 0)
-        Console.err.println("==end==")
+        // Console.err.println("==string==")
+        // Console.err.println(tree.toString())
+        // Console.err.println("==list==")
+        // Console.err.println(tree.toStringTree())
+        // Console.err.println("==tree==")
+        // Console.err.println(tree.toStringTree())
+        // Console.err.println("==custom-tree==")
+        // print_tree(tree, 0)
+        // Console.err.println("==end==")
       case _ =>
     }
 
