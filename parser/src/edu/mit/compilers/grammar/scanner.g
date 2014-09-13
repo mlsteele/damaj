@@ -28,7 +28,7 @@ tokens {
   "break";
   "continue" ;
   "for" ;
-  // TODO add while.
+  "while" ;
 
   // Operators
   // Arithmetic

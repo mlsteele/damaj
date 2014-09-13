@@ -82,7 +82,8 @@ statement : location assign_op expr SEMICOLON
 assign_op : OP_SET^ | OP_INC^ | OP_DEC^ | OP_INV^ ;
 method_name : IDENTIFIER ;
 expr : eA ;
-eA : (LPAREN^ eA RPAREN) | eB ; // parens
+eA : eB ;
+// eA : eB | (LPAREN^ eA RPAREN) ; // parens
 eB : eC (QUESTION^ eA COLON eA)? ; // ternary
 eC : eD (OP_OR^ eA)? ; // ||
 eD : eE (OP_AND^ eA)? ; // &&
@@ -90,7 +91,8 @@ eE : eF ((OP_EQ^ | OP_NEQ^) eA)? ; // == !=
 eF : eG ((OP_LT^ | OP_GT^ | OP_LTE^ | OP_GTE^) eA)? ; // < <= > >=
 eG : eH ((OP_PLUS^ | OP_MINUS^) eA)? ; // + -
 eH : eI ((OP_STAR^ | OP_SLASH^ | OP_PERC^) eA)? ; // * /
-eI : ((OP_MINUS^ | OP_INV^ | AT) eA) | eJ ; // unary - !
+eI : ((OP_MINUS^ | OP_INV^ | AT) eA) | eZ ; // unary - !
+eZ : eJ | (LPAREN eA RPAREN) ; // ()
 eJ : location | method_call | literal ;
 location : IDENTIFIER^ LSQUARE expr RSQUARE | IDENTIFIER^ ;
 method_call : method_name LPAREN (callout_arg (COMMA callout_arg)*)? RPAREN ;
