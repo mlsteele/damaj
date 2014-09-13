@@ -74,7 +74,7 @@ type : TK_int | TK_boolean ;
 statement : location assign_op expr SEMICOLON
           | method_call SEMICOLON
           | TK_if^ LPAREN expr RPAREN block (TK_else block)?
-          | TK_for^ LPAREN IDENTIFIER SETEQ expr COMMA expr RPAREN block
+          | TK_for^ LPAREN IDENTIFIER OP_SET expr COMMA expr RPAREN block
           | TK_while^ LPAREN expr RPAREN (COLON INTLITERAL)? block
           | TK_return^ (expr)? SEMICOLON
           | TK_break^ SEMICOLON
@@ -82,12 +82,16 @@ statement : location assign_op expr SEMICOLON
 assign_op : OP_SET^ | OP_INC^ | OP_DEC^ | OP_INV^ ;
 method_name : IDENTIFIER ;
 expr : eA ;
-eA : LPAREN^ eA RPAREN | eB ; // parens
-eB : eC QUESTION^ eA COLON eA | eC ; // ternary
-eC : eD (OP_PLUS^ | OP_MINUS^) eA | eD ; // + -
-eD : eE (OP_STAR^ | OP_SLASH^) eA | eE ; // * /
-eE : (OP_MINUS^ | OP_INV^ | AT) eA | eF ; // unary - !
-eF : location | method_call | literal ;
+eA : (LPAREN^ eA RPAREN) | eB ; // parens
+eB : eC (QUESTION^ eA COLON eA)? ; // ternary
+eC : eD (OP_OR^ eA)? ; // ||
+eD : eE (OP_AND^ eA)? ; // &&
+eE : eF ((OP_EQ^ | OP_NEQ^) eA)? ; // == !=
+eF : eG ((OP_LT^ | OP_GT^ | OP_LTE^ | OP_GTE^) eA)? ; // < <= > >=
+eG : eH ((OP_PLUS^ | OP_MINUS^) eA)? ; // + -
+eH : eI ((OP_STAR^ | OP_SLASH^ | OP_PERC^) eA)? ; // * /
+eI : ((OP_MINUS^ | OP_INV^ | AT) eA) | eJ ; // unary - !
+eJ : location | method_call | literal ;
 location : IDENTIFIER^ LSQUARE expr RSQUARE | IDENTIFIER^ ;
 method_call : method_name LPAREN (callout_arg (COMMA callout_arg)*)? RPAREN ;
 callout_arg : STRINGLITERAL | expr ;
