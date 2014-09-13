@@ -80,24 +80,16 @@ statement : location assign_op expr SEMICOLON
           | TK_break^ SEMICOLON
           | TK_continue^ SEMICOLON ;
 assign_op : OP_SET^ | OP_INC^ | OP_DEC^ | OP_INV^ ;
-method_call : method_name LPAREN expr (COMMA expr)* RPAREN
-            | method_name LPAREN callout_arg (COMMA callout_arg)* RPAREN ;
 method_name : IDENTIFIER ;
-location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
-// expr : // Oh, brother.
-       // expr BINOP expr ;
-expr : expr_prefix | expr_norec ;
-// TODO: ternary
-// expr : expr TERN_START expr TERN_DIVIDER expr ;
-expr_prefix :
-      MINUS expr
-    | BANG expr
-    | LPAREN expr RPAREN ;
-expr_norec :
-      location
-    | method_call
-    | literal
-    | AT IDENTIFIER ;
-callout_arg : expr | STRINGLITERAL ;
+expr : eA ;
+eA : LPAREN^ eA RPAREN | eB ; // parens
+eB : eC QUESTION^ eA COLON eA | eC ; // ternary
+eC : eD (OP_PLUS^ | OP_MINUS^) eA | eD ; // + -
+eD : eE (OP_STAR^ | OP_SLASH^) eA | eE ; // * /
+eE : (OP_MINUS^ | OP_INV^ | AT) eA | eF ; // unary - !
+eF : location | method_call | literal ;
+location : IDENTIFIER^ LSQUARE expr RSQUARE | IDENTIFIER^ ;
+method_call : method_name LPAREN (callout_arg (COMMA callout_arg)*)? RPAREN ;
+callout_arg : STRINGLITERAL | expr ;
 literal : INTLITERAL | CHARLITERAL | bool_literal ;
 bool_literal : TK_true | TK_false ;

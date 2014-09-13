@@ -28,6 +28,7 @@ tokens {
   "break";
   "continue" ;
   "for" ;
+  // TODO add while.
 
   // Operators
   // Arithmetic
@@ -88,6 +89,7 @@ COMMA options { paraphrase = ","; } : ",";
 COLON options { paraphrase = ":"; } : ":";
 SEMICOLON options { paraphrase = ";"; } : ";";
 QUESTION options { paraphrase = "?"; } : "?";
+AT options { paraphrase = "@"; } : "@";
 
 // Literals are pulled from 'tokens' above.
 IDENTIFIER : ALPHA (ALPHANUM)* ;
