@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/sh
+# Test the parser.
+# Run this with the path to an input file like:
+# $ scripts/parse-test tests/parser/legal/legal-01
 
 runscanner() {
   $(git rev-parse --show-toplevel)/run.sh -t scan `pwd`/$1

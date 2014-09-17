@@ -1,4 +1,8 @@
 #!/bin/sh
+# Test the scanner.
+# Run this with the name of a scanner test like:
+# $ scripts/scan-test char3
+
 run_parser() {
   $(git rev-parse --show-toplevel)/run.sh -t scan `pwd`/$1
 }
