@@ -124,7 +124,7 @@ CHARLITERAL : '\'' CHAR '\'' ;
 STRINGLITERAL : '"' (CHAR)* '"' ;
 INTLITERAL : DEC_LITERAL | HEX_LITERAL ;
 protected DEC_LITERAL : (DIGIT)+ ;
-protected HEX_LITERAL : "0x" (DIGIT|ALPHA)+ ;
+protected HEX_LITERAL : "0x" (DIGIT|('a'..'f'|'A'..'F'))+ ;
 
 protected ALPHANUM : (ALPHA | DIGIT) ;
 protected ALPHA : ('a'..'z' | 'A'..'Z') | '_' ;
