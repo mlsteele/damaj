@@ -64,7 +64,7 @@ options
   }
 }
 
-program : (callout_decl)* (field_decl)* (method_decl)* ;
+program : (callout_decl)* (field_decl)* (method_decl)* EOF;
 callout_decl : TK_callout IDENTIFIER SEMICOLON ;
 field_decl : type field_decl_right (COMMA field_decl_right)* SEMICOLON ;
 field_decl_right : IDENTIFIER^ (LSQUARE INTLITERAL RSQUARE)? ;
