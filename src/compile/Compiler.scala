@@ -84,7 +84,9 @@ object Compiler {
     try {
       inputStream = new java.io.FileInputStream(fileName)
     } catch {
-      case f: FileNotFoundException => { Console.err.println("File " + fileName + " does not exist"); return null }
+      case f: FileNotFoundException =>
+        Console.err.println("File " + fileName + " does not exist")
+        return None
     }
 
     val scanner = new DecafScanner(new DataInputStream(inputStream))
