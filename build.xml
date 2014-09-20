@@ -30,11 +30,11 @@
  
     <!-- variables for paths and files -->
     <property name="src.dir" location="${basedir}/src"/>
-    <property name="tests.dir" location="${basedir}/unittests"/>
+    <!-- <property name="tests.dir" location="${basedir}/unittests"/> -->
     <property name="lib.dir" location="${basedir}/lib"/>
     <property name="build.dir" location="${basedir}/build"/>
     <property name="build-classes.dir" location="${build.dir}/classes"/>
-    <property name="test-classes.dir" location="${build.dir}/test/classes"/>
+    <!-- <property name="test-classes.dir" location="${build.dir}/test/classes"/> -->
     <property name="build-lib.dir" location="${build.dir}/lib"/>
     <property name="build-doc.dir" location="${build.dir}/doc"/>
     <property name="java.dir" location="${env.JAVA_HOME}"/>
@@ -46,7 +46,7 @@
     <path id="project.classpath">
       <pathelement location="${scala-library.jar}"/>
       <pathelement location="${build-classes.dir}"/> <!-- used during recompilation -->
-      <pathelement location="${test-classes.dir}"/> <!-- used during recompilation -->
+      <!-- <pathelement location="${test-classes.dir}"/> [> used during recompilation <] -->
       <fileset dir="${lib.dir}">  
         <include name="**/*.jar"/>  
       </fileset>  
