@@ -1,7 +1,7 @@
 lexer grammar DecafScanner;
 
 @header {
-package edu.mit.compilers.grammar;
+package grammars;
 }
 
 LCURLY : '{' ;

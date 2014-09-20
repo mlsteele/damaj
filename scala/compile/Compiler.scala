@@ -9,10 +9,10 @@ import scala.collection.mutable.{StringBuilder, ListBuffer}
 import scala.Console
 
 // Begin parser/scanner imports
-import antlr.CommonAST
-import antlr.collections.AST
-import antlr.Token
-import edu.mit.compilers.grammar.{ DecafParser, DecafParserTokenTypes, DecafScanner, DecafScannerTokenTypes }
+// import antlr.CommonAST
+// import antlr.collections.AST
+// import antlr.Token
+import grammars.{ DecafScanner }
 
 object Compiler {
   val tokenMap = Map(
