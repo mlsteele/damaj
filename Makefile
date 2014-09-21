@@ -1,4 +1,4 @@
-.PHONY: all build build-dir grammars scanner java scala clean
+.PHONY: all build build-dir java scala grammars scanner parser clean
 CLASSPATH=build/lib/project.jar:lib/antlr.jar
 JAVA_FILES=`find java -type f -name "*.java"`
 SCALA_FILES=`find scala -type f -name "*.scala"`
@@ -16,11 +16,15 @@ java:
 scala:
 	fsc -reset -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
 
-grammars: scanner
+grammars: scanner parser
 
 scanner:
 	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafScanner.g
 	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafScanner.java
+
+parser:
+	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafParser.g
+	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafParser.java
 
 clean:
 	rm -rf build/*

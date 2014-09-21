@@ -55,9 +55,6 @@ OP_DEC : '-=' ;
 // Other
 OP_INV : '!' ;
 
-// WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
-// SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
-
 WHITESPACE : (' ' | '\t' | '\n') {$channel=HIDDEN;};
 SL_COMMENT : '/' '/' (~'\n')* '\n' {$channel=HIDDEN;} ;
 

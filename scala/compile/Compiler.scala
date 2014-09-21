@@ -9,8 +9,9 @@ import scala.collection.mutable.{StringBuilder, ListBuffer}
 import scala.Console
 
 import org.antlr.runtime.tree.ParseTree
-import org.antlr.runtime.{ANTLRFileStream, Token}
-import grammars.DecafScanner
+import org.antlr.runtime.debug.ParseTreeBuilder
+import org.antlr.runtime.{ANTLRFileStream, Token, CommonTokenStream}
+import grammars.{DecafScanner, DecafParser}
 
 object Compiler {
   val tokenMap: Map[Int, String] = Map(
@@ -29,6 +30,7 @@ object Compiler {
       scan(CLI.infile)
       System.exit(0)
     } else if (CLI.target == CLI.Action.PARSE) {
+      parse(CLI.infile)
       // val tree = parse(CLI.infile)
       // tree match {
         // case Some(tree) => System.exit(0)
@@ -71,6 +73,16 @@ object Compiler {
     } catch {
       case ex: Exception => Console.err.println(ex)
     }
+  }
+
+  def parse(fileName: String): Unit = {
+    val inputStream: ANTLRFileStream = new ANTLRFileStream(fileName)
+    val scanner = new DecafScanner(inputStream)
+    val tokens = new CommonTokenStream(scanner)
+    // val treebuilder: RecognizerSharedState = new ParseTreeBuilder("program");
+    val parser = new DecafParser(tokens)
+    parser.program()
+    Console.err.println(parser.failed)
   }
 
   // def parse(fileName: String): Option[CommonAST]  = {
