@@ -8,20 +8,17 @@ import scala.io.Source
 import scala.collection.mutable.{StringBuilder, ListBuffer}
 import scala.Console
 
-// Begin parser/scanner imports
-// import antlr.CommonAST
-// import antlr.collections.AST
-// import antlr.Token
-import grammars.{ DecafScanner }
+import org.antlr.runtime.tree.ParseTree
+import org.antlr.runtime.{ANTLRFileStream, Token}
+import grammars.DecafScanner
 
 object Compiler {
-  val tokenMap = Map(
-    DecafScannerTokenTypes.IDENTIFIER -> "IDENTIFIER",
-    DecafScannerTokenTypes.CHARLITERAL -> "CHARLITERAL",
-    DecafScannerTokenTypes.STRINGLITERAL -> "STRINGLITERAL",
-    DecafScannerTokenTypes.INTLITERAL -> "INTLITERAL",
-    DecafScannerTokenTypes.TK_true -> "BOOLEANLITERAL",
-    DecafScannerTokenTypes.TK_false -> "BOOLEANLITERAL"
+  val tokenMap: Map[Int, String] = Map(
+    DecafScanner.IDENTIFIER -> "IDENTIFIER",
+    DecafScanner.CHARLITERAL -> "CHARLITERAL",
+    DecafScanner.INTLITERAL -> "INTLITERAL"
+    // DecafScanner.TK_true -> "BOOLEANLITERAL",
+    // DecafScanner.TK_false -> "BOOLEANLITERAL"
   )
 
   var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
@@ -33,40 +30,42 @@ object Compiler {
       scan(CLI.infile)
       System.exit(0)
     } else if (CLI.target == CLI.Action.PARSE) {
-      val tree = parse(CLI.infile)
-      tree match {
-        case Some(tree) => System.exit(0)
-        case None => System.exit(1)
-      }
+      // val tree = parse(CLI.infile)
+      // tree match {
+        // case Some(tree) => System.exit(0)
+        // case None => System.exit(1)
+      // }
     }
   }
 
   def scan(fileName: String) {
     try {
-      val inputStream: FileInputStream = new java.io.FileInputStream(fileName)
-      val scanner = new DecafScanner(new DataInputStream(inputStream))
-      scanner.setTrace(CLI.debug)
+      val inputStream: ANTLRFileStream = new ANTLRFileStream(fileName)
+      val scanner = new DecafScanner(inputStream)
+      // scanner.setTrace(CLI.debug)
       var done = false
       while (!done) {
         try {
           val head = scanner.nextToken()
-          if (head.getType() == DecafScannerTokenTypes.EOF) {
-            done = true
-          } else {
-            val tokenType = tokenMap.getOrElse(head.getType(), "")
-            // outFile.println(head.getLine() + (if (tokenType ==  "") "" else " ") + tokenType + " " + head.getText())
-            outFile.println(
-              head.getLine()
-              + (if (tokenType ==  "") "" else " ")
-              // + " (" + head.getType() + ") "
-              + tokenType
-              + " "
-              + head.getText())
+          if (head.getChannel() != Token.HIDDEN_CHANNEL) {
+            if (head.getType() == DecafScanner.EOF) {
+              done = true
+            } else {
+              val tokenType = head.getType();
+              val tokenTypeName: String = tokenMap.getOrElse(tokenType, "???")
+              outFile.println(
+                head.getLine()
+                + (if (tokenTypeName ==  "") "" else " ")
+                // + " (" + head.getType() + ") "
+                + tokenTypeName
+                + " "
+                + head.getText())
+            }
           }
         } catch {
           case ex: Exception => {
             Console.err.println(CLI.infile + " " + ex)
-            scanner.consume();
+            // scanner.consume();
           }
         }
       }
@@ -75,75 +74,75 @@ object Compiler {
     }
   }
 
-  def parse(fileName: String): Option[CommonAST]  = {
-    /** 
-    Parse the file specified by the filename. Eventually, this method
-    may return a type specific to your compiler.
-    */
-    var inputStream : java.io.FileInputStream = null
-    try {
-      inputStream = new java.io.FileInputStream(fileName)
-    } catch {
-      case f: FileNotFoundException =>
-        Console.err.println("File " + fileName + " does not exist")
-        return None
-    }
+  // def parse(fileName: String): Option[CommonAST]  = {
+    // [>* 
+    // Parse the file specified by the filename. Eventually, this method
+    // may return a type specific to your compiler.
+    // */
+    // var inputStream : java.io.FileInputStream = null
+    // try {
+      // inputStream = new java.io.FileInputStream(fileName)
+    // } catch {
+      // case f: FileNotFoundException =>
+        // Console.err.println("File " + fileName + " does not exist")
+        // return None
+    // }
 
-    val scanner = new DecafScanner(new DataInputStream(inputStream))
-    val parser = new DecafParser(scanner);
-    parser.setTrace(CLI.debug)
-    parser.program()
-    val tree = Option(parser.getAST().asInstanceOf[CommonAST])
-    val error: Boolean = parser.getError()
+    // val scanner = new DecafScanner(new DataInputStream(inputStream))
+    // val parser = new DecafParser(scanner);
+    // parser.setTrace(CLI.debug)
+    // parser.program()
+    // val tree = Option(parser.getAST().asInstanceOf[CommonAST])
+    // val error: Boolean = parser.getError()
 
-    // error reporting
-    (error, tree) match {
-      case (true, None) =>
-        Console.err.println("[ERROR]: Parse error\n")
-      case (true, Some(tree)) =>
-        Console.err.println("[ERROR]: Parse error with tree\n")
-      case (false, None) =>
-        Console.err.println("[ERROR] No parse tree but no error\n")
-      case (false, Some(tree)) =>
-        Console.err.println("[YAY] Parse succeeded\n")
-    }
+    // // error reporting
+    // (error, tree) match {
+      // case (true, None) =>
+        // Console.err.println("[ERROR]: Parse error\n")
+      // case (true, Some(tree)) =>
+        // Console.err.println("[ERROR]: Parse error with tree\n")
+      // case (false, None) =>
+        // Console.err.println("[ERROR] No parse tree but no error\n")
+      // case (false, Some(tree)) =>
+        // Console.err.println("[YAY] Parse succeeded\n")
+    // }
 
-    // debug print
-    tree match {
-      case Some(tree) =>
-        // Console.err.println("==string==")
-        // Console.err.println(tree.toString())
-        // Console.err.println("==list==")
-        // Console.err.println(tree.toStringTree())
-        // Console.err.println("==tree==")
-        // Console.err.println(tree.toStringTree())
-        // Console.err.println("==custom-tree==")
-        // print_tree(tree, 0)
-        // Console.err.println("==end==")
-      case _ =>
-    }
+    // // debug print
+    // tree match {
+      // case Some(tree) =>
+        // // Console.err.println("==string==")
+        // // Console.err.println(tree.toString())
+        // // Console.err.println("==list==")
+        // // Console.err.println(tree.toStringTree())
+        // // Console.err.println("==tree==")
+        // // Console.err.println(tree.toStringTree())
+        // // Console.err.println("==custom-tree==")
+        // // print_tree(tree, 0)
+        // // Console.err.println("==end==")
+      // case _ =>
+    // }
 
-    // return value
-    (error, tree) match {
-      case (false, Some(tree)) => Some(tree)
-      case _ => None
-    }
-  }
+    // // return value
+    // (error, tree) match {
+      // case (false, Some(tree)) => Some(tree)
+      // case _ => None
+    // }
+  // }
 
-  def print_tree(tree: AST, level: Int): Unit  = {
-    val prefix = "    " * level
-    val ttype = tree.getType()
-    val token = tree.getText()
-    val child = Option(tree.getFirstChild())
-    val next = Option(tree.getNextSibling())
-    Console.err.println(prefix + "| " + token + " (" + ttype + ")")
-    child match {
-      case Some(child) => print_tree(child, level + 1)
-      case None =>
-    }
-    next match {
-      case Some(next) => print_tree(next, level)
-      case None =>
-    }
-  }
+  // def print_tree(tree: AST, level: Int): Unit  = {
+    // val prefix = "    " * level
+    // val ttype = tree.getType()
+    // val token = tree.getText()
+    // val child = Option(tree.getFirstChild())
+    // val next = Option(tree.getNextSibling())
+    // Console.err.println(prefix + "| " + token + " (" + ttype + ")")
+    // child match {
+      // case Some(child) => print_tree(child, level + 1)
+      // case None =>
+    // }
+    // next match {
+      // case Some(next) => print_tree(next, level)
+      // case None =>
+    // }
+  // }
 }

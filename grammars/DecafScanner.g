@@ -4,17 +4,17 @@ lexer grammar DecafScanner;
 package grammars;
 }
 
-LCURLY : '{' ;
-RCURLY : '}' ;
-LSQUARE : '[' ;
-RSQUARE : ']' ;
-LPAREN : '(' ;
-RPAREN : ')' ;
-COMMA : ',' ;
-COLON : ':' ;
-SEMICOLON : ' ;';
-QUESTION : '?' ;
-AT : '@' ;
+// LCURLY : '{' ;
+// RCURLY : '}' ;
+// LSQUARE : '[' ;
+// RSQUARE : ']' ;
+// LPAREN : '(' ;
+// RPAREN : ')' ;
+// COMMA : ',' ;
+// COLON : ':' ;
+// SEMICOLON : ';' ;
+// QUESTION : '?' ;
+// AT : '@' ;
 
 // Literals are pulled from 'tokens' above.
 IDENTIFIER : ALPHA (ALPHANUM)* ;
@@ -39,14 +39,14 @@ OP : '+'
    | '-='
    | '!' ;
 
-// Note that here, the {} syntax allows you to literally command the lexer
-// to skip mark this token as skipped, or to advance to the next line
-// by directly adding Java commands.
 // WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
 // SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };
 
+WHITESPACE : (' ' | '\t' | '\n') {$channel=HIDDEN;};
+SL_COMMENT : '/' '/' (~'\n')* '\n' {$channel=HIDDEN;} ;
+
 CHARLITERAL : '\'' CHAR '\'' ;
-STRINGLITERAL : '"' (CHAR)* '"' ;
+STRINGLITERAL : '\"' (CHAR)* '\"' ;
 INTLITERAL : DEC_LITERAL | HEX_LITERAL ;
 fragment DEC_LITERAL : (DIGIT)+ ;
 fragment HEX_LITERAL : '0x' (DIGIT|('a'..'f'|'A'..'F'))+ ;
