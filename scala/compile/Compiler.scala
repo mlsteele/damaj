@@ -16,9 +16,8 @@ object Compiler {
   val tokenMap: Map[Int, String] = Map(
     DecafScanner.IDENTIFIER -> "IDENTIFIER",
     DecafScanner.CHARLITERAL -> "CHARLITERAL",
-    DecafScanner.INTLITERAL -> "INTLITERAL"
-    // DecafScanner.TK_true -> "BOOLEANLITERAL",
-    // DecafScanner.TK_false -> "BOOLEANLITERAL"
+    DecafScanner.INTLITERAL -> "INTLITERAL",
+    DecafScanner.BOOL_LITERAL -> "BOOLEANLITERAL"
   )
 
   var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
@@ -52,7 +51,7 @@ object Compiler {
               done = true
             } else {
               val tokenType = head.getType();
-              val tokenTypeName: String = tokenMap.getOrElse(tokenType, "???")
+              val tokenTypeName: String = tokenMap.getOrElse(tokenType, "")
               outFile.println(
                 head.getLine()
                 + (if (tokenTypeName ==  "") "" else " ")

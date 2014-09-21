@@ -4,40 +4,56 @@ lexer grammar DecafScanner;
 package grammars;
 }
 
-// LCURLY : '{' ;
-// RCURLY : '}' ;
-// LSQUARE : '[' ;
-// RSQUARE : ']' ;
-// LPAREN : '(' ;
-// RPAREN : ')' ;
-// COMMA : ',' ;
-// COLON : ':' ;
-// SEMICOLON : ';' ;
-// QUESTION : '?' ;
-// AT : '@' ;
+LCURLY : '{' ;
+RCURLY : '}' ;
+LSQUARE : '[' ;
+RSQUARE : ']' ;
+LPAREN : '(' ;
+RPAREN : ')' ;
+COMMA : ',' ;
+COLON : ':' ;
+SEMICOLON : ';' ;
+QUESTION : '?' ;
+AT : '@' ;
 
-// Literals are pulled from 'tokens' above.
-IDENTIFIER : ALPHA (ALPHANUM)* ;
+KW_boolean : 'boolean' ;
+KW_callout : 'callout' ;
+KW_else : 'else' ;
+KW_if : 'if' ;
+KW_int : 'int' ;
+KW_return : 'return' ;
+KW_void : 'void' ;
+KW_break : 'break' ;
+KW_continue : 'continue' ;
+KW_for : 'for' ;
+KW_while : 'while' ;
+BOOL_LITERAL : 'true' | 'false' ;
+IDENTIFIER : ALPHA (ALPHANUM)*  ;
 
-// This is one giant rule to avoid lexical nondeterminism warnings.
-// They're broken up by 'tokens' above.
-OP : '+'
-   | '-'
-   | '*'
-   | '/'
-   | '%'
-   | '<'
-   | '>'
-   | '<='
-   | '>='
-   | '=='
-   | '!='
-   | '&&'
-   | '||'
-   | '='
-   | '+='
-   | '-='
-   | '!' ;
+// Operators
+// Arithmetic
+OP_PLUS : '+' ;
+OP_MINUS : '-' ;
+OP_STAR : '*' ;
+OP_SLASH : '/' ;
+OP_PERC : '%' ;
+// Relative
+OP_LT : '<' ;
+OP_GT : '>' ;
+OP_LE : '<=' ;
+OP_GE : '>=' ;
+// Equality
+OP_EQ : '==' ;
+OP_NEQ : '!=' ;
+// Conditional
+OP_AND : '&&' ;
+OP_OR : '||' ;
+// Assignment Operators
+OP_SET : '=' ;
+OP_INC : '+=' ;
+OP_DEC : '-=' ;
+// Other
+OP_INV : '!' ;
 
 // WS_ : (' ' | '\t' | '\n' {newline();}) {_ttype = Token.SKIP; };
 // SL_COMMENT : "//" (~'\n')* '\n' {_ttype = Token.SKIP; newline (); };

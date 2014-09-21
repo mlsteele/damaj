@@ -14,16 +14,12 @@ java:
 	javac -d build/ $(JAVA_FILES)
 
 scala:
-	fsc -reset
-	fsc -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
+	fsc -reset -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
 
 grammars: scanner
 
 scanner:
 	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafScanner.g
-	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafScanner.java
-
-special:
 	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafScanner.java
 
 clean:
