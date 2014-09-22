@@ -81,7 +81,10 @@ object Compiler {
     val treebuilder = new ParseTreeBuilder("program")
     val parser = new DecafParser(tokens, treebuilder)
     parser.program()
-    val tree = Option(treebuilder.getTree())
+    val tree = Option(treebuilder.getTree()) match {
+      case Some(tree) => Some(tree.getChild(0).asInstanceOf[ParseTree])
+      case None => None
+    }
     val error = parser.getNumberOfSyntaxErrors() > 0
 
     // Error reporting
@@ -99,12 +102,13 @@ object Compiler {
     // Debug print
     tree match {
       case Some(tree) =>
+        print_tree(tree, 0)
         // Console.err.println(tree.toStringTree())
         // Console.err.println(tree.getChild(0).toStringTree())
         // Console.err.println(tree.getChild(0).getChild(0).getChild(0).toStringTree())
         // Console.err.println(tree.getChild(0).getChild(0).getType())
         // Console.err.println(tree.getChild(0).getChild(0).toString())
-        // Console.err.println(tree.getChild(0).getChild(0).getText())
+        // Console.err.println(tree.getChild(0).getChild(0).getChild(1).getText())
       case _ =>
     }
 
@@ -166,20 +170,12 @@ object Compiler {
     // }
   // }
 
-  // def print_tree(tree: AST, level: Int): Unit  = {
-    // val prefix = "    " * level
-    // val ttype = tree.getType()
-    // val token = tree.getText()
-    // val child = Option(tree.getFirstChild())
-    // val next = Option(tree.getNextSibling())
-    // Console.err.println(prefix + "| " + token + " (" + ttype + ")")
-    // child match {
-      // case Some(child) => print_tree(child, level + 1)
-      // case None =>
-    // }
-    // next match {
-      // case Some(next) => print_tree(next, level)
-      // case None =>
-    // }
-  // }
+  def print_tree(tree: ParseTree, level: Int): Unit  = {
+    val prefix = "  " * level
+    val ttype = tree.getType()
+    val token = tree.getText()
+    val children = Range(0, tree.getChildCount()).map (tree.getChild(_).asInstanceOf[ParseTree])
+    Console.err.println(prefix + "| " + token + " (" + ttype + ")")
+    children.foreach(print_tree(_, level + 1))
+  }
 }

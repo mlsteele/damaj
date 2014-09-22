@@ -28,7 +28,6 @@ assign_op : OP_SET | OP_INC | OP_DEC | OP_INV ;
 method_name : IDENTIFIER ;
 expr : eA ;
 eA : eB ;
-// eA : eB | (LPAREN eA RPAREN) ; // parens
 eB : eC (QUESTION eA COLON eA)? ; // ternary
 eC : eD (OP_OR eA)? ; // ||
 eD : eE (OP_AND eA)? ; // &&
