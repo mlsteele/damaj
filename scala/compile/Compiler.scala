@@ -30,12 +30,11 @@ object Compiler {
       scan(CLI.infile)
       System.exit(0)
     } else if (CLI.target == CLI.Action.PARSE) {
-      parse(CLI.infile)
-      // val tree = parse(CLI.infile)
-      // tree match {
-        // case Some(tree) => System.exit(0)
-        // case None => System.exit(1)
-      // }
+      val tree = parse(CLI.infile)
+      tree match {
+        case Some(tree) => System.exit(0)
+        case None => System.exit(1)
+      }
     }
   }
 
@@ -75,23 +74,48 @@ object Compiler {
     }
   }
 
-  def parse(fileName: String): Unit = {
+  def parse(fileName: String): Option[ParseTree] = {
     val inputStream: ANTLRFileStream = new ANTLRFileStream(fileName)
     val scanner = new DecafScanner(inputStream)
     val tokens = new CommonTokenStream(scanner)
-    // val treebuilder: RecognizerSharedState = new ParseTreeBuilder("program");
     val treebuilder = new ParseTreeBuilder("program")
     val parser = new DecafParser(tokens, treebuilder)
     parser.program()
-    val tree = treebuilder.getTree()
-    Console.err.println(tree.toStringTree())
+    val tree = Option(treebuilder.getTree())
+    val error = parser.getNumberOfSyntaxErrors() > 0
+
+    // Error reporting
+    (error, tree) match {
+      case (true, None) =>
+        Console.err.println("[ERROR]: Parse error")
+      case (true, Some(tree)) =>
+        Console.err.println("[ERROR]: Parse error but tree exists")
+      case (false, None) =>
+        Console.err.println("[ERROR]: No parse error but no parse tree")
+      case (false, Some(tree)) =>
+        Console.err.println("[YAY]: Parse succeeded")
+    }
+
+    // Debug print
+    tree match {
+      case Some(tree) =>
+        // Console.err.println(tree.toStringTree())
+        // Console.err.println(tree.getChild(0).toStringTree())
+        // Console.err.println(tree.getChild(0).getChild(0).getChild(0).toStringTree())
+        // Console.err.println(tree.getChild(0).getChild(0).getType())
+        // Console.err.println(tree.getChild(0).getChild(0).toString())
+        // Console.err.println(tree.getChild(0).getChild(0).getText())
+      case _ =>
+    }
+
+    // return value
+    (error, tree) match {
+      case (false, Some(tree)) => Some(tree)
+      case _ => None
+    }
   }
 
   // def parse(fileName: String): Option[CommonAST]  = {
-    // [>* 
-    // Parse the file specified by the filename. Eventually, this method
-    // may return a type specific to your compiler.
-    // */
     // var inputStream : java.io.FileInputStream = null
     // try {
       // inputStream = new java.io.FileInputStream(fileName)
