@@ -80,9 +80,11 @@ object Compiler {
     val scanner = new DecafScanner(inputStream)
     val tokens = new CommonTokenStream(scanner)
     // val treebuilder: RecognizerSharedState = new ParseTreeBuilder("program");
-    val parser = new DecafParser(tokens)
+    val treebuilder = new ParseTreeBuilder("program")
+    val parser = new DecafParser(tokens, treebuilder)
     parser.program()
-    Console.err.println(parser.failed)
+    val tree = treebuilder.getTree()
+    Console.err.println(tree.toStringTree())
   }
 
   // def parse(fileName: String): Option[CommonAST]  = {

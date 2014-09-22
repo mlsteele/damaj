@@ -2,6 +2,7 @@ parser grammar DecafParser;
 
 options {
     tokenVocab=DecafScanner;
+    output=AST;
 }
 
 @header {

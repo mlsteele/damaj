@@ -19,11 +19,11 @@ scala:
 grammars: scanner parser
 
 scanner:
-	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafScanner.g
+	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafScanner.g -debug
 	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafScanner.java
 
 parser:
-	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafParser.g
+	java -cp vendor/antlr.jar org.antlr.Tool -o build/ grammars/DecafParser.g -debug
 	javac -cp vendor/antlr.jar -d build/ build/grammars/DecafParser.java
 
 clean:
