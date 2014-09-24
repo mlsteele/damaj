@@ -2,6 +2,8 @@
 
 A really decent Decaf compiler.
 
+"Mad decent" - Jess
+
 ## Building
 To build everything run `make`.
 
