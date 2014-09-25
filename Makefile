@@ -14,7 +14,7 @@ java:
 	javac -d build/ $(JAVA_FILES)
 
 scala:
-	fsc -reset -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
+	fsc -reset -deprecation -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
 
 grammars: scanner parser
 
