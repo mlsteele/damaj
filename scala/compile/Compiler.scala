@@ -103,6 +103,9 @@ object Compiler {
     tree match {
       case Some(tree) =>
         print_tree(tree, 0)
+        Console.err.println("HERE COMES THE AST")
+        val ast = ASTTools.parseNode(tree)
+        Console.err.println(ast)
         // Console.err.println(tree.toStringTree())
         // Console.err.println(tree.getChild(0).toStringTree())
         // Console.err.println(tree.getChild(0).getChild(0).getChild(0).toStringTree())

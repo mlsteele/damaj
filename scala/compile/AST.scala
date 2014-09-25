@@ -1,7 +1,8 @@
 package compile
 
-trait AST {
-  // AST tree classes
+// AST structure definition
+// See ASTTools for methods having to do with ASTs.
+object AST {
   // Note: Parenthesis will be purged from the AST.
 
   // Root node
