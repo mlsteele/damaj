@@ -1,11 +1,12 @@
 package compile
-import compile.AST._
+import AST._
 import org.antlr.runtime.tree.ParseTree
 
-// Tools for handling ASTs.
-object ASTTools {
+// Construct an AST from a parse tree
+object ASTBuilder {
   class ASTConstructionException(msg: String) extends RuntimeException(msg)
 
+  // Wrapper for ParseTree to make the interface a bit nicer.
   class HappyParseTree(pt: ParseTree) {
     def text = pt.getText()
     def children =
@@ -71,4 +72,38 @@ object ASTTools {
     MethodDecl(id, args, returns, block)
   }
 
+}
+
+object ASTPrinter {
+  def printProgram(ast: ProgramAST): String = {
+    lines(List(
+      lines(ast.callouts.map(printCalloutDecl)),
+      lines(ast.fields.map(printFieldDecl)),
+      lines(ast.methods.map(printMethodDecl))))
+  }
+
+  def printCalloutDecl(ast: CalloutDecl): String = "callout %s".format(ast.id)
+
+  def printFieldDecl(ast: FieldDecl): String = ast match {
+    case FieldDecl(dtype, id, None) => "field %s: %s".format(id, printDType(dtype))
+    case FieldDecl(dtype, id, Some(size)) =>
+      "field %s: %s[%d]".format(id, printDType(dtype), size)
+  }
+
+  def printMethodDecl(ast: MethodDecl) =
+    // TODO args, block
+    lines(List(
+      "%s %s() {".format(printDType(ast.returns), ast.id),
+      indent("stuff"),
+      "}"))
+
+  def printDType(ast: DType): String = ast match {
+    case DTVoid => "void"
+    case DTInt => "int"
+    case DTBool => "boolean"
+  }
+
+  def lines(strs: List[String]): String = strs.mkString("\n")
+
+  def indent(str: String): String = lines(str.split("\n").map("  " + _).toList)
 }

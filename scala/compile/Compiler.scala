@@ -104,8 +104,9 @@ object Compiler {
       case Some(tree) =>
         print_tree(tree, 0)
         Console.err.println("HERE COMES THE AST")
-        val ast = ASTTools.parseProgram(tree)
-        Console.err.println(ast)
+        val ast = ASTBuilder.parseProgram(tree)
+        val ast_pretty = ASTPrinter.printProgram(ast)
+        Console.err.println(ast_pretty)
         // Console.err.println(tree.toStringTree())
         // Console.err.println(tree.getChild(0).toStringTree())
         // Console.err.println(tree.getChild(0).getChild(0).getChild(0).toStringTree())
