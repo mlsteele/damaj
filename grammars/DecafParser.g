@@ -9,11 +9,18 @@ options {
 package grammars;
 }
 
-program : (callout_decl)* (field_decl)* (method_decl)* EOF;
+program : callout_decls field_decls method_decls EOF;
+callout_decls : callout_decl* ;
+field_decls : field_decl* ;
+method_decls : method_decl* ;
+
 callout_decl : KW_callout IDENTIFIER SEMICOLON ;
 field_decl : type field_decl_right (COMMA field_decl_right)* SEMICOLON ;
 field_decl_right : IDENTIFIER (LSQUARE INTLITERAL RSQUARE)? ;
-method_decl : (type | KW_void) IDENTIFIER LPAREN (type IDENTIFIER (COMMA type IDENTIFIER)*)? RPAREN block ;
+
+method_decl : (type | KW_void) IDENTIFIER LPAREN method_args RPAREN block ;
+method_args : (type IDENTIFIER (COMMA type IDENTIFIER)*)? ;
+
 block : LCURLY (field_decl)* (statement)* RCURLY ;
 type : KW_int | KW_boolean ;
 statement : location assign_op expr SEMICOLON
