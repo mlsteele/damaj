@@ -122,57 +122,6 @@ object Compiler {
     }
   }
 
-  // def parse(fileName: String): Option[CommonAST]  = {
-    // var inputStream : java.io.FileInputStream = null
-    // try {
-      // inputStream = new java.io.FileInputStream(fileName)
-    // } catch {
-      // case f: FileNotFoundException =>
-        // Console.err.println("File " + fileName + " does not exist")
-        // return None
-    // }
-
-    // val scanner = new DecafScanner(new DataInputStream(inputStream))
-    // val parser = new DecafParser(scanner);
-    // parser.setTrace(CLI.debug)
-    // parser.program()
-    // val tree = Option(parser.getAST().asInstanceOf[CommonAST])
-    // val error: Boolean = parser.getError()
-
-    // // error reporting
-    // (error, tree) match {
-      // case (true, None) =>
-        // Console.err.println("[ERROR]: Parse error\n")
-      // case (true, Some(tree)) =>
-        // Console.err.println("[ERROR]: Parse error with tree\n")
-      // case (false, None) =>
-        // Console.err.println("[ERROR] No parse tree but no error\n")
-      // case (false, Some(tree)) =>
-        // Console.err.println("[YAY] Parse succeeded\n")
-    // }
-
-    // // debug print
-    // tree match {
-      // case Some(tree) =>
-        // // Console.err.println("==string==")
-        // // Console.err.println(tree.toString())
-        // // Console.err.println("==list==")
-        // // Console.err.println(tree.toStringTree())
-        // // Console.err.println("==tree==")
-        // // Console.err.println(tree.toStringTree())
-        // // Console.err.println("==custom-tree==")
-        // // print_tree(tree, 0)
-        // // Console.err.println("==end==")
-      // case _ =>
-    // }
-
-    // // return value
-    // (error, tree) match {
-      // case (false, Some(tree)) => Some(tree)
-      // case _ => None
-    // }
-  // }
-
   def print_tree(tree: ParseTree, level: Int): Unit  = {
     val prefix = "  " * level
     val ttype = tree.getType()
