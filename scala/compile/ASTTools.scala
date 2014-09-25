@@ -36,24 +36,32 @@ object ASTBuilder {
 
   def parseFieldDecls(pt: ParseTree): List[FieldDecl] =
     pt.children(0).text match {
-      case "field_decl" => pt.children.map(parseFieldDecl(_)).toList
+      case "field_decl" => pt.children.flatMap(parseFieldDecl(_)).toList
       case "<epsilon>" => List()
       case _ => throw new ASTConstructionException("wtf")
     }
 
-  def parseFieldDecl(pt: ParseTree): FieldDecl = {
-    // TODO only handles simplest case fields.
+  // This returns a List because we unpack comma-sep decls at this stage.
+  def parseFieldDecl(pt: ParseTree): List[FieldDecl] = {
     val dtype = parseDType(pt.children(0))
-    val id = pt.children(1).children(0).text
-    FieldDecl(dtype, id, None)
+    // val grouped: Iterator[List[ParseTree]] = pt.children.dropRight(1).grouped(2)
+    // val rights: Iterator[ParseTree] = grouped.map(_.tail.head)
+    // val ret: Iterator[FieldDecl] = rights.map(parseFieldDeclRight(_, dtype))
+    // ret.toList
+    pt.children.dropRight(1)
+      .grouped(2).map(_.tail.head)
+      .map(parseFieldDeclRight(_, dtype))
+      .toList
   }
 
-  def parseDType(pt: ParseTree): DType = pt.text match {
-    case "type" => parseDType(pt.children(0))
-    case "int" => DTInt
-    case "boolean" => DTBool
-    case "void" => DTVoid
-    case _ => throw new ASTConstructionException("Unknown type " + pt.text)
+  def parseFieldDeclRight(pt: ParseTree, dtype: DType): FieldDecl = {
+    val id = pt.children(0).text
+    pt.children.length match {
+      case 1 => FieldDecl(dtype, id, None)
+      case 4 =>
+        val size = parseIntLiteral(pt.children(2))
+        FieldDecl(dtype, id, Some(size))
+    }
   }
 
   def parseMethodDecls(pt: ParseTree): List[MethodDecl] =
@@ -72,6 +80,17 @@ object ASTBuilder {
     MethodDecl(id, args, returns, block)
   }
 
+  def parseDType(pt: ParseTree): DType = pt.text match {
+    case "type" => parseDType(pt.children(0))
+    case "int" => DTInt
+    case "boolean" => DTBool
+    case "void" => DTVoid
+    case _ => throw new ASTConstructionException("Unknown type " + pt.text)
+  }
+
+  def parseIntLiteral(pt: ParseTree): IntLiteral =
+    IntLiteral(BigInt(pt.text))
+
 }
 
 object ASTPrinter {
@@ -87,14 +106,17 @@ object ASTPrinter {
   def printFieldDecl(ast: FieldDecl): String = ast match {
     case FieldDecl(dtype, id, None) => "field %s: %s".format(id, printDType(dtype))
     case FieldDecl(dtype, id, Some(size)) =>
-      "field %s: %s[%d]".format(id, printDType(dtype), size)
+      "field %s: %s[%s]".format(id, printDType(dtype), size.value)
   }
 
   def printMethodDecl(ast: MethodDecl) =
     // TODO args, block
     lines(List(
-      "%s %s() {".format(printDType(ast.returns), ast.id),
-      indent("stuff"),
+      "%s %s(%s) {".format(
+        printDType(ast.returns),
+        ast.id,
+        "CANT PRINT ARGS YET"),
+      indent("CANT PRINT BLOCKS YET"),
       "}"))
 
   def printDType(ast: DType): String = ast match {

@@ -102,17 +102,19 @@ object Compiler {
     // Debug print
     tree match {
       case Some(tree) =>
+        Console.err.println("\nParse Tree:")
+        Console.err.println(tree.toStringTree())
+
+        Console.err.println("\nParse Tree (pretty):")
         print_tree(tree, 0)
-        Console.err.println("HERE COMES THE AST")
+
+        Console.err.println("\nAST:")
         val ast = ASTBuilder.parseProgram(tree)
+        Console.err.println(ast)
+
+        Console.err.println("\nAST (pretty):")
         val ast_pretty = ASTPrinter.printProgram(ast)
         Console.err.println(ast_pretty)
-        // Console.err.println(tree.toStringTree())
-        // Console.err.println(tree.getChild(0).toStringTree())
-        // Console.err.println(tree.getChild(0).getChild(0).getChild(0).toStringTree())
-        // Console.err.println(tree.getChild(0).getChild(0).getType())
-        // Console.err.println(tree.getChild(0).getChild(0).toString())
-        // Console.err.println(tree.getChild(0).getChild(0).getChild(1).getText())
       case _ =>
     }
 
@@ -130,7 +132,7 @@ object Compiler {
     val line = tree.getLine()
     val linechar = tree.getCharPositionInLine()
     val children = Range(0, tree.getChildCount()).map (tree.getChild(_).asInstanceOf[ParseTree])
-    Console.err.println(prefix + "| " + token + " (t:" + ttype + ", l:" + line + ":" + linechar + ")")
+    Console.err.println(prefix + token + " (t:" + ttype + ", l:" + line + ":" + linechar + ")")
     children.foreach(print_tree(_, level + 1))
   }
 }

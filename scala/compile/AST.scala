@@ -14,7 +14,7 @@ object AST {
   case class CalloutDecl(id: ID)
   // FieldDecl are not analogous to field_decl in the gramar.
   // Each FieldDecl is one variable, the size option determines whether it is an array.
-  case class FieldDecl(dtype: DType, id: ID, size: Option[Int])
+  case class FieldDecl(dtype: DType, id: ID, size: Option[IntLiteral])
 
   case class MethodDecl(
     id: ID,
@@ -30,7 +30,7 @@ object AST {
   // MethodCalls are both Statements and Exprs. Is this ok?
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
-  case class While(condition: Expr, block: Block, max: Option[Int]) extends Statement
+  case class While(condition: Expr, block: Block, max: Option[BigInt]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case class Break() extends Statement
   case class Continue() extends Statement
@@ -49,7 +49,7 @@ object AST {
   case object DTBool extends DType
 
   sealed abstract trait Literal extends Expr
-  case class IntLiteral(value: Int) extends Literal
+  case class IntLiteral(value: BigInt) extends Literal
   case class CharLiteral(value: Char) extends Literal
   case class BoolLiteral(value: Boolean) extends Literal
   // String literal is not a literal! It's only used in callout args.
