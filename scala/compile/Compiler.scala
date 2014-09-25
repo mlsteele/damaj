@@ -104,7 +104,7 @@ object Compiler {
       case Some(tree) =>
         print_tree(tree, 0)
         Console.err.println("HERE COMES THE AST")
-        val ast = ASTTools.parseNode(tree)
+        val ast = ASTTools.parseProgram(tree)
         Console.err.println(ast)
         // Console.err.println(tree.toStringTree())
         // Console.err.println(tree.getChild(0).toStringTree())
@@ -126,8 +126,10 @@ object Compiler {
     val prefix = "  " * level
     val ttype = tree.getType()
     val token = tree.getText()
+    val line = tree.getLine()
+    val linechar = tree.getCharPositionInLine()
     val children = Range(0, tree.getChildCount()).map (tree.getChild(_).asInstanceOf[ParseTree])
-    Console.err.println(prefix + "| " + token + " (" + ttype + ")")
+    Console.err.println(prefix + "| " + token + " (t:" + ttype + ", l:" + line + ":" + linechar + ")")
     children.foreach(print_tree(_, level + 1))
   }
 }
