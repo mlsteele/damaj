@@ -71,11 +71,7 @@ object ASTBuilder {
   }
 
   def parseMethodDecls(pt: ParseTree): List[MethodDecl] =
-    pt.children(0).text match {
-      case "method_decl" => pt.children.map(parseMethodDecl(_)).toList
-      case "<epsilon>" => List()
-      case _ => throw new ASTConstructionException("wtf")
-    }
+    parseMany[MethodDecl](pt, "method_decl", parseMethodDecl)
 
   def parseMethodDecl(pt: ParseTree): MethodDecl = {
     // TODO args and block are fake.
