@@ -13,6 +13,7 @@ program : callout_decls field_decls method_decls EOF;
 callout_decls : callout_decl* ;
 field_decls : field_decl* ;
 method_decls : method_decl* ;
+statements : statement* ;
 
 callout_decl : KW_callout IDENTIFIER SEMICOLON ;
 field_decl : type field_decl_right (COMMA field_decl_right)* SEMICOLON ;
@@ -22,9 +23,9 @@ method_decl : (type | KW_void) IDENTIFIER LPAREN method_decl_args RPAREN block ;
 method_decl_args : (method_decl_arg (COMMA method_decl_arg)*)? ;
 method_decl_arg : type IDENTIFIER ;
 
-block : LCURLY (field_decl)* (statement)* RCURLY ;
+block : LCURLY field_decls statements RCURLY ;
 type : KW_int | KW_boolean ;
-statement : location assign_op expr SEMICOLON
+statement : assignment SEMICOLON
           | method_call SEMICOLON
           | KW_if LPAREN expr RPAREN block (KW_else block)?
           | KW_for LPAREN IDENTIFIER OP_SET expr COMMA expr RPAREN block
@@ -32,6 +33,7 @@ statement : location assign_op expr SEMICOLON
           | KW_return (expr)? SEMICOLON
           | KW_break SEMICOLON
           | KW_continue SEMICOLON ;
+assignment : location assign_op expr ;
 assign_op : OP_SET | OP_INC | OP_DEC | OP_INV ;
 method_name : IDENTIFIER ;
 expr : eA ;

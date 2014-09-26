@@ -71,22 +71,46 @@ object ASTBuilder {
     parseMany[MethodDecl](pt, "method_decl", parseMethodDecl)
 
   def parseMethodDecl(pt: ParseTree): MethodDecl = {
-    // TODO block
     val id = pt.children(1).text
     val args = parseMethodDeclArgs(pt.children(3))
     val returns = parseDType(pt.children(0))
-    val block = Block(List(), List())
+    val block = parseBlock(pt.children(5))
     MethodDecl(id, args, returns, block)
   }
 
   def parseMethodDeclArgs(pt: ParseTree): List[MethodDeclArg] = {
-    assert(pt.text == "method_decl_args")
+    assert(pt.text == "method_decl_args", pt.text)
     parseMany[MethodDeclArg](pt, "method_decl_arg", parseMethodDeclArg)
   }
 
   def parseMethodDeclArg(pt: ParseTree): MethodDeclArg = {
     assert(pt.text == "method_decl_arg", pt.text)
     MethodDeclArg(parseDType(pt.children(0)), pt.children(1).text)
+  }
+
+  def parseBlock(pt: ParseTree): Block = {
+    assert(pt.text == "block")
+    val decls = parseFieldDecls(pt.children(1))
+    val stmts = parseMany[Statement](pt.children(2), "statement", parseStatement)
+    Block(decls, stmts)
+  }
+
+  def parseStatement(pt: ParseTree): Statement = {
+    assert(pt.text == "statement")
+    pt.children(0).text match {
+      case "assignment" => throw new ASTConstructionException("not implemented yet")
+      case "method_call" => throw new ASTConstructionException("not implemented yet")
+      case "if" => throw new ASTConstructionException("not implemented yet")
+      case "for" => throw new ASTConstructionException("not implemented yet")
+      case "while" => throw new ASTConstructionException("not implemented yet")
+      case "return" => pt.children.length match {
+        case 3 => throw new ASTConstructionException("not implemented yet")
+        case 2 => Return(None)
+      }
+      case "break" => Break()
+      case "continue" => Continue()
+      case x => throw new ASTConstructionException("unrecognized expression type" + x)
+    }
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
@@ -136,9 +160,20 @@ object ASTPrinter {
     lines(decls ++ stmts)
   }
 
-  def printStatement(ast: Statement): String =
-    // TODO
-    "CAN'T PRINT STATEMENTS YET"
+  def printStatement(ast: Statement): String = ast match {
+    case Assignment(left, right) => "CANT PRINT Assignment's YET"
+    case MethodCall(id, args) => "CANT PRINT MethodCall's YET"
+    case If(condition, then, elseb) => "CANT PRINT If's YET"
+    case While(condition, block, max) => "CANT PRINT While's YET"
+    case Return(expr) => expr match {
+      case Some(expr) => printExpr(expr)
+      case None => "return"
+    }
+    case Break() => "CANT PRINT Break's YET"
+    case Continue() => "CANT PRINT Continue's YET"
+  }
+
+  def printExpr(ast: Expr): String = "(CANT PRINT Expr YET)"
 
   def printDType(ast: DType): String = ast match {
     case DTVoid => "void"
