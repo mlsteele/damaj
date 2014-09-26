@@ -4,6 +4,8 @@ import org.antlr.runtime.tree.ParseTree
 
 // Construct an AST from a parse tree
 object ASTBuilder {
+  // Exception for unexpected runtime issues.
+  // These represent programming errors and should never happen.
   class ASTConstructionException(msg: String) extends RuntimeException(msg)
 
   // Wrapper for ParseTree to make the interface a bit nicer.
@@ -22,10 +24,11 @@ object ASTBuilder {
   // Generic helper to handle sequences of the same node.
   // Takes the container node. For example, call this with
   // a pt pointing to a "field_decls" and node_name of "field_decl"
+  // Also skips comma nodes (if comma is not first child!).
   def parseMany[T](pt: ParseTree, node_name: String, processor: ParseTree => T): List[T] =
     pt.children(0).text match {
       case "<epsilon>" => List()
-      case `node_name` => pt.children.map(processor)
+      case `node_name` => pt.children.filter(_.text != ",").map(processor)
       case _ => throw new ASTConstructionException("wtf")
     }
 
@@ -48,10 +51,6 @@ object ASTBuilder {
   // This returns a List because we unpack comma-sep decls at this stage.
   def parseFieldDecl(pt: ParseTree): List[FieldDecl] = {
     val dtype = parseDType(pt.children(0))
-    // val grouped: Iterator[List[ParseTree]] = pt.children.dropRight(1).grouped(2)
-    // val rights: Iterator[ParseTree] = grouped.map(_.tail.head)
-    // val ret: Iterator[FieldDecl] = rights.map(parseFieldDeclRight(_, dtype))
-    // ret.toList
     pt.children.dropRight(1)
       .grouped(2).map(_.tail.head)
       .map(parseFieldDeclRight(_, dtype))
@@ -72,12 +71,22 @@ object ASTBuilder {
     parseMany[MethodDecl](pt, "method_decl", parseMethodDecl)
 
   def parseMethodDecl(pt: ParseTree): MethodDecl = {
-    // TODO args and block are fake.
+    // TODO block
     val id = pt.children(1).text
-    val args = List()
+    val args = parseMethodDeclArgs(pt.children(3))
     val returns = parseDType(pt.children(0))
     val block = Block(List(), List())
     MethodDecl(id, args, returns, block)
+  }
+
+  def parseMethodDeclArgs(pt: ParseTree): List[MethodDeclArg] = {
+    assert(pt.text == "method_decl_args")
+    parseMany[MethodDeclArg](pt, "method_decl_arg", parseMethodDeclArg)
+  }
+
+  def parseMethodDeclArg(pt: ParseTree): MethodDeclArg = {
+    assert(pt.text == "method_decl_arg", pt.text)
+    MethodDeclArg(parseDType(pt.children(0)), pt.children(1).text)
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
@@ -109,15 +118,27 @@ object ASTPrinter {
       "field %s: %s[%s]".format(id, printDType(dtype), size.value)
   }
 
-  def printMethodDecl(ast: MethodDecl) =
-    // TODO args, block
+  def printMethodDecl(ast: MethodDecl): String = {
+    val args = commasep(ast.args .map(arg =>
+        "%s: %s".format(arg.id, printDType(arg.dtype))))
     lines(List(
       "%s %s(%s) {".format(
         printDType(ast.returns),
         ast.id,
-        "CANT PRINT ARGS YET"),
-      indent("CANT PRINT BLOCKS YET"),
+        args),
+      indent(printBlock(ast.block)),
       "}"))
+  }
+
+  def printBlock(ast: Block): String = {
+    val decls = ast.decls.map(printFieldDecl)
+    val stmts = ast.stmts.map(printStatement)
+    lines(decls ++ stmts)
+  }
+
+  def printStatement(ast: Statement): String =
+    // TODO
+    "CAN'T PRINT STATEMENTS YET"
 
   def printDType(ast: DType): String = ast match {
     case DTVoid => "void"
@@ -125,7 +146,8 @@ object ASTPrinter {
     case DTBool => "boolean"
   }
 
-  def lines(strs: List[String]): String = strs.mkString("\n")
-
+  // String formatting helpers
+  def lines(strs: List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
+  def commasep(strs: List[String]): String = strs.mkString(", ")
   def indent(str: String): String = lines(str.split("\n").map("  " + _).toList)
 }
