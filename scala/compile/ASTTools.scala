@@ -19,17 +19,23 @@ object ASTBuilder {
   implicit def parseTreeUpgrade(pt: ParseTree): HappyParseTree =
     new HappyParseTree(pt)
 
+  // Generic helper to handle sequences of the same node.
+  // Takes the container node. For example, call this with
+  // a pt pointing to a "field_decls" and node_name of "field_decl"
+  def parseMany[T](pt: ParseTree, node_name: String, processor: ParseTree => T): List[T] =
+    pt.children(0).text match {
+      case "<epsilon>" => List()
+      case `node_name` => pt.children.map(processor)
+      case _ => throw new ASTConstructionException("wtf")
+    }
+
   def parseProgram(pt: ParseTree): ProgramAST = ProgramAST(
     parseCalloutDecls(pt.children(0)),
     parseFieldDecls(pt.children(1)),
     parseMethodDecls(pt.children(2)))
 
   def parseCalloutDecls(pt: ParseTree): List[CalloutDecl] =
-    pt.children(0).text match {
-      case "callout_decl" => pt.children.map(parseCalloutDecl(_)).toList
-      case "<epsilon>" => List()
-      case _ => throw new ASTConstructionException("wtf")
-    }
+    parseMany[CalloutDecl](pt, "callout_decl", parseCalloutDecl)
 
   def parseCalloutDecl(pt: ParseTree): CalloutDecl =
     CalloutDecl(pt.children(1).text)
