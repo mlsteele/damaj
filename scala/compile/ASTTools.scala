@@ -41,11 +41,9 @@ object ASTBuilder {
     CalloutDecl(pt.children(1).text)
 
   def parseFieldDecls(pt: ParseTree): List[FieldDecl] =
-    pt.children(0).text match {
-      case "field_decl" => pt.children.flatMap(parseFieldDecl(_)).toList
-      case "<epsilon>" => List()
-      case _ => throw new ASTConstructionException("wtf")
-    }
+    // This one's a bit funny because there can be multiple
+    // FieldDecl's per field_decl tree.
+    parseMany[List[FieldDecl]](pt, "field_decl", parseFieldDecl).flatten
 
   // This returns a List because we unpack comma-sep decls at this stage.
   def parseFieldDecl(pt: ParseTree): List[FieldDecl] = {
