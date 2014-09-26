@@ -18,8 +18,9 @@ callout_decl : KW_callout IDENTIFIER SEMICOLON ;
 field_decl : type field_decl_right (COMMA field_decl_right)* SEMICOLON ;
 field_decl_right : IDENTIFIER (LSQUARE INTLITERAL RSQUARE)? ;
 
-method_decl : (type | KW_void) IDENTIFIER LPAREN method_args RPAREN block ;
-method_args : (type IDENTIFIER (COMMA type IDENTIFIER)*)? ;
+method_decl : (type | KW_void) IDENTIFIER LPAREN method_decl_args RPAREN block ;
+method_decl_args : (method_decl_arg (COMMA method_decl_arg)*)? ;
+method_decl_arg : type IDENTIFIER ;
 
 block : LCURLY (field_decl)* (statement)* RCURLY ;
 type : KW_int | KW_boolean ;
