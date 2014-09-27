@@ -1,4 +1,4 @@
-all: scala_classes
+all: scala_classes fsc_reset
 
 CLASSPATH = build/lib/project.jar:vendor/antlr.jar:build
 
@@ -22,7 +22,7 @@ build/%.class: java/%.java
 # Compile a .class file from a .scala file
 build/%.class: scala/%.scala $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
-	scalac -cp $(CLASSPATH) -d build $<
+	fsc -deprecation -cp $(CLASSPATH) -d build $<
 
 # Generate the .java file for a .g file
 build/grammars/%.java: grammars/%.g 
@@ -44,9 +44,10 @@ scala_classes: $(SCALA_CLASSES)
 .PHONY:
 antlr_classes: $(ANTLR_CLASSES)
 
-scala:
-	fsc -reset -deprecation -d build/ -classpath build/:vendor/antlr.jar $(SCALA_FILES)
-
+# Clear fsc cache
+.PHONY:
+fsc_reset:
+	fsc -reset
 clean:
 	rm -rf build/*
 
