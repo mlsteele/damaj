@@ -102,15 +102,28 @@ object ASTBuilder {
       case "method_call" => throw new ASTConstructionException("not implemented yet")
       case "if" => throw new ASTConstructionException("not implemented yet")
       case "for" => throw new ASTConstructionException("not implemented yet")
-      case "while" => throw new ASTConstructionException("not implemented yet")
+      case "while" => pt.children.length match {
+        case 7 => While(
+          parseExpr(pt.children(2)),
+          parseBlock(pt.children.last), None)
+        case 5 => While(
+          parseExpr(pt.children(2)),
+          parseBlock(pt.children.last),
+          Some(parseIntLiteral(pt.children(5))))
+      }
       case "return" => pt.children.length match {
-        case 3 => throw new ASTConstructionException("not implemented yet")
+        case 3 => Return(Some(parseExpr(pt.children(1))))
         case 2 => Return(None)
       }
       case "break" => Break()
       case "continue" => Continue()
       case x => throw new ASTConstructionException("unrecognized expression type" + x)
     }
+  }
+
+  def parseExpr(pt: ParseTree): Expr = {
+    // TODO parse exprs.
+    BoolLiteral(false)
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
@@ -164,16 +177,24 @@ object ASTPrinter {
     case Assignment(left, right) => "CANT PRINT Assignment's YET"
     case MethodCall(id, args) => "CANT PRINT MethodCall's YET"
     case If(condition, then, elseb) => "CANT PRINT If's YET"
+    case For(id, start, iter, then) => "CANT PRINT If's YET"
     case While(condition, block, max) => "CANT PRINT While's YET"
     case Return(expr) => expr match {
-      case Some(expr) => printExpr(expr)
+      case Some(expr) => "return " + printExpr(expr)
       case None => "return"
     }
     case Break() => "CANT PRINT Break's YET"
     case Continue() => "CANT PRINT Continue's YET"
   }
 
-  def printExpr(ast: Expr): String = "(CANT PRINT Expr YET)"
+  def printExpr(ast: Expr): String = ast match {
+    case MethodCall(id, args) => "(CANT PRINT MethodCall YET)"
+    case Location(id, index) => "(CANT PRINT Location YET)"
+    case BinOp(left, op, right) => "(CANT PRINT BinOp YET)"
+    case UnaryOp(op, right) => "(CANT PRINT UnaryOp YET)"
+    case Ternary(condition, left, right) => "(CANT PRINT Ternary YET)"
+    case lit: Literal => "(CANT PRINT LITERAL YET)"
+  }
 
   def printDType(ast: DType): String = ast match {
     case DTVoid => "void"

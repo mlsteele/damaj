@@ -30,14 +30,14 @@ object AST {
   // MethodCalls are both Statements and Exprs. Is this ok?
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
-  case class While(condition: Expr, block: Block, max: Option[BigInt]) extends Statement
+  case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement
+  case class While(condition: Expr, block: Block, max: Option[IntLiteral]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case class Break() extends Statement
   case class Continue() extends Statement
 
   sealed abstract trait Expr
   case class Location(id: ID, index: Option[Expr]) extends Expr
-  case class Length(id: ID) extends Expr
   case class BinOp(left: Expr, op: String, right: Expr) extends Expr
   case class UnaryOp(op: String, right: Expr) extends Expr
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
