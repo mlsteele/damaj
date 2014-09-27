@@ -4,6 +4,9 @@ package compile
 // TODO See IRTools for methods having to do with IRs.
 object IR {
 
+  // placeholder until someone writes the real symbol tables
+  case class SymbolTable()
+
   // Root node
   case class ProgramIR(
     callouts: SymbolTable,
