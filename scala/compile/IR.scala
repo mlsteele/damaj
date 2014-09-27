@@ -6,9 +6,9 @@ object IR {
 
   // Root node
   case class ProgramIR(
-    callouts: SymbolTable[Callout],
-    fields: SymbolTable[Field],
-    methods: SymbolTable[Method])
+    callouts: SymbolTable,
+    fields: SymbolTable,
+    methods: SymbolTable)
 
   case class Callout(id: ID)
   // FieldDecl are not analogous to field_decl in the gramar.
@@ -22,7 +22,7 @@ object IR {
     block: Block,
     params: SymbolTable)
 
-  case class Block(stmts: List[Statement], environment: SymbolTable[Field])
+  case class Block(stmts: List[Statement], environment: SymbolTable)
 
   sealed abstract trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement
