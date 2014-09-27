@@ -20,9 +20,9 @@ build/%.class: java/%.java
 	javac -cp $(CLASSPATH) $< -d build
 
 # Compile a .class file from a .scala file
-build/%.class: scala/%.scala $(JAVA_SOURCES) $(ANTLR_CLASSES)
+build/%.class: scala/%.scala $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
-	scalac -cp $(CLASSPATH) -d build scala/$*.scala
+	scalac -cp $(CLASSPATH) -d build $<
 
 # Generate the .java file for a .g file
 build/grammars/%.java: grammars/%.g 
@@ -32,7 +32,6 @@ build/grammars/%.java: grammars/%.g
 # Compile a .class file from a ANTLR-generated .java file
 build/grammars/%.class: build/grammars/%.java
 	@mkdir -p build
-	echo $<
 	javac -cp $(CLASSPATH) -d build $<
 
 # Compile all .java files to .class
