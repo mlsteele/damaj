@@ -30,9 +30,9 @@ object IR {
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
 
   sealed abstract trait Load extends Expr
-  case class LoadField(from: Field, index: Option[Expr]) extends Load
+  case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load
   case class LoadLiteral(value: IntLiteral) extends Load
-  case class Store(to: Field, index: Option[Expr]) extends Expr
+  case class Store(to: FieldSymbol, index: Option[Expr]) extends Expr
 
   type ID = String
   sealed trait DType
