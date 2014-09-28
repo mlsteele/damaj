@@ -1,25 +1,10 @@
 package compile
 
+import SymbolTable._
+
 // IR structure definition
 // TODO See IRTools for methods having to do with IRs.
 object IR {
-
-  // placeholder until someone writes the real symbol tables
-  class SymbolTable (
-    val parent: Option[SymbolTable],
-    val fields: List[Field]
-  ) {
-  }
-
-  // Adds a field to the table, and returns a tuple of (new table, duplicated field)
-  def addField (field: Field, table: SymbolTable) : (SymbolTable, List[Field]) = {
-    if (table.fields.contains(field)) {
-      return (table, List(field))
-    } else {
-      return (new SymbolTable(table.parent, field +: table.fields), List());
-    }
-  }
-
   // Root node
   case class ProgramIR(
     callouts: SymbolTable,
