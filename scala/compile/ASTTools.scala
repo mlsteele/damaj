@@ -193,7 +193,11 @@ object ASTPrinter {
     case BinOp(left, op, right) => "(CANT PRINT BinOp YET)"
     case UnaryOp(op, right) => "(CANT PRINT UnaryOp YET)"
     case Ternary(condition, left, right) => "(CANT PRINT Ternary YET)"
-    case lit: Literal => "(CANT PRINT LITERAL YET)"
+    case lit: Literal => lit match {
+      case IntLiteral(value) => value.toString
+      case CharLiteral(value) => "'%s'".format(value)
+      case BoolLiteral(value) => value.toString
+    }
   }
 
   def printDType(ast: DType): String = ast match {
