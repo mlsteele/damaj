@@ -187,7 +187,7 @@ object ASTBuilder {
         case "eB" =>
           val condition = parseExprInner(c(0))
           val left = parseExprInner(c(2))
-          val right = parseExprInner(c(2))
+          val right = parseExprInner(c(4))
           Ternary(condition, left, right)
         // binary ops
         case "eC" | "eD" | "eE" | "eF" | "eG" | "eH" =>
