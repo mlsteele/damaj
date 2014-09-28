@@ -5,25 +5,13 @@ import SymbolTable._
 // IR structure definition
 // TODO See IRTools for methods having to do with IRs.
 object IR {
+
   // Root node
   case class ProgramIR(
-    callouts: SymbolTable,
-    fields: SymbolTable,
-    methods: SymbolTable)
+    symbols: SymbolTable
+  )
 
-  case class Callout(id: ID)
-  // FieldDecl are not analogous to field_decl in the gramar.
-  // Each FieldDecl is one variable, the size option determines whether it is an array.
-  case class Field(dtype: DType, id: ID, size: Option[IntLiteral])
-
-  case class Method(
-    id: ID,
-    args: List[Load],
-    returns: DType,
-    block: Block,
-    params: SymbolTable)
-
-  case class Block(stmts: List[Statement], environment: SymbolTable)
+  case class Block(stmts: List[Statement], symbolTable: SymbolTable)
 
   sealed abstract trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement

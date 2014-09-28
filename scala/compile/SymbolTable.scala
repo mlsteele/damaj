@@ -3,37 +3,47 @@ package compile;
 import IR._
 
 object SymbolTable {
-  // placeholder until someone writes the real symbol tables
-  class SymbolTable (
-    val parent: Option[SymbolTable],
-    val fields: List[Field]
-  ) {
-    // Adds a field to the table, and returns a tuple of (new table, )
-    def addField (field: Field) : (SymbolTable, Option[Field]) = {
-      if (fields.contains(field)) {
-        return (this, Some(field))
+  
+  sealed abstract trait Symbol {
+    def id: ID
+  }
+  case class CalloutSymbol(id: ID) extends Symbol
+  case class FieldSymbol(id: ID, dType: DType, size: Option[IntLiteral]) extends Symbol
+  case class MethodSymbol(
+    id: ID,
+    params: SymbolTable,
+    returns: DType,
+    block: Block
+    ) extends Symbol
+
+
+  class SymbolTable (val parent: Option[SymbolTable], val symbols: List[Symbol]) {
+    // Adds a symbol to the table, and returns a tuple of (new table, )
+    def addSymbol (symbol: Symbol) : (SymbolTable, Option[Symbol]) = {
+      if (symbols.contains(symbols)) {
+        return (this, Some(symbol))
       } else {
-        return (new SymbolTable(parent, field +: fields), None);
+        return (new SymbolTable(parent, symbol +: symbols), None);
       }
     }
     
-    // Adds a list of fields to a table, and returns a new table, and a list of fields that were found to be duplicates
-    def addFields (newFields: List[Field]) : (SymbolTable, List[Field]) = {
-      var duplicateFields: List[Option[Field]] = List()
+    // Adds a list of symbols to a table, and returns a new table, and a list of symbols that were found to be duplicates
+    def addSymbols (newSymbols: List[Symbol]) : (SymbolTable, List[Symbol]) = {
+      var duplicateSymbols: List[Option[Symbol]] = List()
       var newTable: SymbolTable = this
-      for (f <- newFields) { 
-        val (tempTable, duplicated) = newTable.addField(f);
+      for (f <- newSymbols) { 
+        val (tempTable, duplicated) = newTable.addSymbol(f);
         newTable = tempTable
-        duplicateFields = duplicateFields :+ duplicated
+        duplicateSymbols = duplicateSymbols :+ duplicated
       }
-      return (this, duplicateFields flatten)
+      return (this, duplicateSymbols flatten)
     }
 
     // Looks up a symbol, and recurses up though its parents to find the symbol if needed
-    def lookupSymbol (id: ID) : Option[Field] = {
-      for (f <- fields) {
-        if (f.id == id) {
-          return Some(f);
+    def lookupSymbol (id: ID) : Option[Symbol] = {
+      for (s <- symbols) {
+        if (s.id == id) {
+          return Some(s);
         }
       }
       // If we got to here, then we need to recurse through out parent
