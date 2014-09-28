@@ -318,6 +318,7 @@ object ASTPrinter {
       "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
     case lit: Literal => lit match {
       case IntLiteral(value) => value.toString
+      // TODO re-escape char values.
       case CharLiteral(value) => "'%s'".format(value)
       case BoolLiteral(value) => value.toString
     }
