@@ -1,0 +1,8 @@
+void nicetry ( int i ) {
+
+}
+void main ( ) {
+    int a[10];
+    nicetry(a);
+    // can't send an array
+}

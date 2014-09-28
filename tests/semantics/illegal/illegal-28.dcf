@@ -1,0 +1,7 @@
+int nicetry () {
+    return 0;
+}
+void main ( ) {
+    nicetry = 4;
+    // can't assign a value to a method
+}

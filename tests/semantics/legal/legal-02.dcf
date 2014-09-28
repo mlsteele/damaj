@@ -1,0 +1,5 @@
+int shadow;
+void main() {
+    int shadow;
+    // shadowing is ok
+}

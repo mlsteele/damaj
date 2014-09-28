@@ -1,0 +1,7 @@
+void main ( int i ) {
+    boolean b;
+    b = true;
+}
+void main ( ) {
+    // still bad, duplicate identifiers
+}

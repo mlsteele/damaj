@@ -1,0 +1,5 @@
+void main ( ) {
+  if (true == false) {
+    break; // can't break here
+  }
+}

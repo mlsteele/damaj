@@ -1,0 +1,5 @@
+void main ( ) {
+  for ( x = 0, true ) {
+    //terminating condition must be an int
+  }
+}

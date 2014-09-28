@@ -1,0 +1,7 @@
+callout printf;
+callout foo;
+callout printf;
+
+void main ( ) {
+    // Duplicate callouts
+}
