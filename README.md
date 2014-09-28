@@ -13,3 +13,5 @@ To run the whole scriptadoodle:
 ```
 ./run.sh -t parse --debug tests/parser/legal/legal-01
 ```
+
+Target can be `scan`, `parse`, or `inter`.
