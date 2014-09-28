@@ -1,0 +1,5 @@
+void main ( ) {
+    int boo;
+    boo = true ? true : false;
+    // latter parts of ternary must match location type
+}

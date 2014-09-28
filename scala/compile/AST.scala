@@ -27,7 +27,7 @@ object AST {
 
   sealed abstract trait Statement
   case class Assignment(left: Location, right: Expr) extends Statement
-  // MethodCalls are both Statements and Exprs. Is this ok?
+  // MethodCalls are both Statements and Exprs.
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
   case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement

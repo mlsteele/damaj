@@ -1,0 +1,6 @@
+void main ( ) {
+    int i;
+    boolean bool;
+    i = 3 + bool;
+    // arith op acts on ints not booleans
+}

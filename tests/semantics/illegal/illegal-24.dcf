@@ -1,0 +1,11 @@
+void foo ( int i ) {
+    boolean b;
+    b = true;
+}
+void main ( ) {
+    boolean b;
+    int i;
+    i = 0;
+    b = foo(i);
+    // Can't return a value from a void method
+}

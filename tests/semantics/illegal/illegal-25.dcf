@@ -1,0 +1,7 @@
+void nicetry ( int i ) {
+
+}
+void main ( ) {
+    nicetry("not gonna work");
+    // can't send a string literal to a non-callout
+}

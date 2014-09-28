@@ -34,8 +34,7 @@ statement : assignment SEMICOLON
           | KW_break SEMICOLON
           | KW_continue SEMICOLON ;
 assignment : location assign_op expr ;
-assign_op : OP_SET | OP_INC | OP_DEC | OP_INV ;
-method_name : IDENTIFIER ;
+assign_op : OP_SET | OP_INC | OP_DEC ;
 expr : eA ;
 eA : eB ;
 eB : eC (QUESTION eA COLON eA)? ; // ternary
@@ -49,6 +48,9 @@ eI : ((OP_MINUS | OP_INV | AT) eA) | eZ ; // unary - !
 eZ : eJ | (LPAREN eA RPAREN) ; // ()
 eJ : location | method_call | literal ;
 location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
-method_call : method_name LPAREN (callout_arg (COMMA callout_arg)*)? RPAREN ;
-callout_arg : STRINGLITERAL | expr ;
+method_call : method_name LPAREN method_call_args RPAREN ;
+method_call_args : (method_call_arg (COMMA method_call_arg)*)? ;
+method_call_arg : str_literal | expr ;
+method_name : IDENTIFIER ;
 literal : INTLITERAL | CHARLITERAL | BOOL_LITERAL ;
+str_literal : STRINGLITERAL ;

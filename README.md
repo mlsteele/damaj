@@ -5,11 +5,14 @@ A really decent Decaf compiler.
 "Mad decent" - Jess
 
 ## Building
-To build everything run `make`.
+To build, run `make`. It will recompile the changed files.
 
-Oftentimes you will just edit scala, so run `make scala` to only recompile the scala.
+You can also run `./build.sh` to trigger `make`.
 
+## Running
 To run the whole scriptadoodle:
 ```
-./run.sh -t parse -debug tests/parser/legal/legal-01
+./run.sh -t parse --debug tests/parser/legal/legal-01
 ```
+
+Target can be `scan`, `parse`, or `inter`.
