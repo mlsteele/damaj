@@ -29,7 +29,6 @@ object ASTBuilder {
     pt.children(0).text match {
       case "<epsilon>" => List()
       case `node_name` => pt.children.filter(_.text != ",").map(processor)
-      case _ => throw new ASTConstructionException("wtf")
     }
 
   def parseProgram(pt: ParseTree): ProgramAST = ProgramAST(
@@ -98,8 +97,8 @@ object ASTBuilder {
   def parseStatement(pt: ParseTree): Statement = {
     assert(pt.text == "statement")
     pt.children(0).text match {
-      case "assignment" => throw new ASTConstructionException("not implemented yet")
-      case "method_call" => throw new ASTConstructionException("not implemented yet")
+      case "assignment" => parseAssignment(pt.children(0))
+      case "method_call" => parseMethodCall(pt.children(0))
       case "if" => throw new ASTConstructionException("not implemented yet")
       case "for" => throw new ASTConstructionException("not implemented yet")
       case "while" => pt.children.length match {
@@ -121,6 +120,45 @@ object ASTBuilder {
     }
   }
 
+  def parseAssignment(pt: ParseTree): Assignment = {
+    assert(pt.text == "assignment")
+    val left = parseLocation(pt.children(0))
+    val right = parseExpr(pt.children(2))
+    pt.children(1).children(0).text match {
+      case "=" => Assignment(left, right)
+      case "+=" => Assignment(left, BinOp(left, "+", right))
+      case "-=" => Assignment(left, BinOp(left, "-", right))
+    }
+  }
+
+  def parseMethodCall(pt: ParseTree): MethodCall = {
+    assert(pt.text == "method_call")
+    val id = pt.children(0).children(0).text
+    val args = parseMethodCallArgs(pt.children(2))
+    MethodCall(id, args)
+  }
+
+  def parseMethodCallArgs(pt: ParseTree): List[Either[StrLiteral, Expr]] = {
+    assert(pt.text == "method_call_args", pt.text)
+    parseMany[Either[StrLiteral, Expr]](pt, "method_call_arg", parseMethodCallArg)
+  }
+
+  def parseMethodCallArg(pt: ParseTree): Either[StrLiteral, Expr] = {
+    assert(pt.text == "method_call_arg")
+    pt.children(0).text match {
+      case "str_literal" => Left(parseStrLiteral(pt.children(0)))
+      case "expr" => Right(parseExpr(pt.children(0)))
+    }
+  }
+
+  def parseLocation(pt: ParseTree): Location = {
+    assert(pt.text == "location")
+    pt.children.length match {
+      case 4 => Location(pt.children(0).text, Some(parseExpr(pt.children(2))))
+      case 1 => Location(pt.children(0).text, None)
+    }
+  }
+
   def parseExpr(pt: ParseTree): Expr = {
     // TODO parse exprs.
     BoolLiteral(false)
@@ -136,6 +174,12 @@ object ASTBuilder {
 
   def parseIntLiteral(pt: ParseTree): IntLiteral =
     IntLiteral(BigInt(pt.text))
+
+  def parseStrLiteral(pt: ParseTree): StrLiteral = {
+    assert(pt.text == "str_literal")
+    // TODO this needs to get rid of quotes and undo escapes!
+    StrLiteral(pt.children(0).text)
+  }
 
 }
 
@@ -174,7 +218,8 @@ object ASTPrinter {
   }
 
   def printStatement(ast: Statement): String = ast match {
-    case Assignment(left, right) => "CANT PRINT Assignment's YET"
+    case Assignment(left, right) =>
+      "%s = %s".format(printLocation(left), printExpr(right))
     case MethodCall(id, args) => "CANT PRINT MethodCall's YET"
     case If(condition, then, elseb) => "CANT PRINT If's YET"
     case For(id, start, iter, then) => "CANT PRINT If's YET"
@@ -185,6 +230,11 @@ object ASTPrinter {
     }
     case Break() => "CANT PRINT Break's YET"
     case Continue() => "CANT PRINT Continue's YET"
+  }
+
+  def printLocation(ast: Location): String = ast.index match {
+    case Some(index) => "%s[%s]".format(ast.id, index)
+    case None => "%s".format(ast.id)
   }
 
   def printExpr(ast: Expr): String = ast match {
