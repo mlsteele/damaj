@@ -297,7 +297,7 @@ object ASTPrinter {
   def printStatement(ast: Statement): String = ast match {
     case Assignment(left, right) =>
       "%s = %s".format(printLocation(left), printExpr(right))
-    case MethodCall(id, args) => "CANT PRINT MethodCall's YET"
+    case ast: MethodCall => printMethodCall(ast)
     case If(condition, then, elseb) => "CANT PRINT If's YET"
     case For(id, start, iter, then) => "CANT PRINT If's YET"
     case While(condition, block, max) => "CANT PRINT While's YET"
@@ -309,22 +309,32 @@ object ASTPrinter {
     case Continue() => "CANT PRINT Continue's YET"
   }
 
-  def printLocation(ast: Location): String = ast.index match {
-    case Some(index) => "%s[%s]".format(ast.id, index)
-    case None => "%s".format(ast.id)
-  }
-
   def printExpr(ast: Expr): String = ast match {
-    case MethodCall(id, args) => "(CANT PRINT MethodCall YET)"
-    case Location(id, index) => "(CANT PRINT Location YET)"
-    case BinOp(left, op, right) => "(CANT PRINT BinOp YET)"
-    case UnaryOp(op, right) => "(CANT PRINT UnaryOp YET)"
-    case Ternary(condition, left, right) => "(CANT PRINT Ternary YET)"
+    case ast: MethodCall => printMethodCall(ast)
+    case ast: Location => printLocation(ast)
+    case BinOp(left, op, right) => "(%s %s %s)".format(printExpr(left), op, printExpr(right))
+    case UnaryOp(op, right) => "%s%s".format(op, printExpr(right))
+    case Ternary(cond, left, right) =>
+      "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
     case lit: Literal => lit match {
       case IntLiteral(value) => value.toString
       case CharLiteral(value) => "'%s'".format(value)
       case BoolLiteral(value) => value.toString
     }
+  }
+
+  def printMethodCall(ast: MethodCall): String = {
+    "%s(%s)".format(ast.id, ast.args.map{ arg =>
+      arg match {
+        case Left(strl) => strl.value
+        case Right(expr) => printExpr(expr)
+      }
+    }.mkString(", "))
+  }
+
+  def printLocation(ast: Location): String = ast.index match {
+    case Some(index) => "%s[%s]".format(ast.id, index)
+    case None => "%s".format(ast.id)
   }
 
   def printDType(ast: DType): String = ast match {
