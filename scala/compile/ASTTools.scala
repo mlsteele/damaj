@@ -305,15 +305,29 @@ object ASTPrinter {
     case Assignment(left, right) =>
       "%s = %s".format(printLocation(left), printExpr(right))
     case ast: MethodCall => printMethodCall(ast)
-    case If(condition, then, elseb) => "CANT PRINT If's YET"
-    case For(id, start, iter, then) => "CANT PRINT If's YET"
-    case While(condition, block, max) => "CANT PRINT While's YET"
+    case If(condition, then, elseb) => elseb match {
+      case Some(elseb) => "if (%s) {\n%s\n} else {\n%s\n}".format(
+        printExpr(condition),
+        indent(printBlock(then)),
+        indent(printBlock(elseb)))
+      case None => "if (%s) {\n%s\n}".format(
+        printExpr(condition),
+        indent(printBlock(then)))
+    }
+    case For(id, start, iter, then) => "for (%s = %s, %s) {\n%s\n}".format(
+      id, printExpr(start), printExpr(iter), indent(printBlock(then)))
+    case While(condition, block, max) => max match {
+      case None => "while (%s) {\n%s\n}".format(
+        printExpr(condition), printBlock(block))
+      case Some(max) => "while (%s): %s {\n%s\n}".format(
+        printExpr(condition), max.value, printBlock(block))
+    }
     case Return(expr) => expr match {
       case Some(expr) => "return " + printExpr(expr)
       case None => "return"
     }
-    case Break() => "CANT PRINT Break's YET"
-    case Continue() => "CANT PRINT Continue's YET"
+    case Break() => "break"
+    case Continue() => "continue"
   }
 
   def printExpr(ast: Expr): String = ast match {
