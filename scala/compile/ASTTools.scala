@@ -99,13 +99,20 @@ object ASTBuilder {
     pt.children(0).text match {
       case "assignment" => parseAssignment(pt.children(0))
       case "method_call" => parseMethodCall(pt.children(0))
-      case "if" => throw new ASTConstructionException("not implemented yet")
-      case "for" => throw new ASTConstructionException("not implemented yet")
+      case "if" => pt.children.length match {
+        case 5 => If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), None)
+        case 7 =>
+          If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), Some(parseBlock(pt.children(6))))
+      }
+      case "for" => For(pt.children(2).text,
+                        parseExpr(pt.children(4)),
+                        parseExpr(pt.children(6)),
+                        parseBlock(pt.children(8)))
       case "while" => pt.children.length match {
-        case 7 => While(
+        case 5 => While(
           parseExpr(pt.children(2)),
           parseBlock(pt.children.last), None)
-        case 5 => While(
+        case 7 => While(
           parseExpr(pt.children(2)),
           parseBlock(pt.children.last),
           Some(parseIntLiteral(pt.children(5))))
