@@ -239,30 +239,20 @@ object ASTBuilder {
     }
   }
 
-  def parseIntLiteral(pt: ParseTree): IntLiteral =
-    IntLiteral(BigInt(pt.text))
+  def parseIntLiteral(pt: ParseTree): IntLiteral = IntLiteral(BigInt(pt.text))
 
   def parseStrLiteral(pt: ParseTree): StrLiteral = {
     assert(pt.text == "str_literal")
-    // TODO this needs to get rid of quotes and undo escapes!
-    StrLiteral(pt.children(0).text)
+    val inner = pt.children(0).text.drop(1).dropRight(1)
+    StrLiteral(Escape.unescape(inner))
   }
 
   def parseCharLiteral(pt: ParseTree): CharLiteral = {
     assert(pt.text == "char_literal")
     val inner = pt.children(0).text.drop(1).dropRight(1)
-    val value = inner.length match {
-      case 1 => inner
-      case _ => inner.drop(1) match {
-        case "\\" => "\\"
-        case "\"" => "\""
-        case "'" => "'"
-        case "n" => "\n"
-        case "t" => "\t"
-      }
-    }
-    assert(value.length == 1)
-    CharLiteral(value(0))
+    val str = Escape.unescape(inner)
+    assert(str.length == 1, str)
+    CharLiteral(str(0))
   }
 
 }
@@ -339,8 +329,7 @@ object ASTPrinter {
       "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
     case lit: Literal => lit match {
       case IntLiteral(value) => value.toString
-      // TODO re-escape char values.
-      case CharLiteral(value) => "'%s'".format(value)
+      case CharLiteral(value) => "'%s'".format(Escape.escape(value))
       case BoolLiteral(value) => value.toString
     }
   }
@@ -348,7 +337,7 @@ object ASTPrinter {
   def printMethodCall(ast: MethodCall): String = {
     "%s(%s)".format(ast.id, ast.args.map{ arg =>
       arg match {
-        case Left(strl) => strl.value
+        case Left(strl) => "\"%s\"".format(Escape.escape(strl.value))
         case Right(expr) => printExpr(expr)
       }
     }.mkString(", "))
