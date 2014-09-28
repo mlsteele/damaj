@@ -26,6 +26,10 @@ object Compiler {
 
   def main(args: Array[String]): Unit = {
     CLI.parse(args, Array[String]());
+    if (!(new java.io.File(CLI.infile).exists)){
+        Console.err.println(CLI.infile + ": No such file or directory")
+        System.exit(1)
+    }
     if (CLI.target == CLI.Action.SCAN) {
       scan(CLI.infile)
       System.exit(0)
@@ -35,6 +39,9 @@ object Compiler {
         case Some(tree) => System.exit(0)
         case None => System.exit(1)
       }
+    } else if (CLI.target == CLI.Action.INTER) {
+      val result = inter(CLI.infile)
+      System.exit(result)
     }
   }
 
@@ -63,14 +70,13 @@ object Compiler {
             }
           }
         } catch {
-          case ex: Exception => {
+          case ex: Exception => 
             Console.err.println(CLI.infile + " " + ex)
-            // scanner.consume();
-          }
         }
       }
     } catch {
-      case ex: Exception => Console.err.println(ex)
+      case ex: Exception =>
+        Console.err.println(CLI.infile + " " + ex)
     }
   }
 
@@ -100,22 +106,17 @@ object Compiler {
     }
 
     // Debug print
-    tree match {
-      case Some(tree) =>
-        Console.err.println("\nParse Tree:")
-        Console.err.println(tree.toStringTree())
+    if (CLI.debug) {
+      tree match {
+        case Some(tree) =>
+          print("\nParse Tree:")
+          println(tree.toStringTree())
 
-        Console.err.println("\nParse Tree (pretty):")
-        print_tree(tree, 0)
+          println("\nParse Tree (pretty):")
+          print_tree(tree, 0)
 
-        Console.err.println("\nAST:")
-        val ast = ASTBuilder.parseProgram(tree)
-        Console.err.println(ast)
-
-        Console.err.println("\nAST (pretty):")
-        val ast_pretty = ASTPrinter.printProgram(ast)
-        Console.err.println(ast_pretty)
-      case _ =>
+        case _ =>
+      }
     }
 
     // return value
@@ -123,6 +124,28 @@ object Compiler {
       case (false, Some(tree)) => Some(tree)
       case _ => None
     }
+  }
+
+  def inter(fileName: String): Int = {
+      val parseTree = parse(fileName)
+      parseTree match {
+        case None => return 1
+        case Some(parseTree) =>
+
+          val ast = ASTBuilder.parseProgram(parseTree)
+
+          if (CLI.debug) {
+            println("\nAST:")
+            println(ast)
+
+            val ast_pretty = ASTPrinter.printProgram(ast)
+            println(ast_pretty)
+          }
+      }
+      
+      // TODO more intermediate format stuff
+
+      0
   }
 
   def print_tree(tree: ParseTree, level: Int): Unit  = {

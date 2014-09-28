@@ -11,5 +11,5 @@ Oftentimes you will just edit scala, so run `make scala` to only recompile the s
 
 To run the whole scriptadoodle:
 ```
-./run.sh -t parse -debug tests/parser/legal/legal-01
+./run.sh -t parse --debug tests/parser/legal/legal-01
 ```
