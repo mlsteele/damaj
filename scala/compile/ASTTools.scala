@@ -159,9 +159,56 @@ object ASTBuilder {
     }
   }
 
+  // expr : eA ;
+  // eA : eB ;
+  // eB : eC (QUESTION eA COLON eA)? ; // ternary
+  // eC : eD (OP_OR eA)? ; // ||
+  // eD : eE (OP_AND eA)? ; // &&
+  // eE : eF ((OP_EQ | OP_NEQ) eA)? ; // == !=
+  // eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eA)? ; // < <= > >=
+  // eG : eH ((OP_PLUS | OP_MINUS) eA)? ; // + -
+  // eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eA)? ; // * /
+  // eI : ((OP_MINUS | OP_INV | AT) eA) | eZ ; // unary - !
+  // eZ : eJ | (LPAREN eA RPAREN) ; // ()
+  // eJ : location | method_call | literal ;
   def parseExpr(pt: ParseTree): Expr = {
-    // TODO parse exprs.
-    BoolLiteral(false)
+    assert(pt.text == "expr", pt.toStringTree)
+    parseExprInner(pt.children(0))
+  }
+
+  def parseExprInner(pt: ParseTree): Expr = {
+    val length = pt.children.length
+    val c = pt.children
+    (pt.text, length) match {
+      case ("eJ", _) => parseExprInnerDeepest(pt)
+      case (_, 1) => parseExprInner(c(0))
+      case _ => pt.text match {
+        // ternary
+        case "eB" =>
+          val condition = parseExprInner(c(0))
+          val left = parseExprInner(c(2))
+          val right = parseExprInner(c(2))
+          Ternary(condition, left, right)
+        // binary ops
+        case "eC" | "eD" | "eE" | "eF" | "eG" | "eH" =>
+          val left = parseExprInner(c(0))
+          val right = parseExprInner(c(2))
+          BinOp(left, c(1).text, right)
+        // unary ops- ! @
+        case "eI" =>
+          UnaryOp(c(0).text, parseExprInner(c(1)))
+      }
+    }
+  }
+
+  def parseExprInnerDeepest(pt: ParseTree): Expr = {
+    assert(pt.text == "eJ")
+    val child = pt.children(0)
+    child.text match {
+      case "location" => parseLocation(child)
+      case "method_call" => parseMethodCall(child)
+      case "literal" => parseLiteral(child)
+    }
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
@@ -172,6 +219,19 @@ object ASTBuilder {
     case _ => throw new ASTConstructionException("Unknown type " + pt.text)
   }
 
+  def parseLiteral(pt: ParseTree): Literal = {
+    assert(pt.text == "literal")
+    val child = pt.children(0)
+    child.text match {
+      case "int_literal" => parseIntLiteral(child.children(0))
+      case "bool_literal" => child.children(0).text match {
+        case "true" => BoolLiteral(true)
+        case "false" => BoolLiteral(false)
+      }
+      case "char_literal" => parseCharLiteral(child)
+    }
+  }
+
   def parseIntLiteral(pt: ParseTree): IntLiteral =
     IntLiteral(BigInt(pt.text))
 
@@ -179,6 +239,23 @@ object ASTBuilder {
     assert(pt.text == "str_literal")
     // TODO this needs to get rid of quotes and undo escapes!
     StrLiteral(pt.children(0).text)
+  }
+
+  def parseCharLiteral(pt: ParseTree): CharLiteral = {
+    assert(pt.text == "char_literal")
+    val inner = pt.children(0).text.drop(1).dropRight(1)
+    val value = inner.length match {
+      case 1 => inner
+      case _ => inner.drop(1) match {
+        case "\\" => "\\"
+        case "\"" => "\""
+        case "'" => "'"
+        case "n" => "\n"
+        case "t" => "\t"
+      }
+    }
+    assert(value.length == 1)
+    CharLiteral(value(0))
   }
 
 }

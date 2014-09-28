@@ -43,8 +43,8 @@ eD : eE (OP_AND eA)? ; // &&
 eE : eF ((OP_EQ | OP_NEQ) eA)? ; // == !=
 eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eA)? ; // < <= > >=
 eG : eH ((OP_PLUS | OP_MINUS) eA)? ; // + -
-eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eA)? ; // * /
-eI : ((OP_MINUS | OP_INV | AT) eA) | eZ ; // unary - !
+eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eA)? ; // * / %
+eI : ((OP_MINUS | OP_INV | AT) eA) | eZ ; // unary - ! @
 eZ : eJ | (LPAREN eA RPAREN) ; // ()
 eJ : location | method_call | literal ;
 location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
@@ -52,5 +52,8 @@ method_call : method_name LPAREN method_call_args RPAREN ;
 method_call_args : (method_call_arg (COMMA method_call_arg)*)? ;
 method_call_arg : str_literal | expr ;
 method_name : IDENTIFIER ;
-literal : INTLITERAL | CHARLITERAL | BOOL_LITERAL ;
+literal : int_literal | char_literal | bool_literal ;
+int_literal : INTLITERAL ;
+char_literal : CHARLITERAL ;
+bool_literal : BOOL_LITERAL ;
 str_literal : STRINGLITERAL ;
