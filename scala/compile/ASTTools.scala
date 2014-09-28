@@ -355,7 +355,7 @@ object ASTPrinter {
   }
 
   def printLocation(ast: Location): String = ast.index match {
-    case Some(index) => "%s[%s]".format(ast.id, index)
+    case Some(index) => "%s[%s]".format(ast.id, printExpr(index))
     case None => "%s".format(ast.id)
   }
 
