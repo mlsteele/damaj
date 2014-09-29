@@ -114,8 +114,8 @@ object ASTBuilder {
         case 3 => Return(Some(parseExpr(pt.children(1))))
         case 2 => Return(None)
       }
-      case "break" => Break()
-      case "continue" => Continue()
+      case "break" => Break
+      case "continue" => Continue
       case x => throw new ASTConstructionException("unrecognized expression type" + x)
     }
   }
@@ -305,8 +305,8 @@ object ASTPrinter {
       case Some(expr) => "return " + printExpr(expr)
       case None => "return"
     }
-    case Break() => "CANT PRINT Break's YET"
-    case Continue() => "CANT PRINT Continue's YET"
+    case Break => "CANT PRINT Break's YET"
+    case Continue => "CANT PRINT Continue's YET"
   }
 
   def printExpr(ast: Expr): String = ast match {

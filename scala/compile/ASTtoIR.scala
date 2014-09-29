@@ -20,27 +20,42 @@ object IRBuilder{
 //     calloutList.map(AST.CalloutDecl => IR.CalloutDecl)
    def convertFieldDecl(fieldDec: AST.FieldDecl): IR.Field = IR.Field(fieldDec.dtype,field.id,field.size)
    def convertMethodDecl(meth: AST.MethodDecl): IR.Method = IR.Method( meth.id,meth.args,meth.returns,meth.block,meth.params)
-  
+ /*  def convertMethodDeclAgr(meth: AST.MethodDeclArg): IR.Load = meth match{
+     
+   }*/
    //for convert assign assume know how to convert location to store  
   def convertAssignment(assign: AST.Assignment): IR.Assignment = IR.Assignment(locToStore(assign.left),convertExpr(assign.right))
-/*
-  def convertExpr(  )
-  def convertID(  )
+
+  def convertExpr(expr: AST.Expr ): IR.Expr = IR.BoolLiteral(true)
+  def convertID()
   def convertMethodDeclArg( )
   def convertDType( )
-  def convertBlock( )
-  def convertStatement( )
+  def convertStatement(ast:AST.Statement): IR.Statement = ast match{
+      case Assignment => convertAssignment(ast)
+      case MethodCall => convertMethodCall(ast)
+      case If => convertIf(ast)
+      case For => convertFor(ast)
+      case While => convertWhile(ast)
+      case Return => convertReturn(ast)
+      case Continue => convertContinue(ast)
+     }
+  
+
+
   def locToStore( )
-  def convertBlock( )
-  def convertStrLiteral(  )
-  def convertIf(  )
-  def convertFor( )
-  def convertWhile ( )
-  def convertReturn ( )
-  def convertBreak ( )
-  def convertContinue ( )
-   //  convertMany[AST.CalloutDecl](ast,"callout_many",convertCalloutDecl)
-*/
+  def convertBlock(block: AST.Block ):IR.Block = IR.Block(block.decls,block.stmts)
+  def convertIf(iff: AST.If): IR.If = IR.If(iff.condition,iff.then,iff.elseb)
+  def convertFor(fo: AST.For): IR.For = IR.For(fo.id,fo.start,fo.iter,fo.then)
+  def convertWhile (whil:AST.While): IR.While = IR.While(whil.condition, whil.block,whil.max)
+  def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr)
+  //  def convertBreak ( ) this can be done through =>
+  //  def convertContinue ( ) this can be done through =>
+  def convertIntLiteral(int:AST.IntLiteral): IR.IntLiteral = IR.IntLiteral(int.value)
+  def convertBoolLiteral(bool:AST.BoolLiteral):IR.BoolLiteral = IR.BoolLiteral(bool.value)
+  def convertStrLiteral(string: AST.StrLiteral): IR.StrLiteral = IR.StrLiteral(string.value)
+  def convertCharLiteral(char: AST.CharLiteral): IR.IntLiteral = IR.IntLiteral(char.value.toInt)
+  //  convertMany[AST.CalloutDecl](ast,"callout_many",convertCalloutDecl)
+
 }
 
 
