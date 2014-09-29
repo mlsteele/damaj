@@ -3,9 +3,14 @@ package compile;
 import IR._
 
 object SymbolTable {
+
+  /**
+   * Represents something that can be looked up in a symbol table.
+   */
   sealed abstract trait Symbol {
     def id: ID
   }
+
   case class CalloutSymbol(id: ID) extends Symbol
   case class FieldSymbol(id: ID, dType: DType, size: Option[IntLiteral]) extends Symbol
   case class MethodSymbol(
@@ -18,7 +23,11 @@ object SymbolTable {
   type LookupPredicate = Symbol => Boolean
 
   class SymbolTable (val parent: Option[SymbolTable], val symbols: List[Symbol]) {
-    // Adds a symbol to the table, and returns a tuple of (new table, )
+    /**
+     * Adds a symbol to the table, and returns a tuple
+     * The first element of the tuple is the new table.
+     * The second element of the tuple is None if the insert succeeded, and returns a Some[Symbol] is the symbol was duplicate.
+     */
     def addSymbol (symbol: Symbol) : (SymbolTable, Option[Symbol]) = {
       if (symbols.contains(symbols)) {
         return (this, Some(symbol))
@@ -27,7 +36,9 @@ object SymbolTable {
       }
     }
     
-    // Adds a list of symbols to a table, and returns a new table, and a list of symbols that were found to be duplicates
+    /**
+     * Adds a list of symbols to a table, and returns a new table, and a list of symbols that were found to be duplicates
+     */
     def addSymbols (newSymbols: List[Symbol]) : (SymbolTable, List[Symbol]) = {
       var duplicateSymbols: List[Option[Symbol]] = List()
       var newTable: SymbolTable = this
@@ -39,7 +50,10 @@ object SymbolTable {
       return (this, duplicateSymbols flatten)
     }
 
-    // Similar to lookupSymbol, but it does not recurse through its parents
+    /**
+     * Looks up the first field in the current scope that matches the given predicate.
+     * For example: table.lookupSymbolLocal(byID("x") and isMethod) tries to find a variable named "x" that is a method.
+     */
     def lookupSymbolLocal(pred: LookupPredicate) : Option[Symbol] = {
       for (s <- symbols) {
         if (pred(s)) {
@@ -49,7 +63,9 @@ object SymbolTable {
       return None
     }
 
-    // Returns the first symbol that matches the given predicate, recursing through its parent to find the symbol if needed
+    /**
+     * Similar to lookupSymbolLocal, but it also tries looking through the parent scopes.
+     */
     def lookupSymbol(pred: LookupPredicate) : Option[Symbol] = {
       lookupSymbolLocal(pred) match {
         case Some(s) => Some(s)
@@ -58,7 +74,9 @@ object SymbolTable {
     }
   }
 
-  // Combines two predicates together
+  
+
+  // Combines two predicates together into a single one
   def and(a: LookupPredicate, b: LookupPredicate) : LookupPredicate 
     = (s:Symbol) => a(s) && b(s)
 
