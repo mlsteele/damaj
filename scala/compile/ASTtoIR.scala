@@ -1,4 +1,5 @@
 package compile 
+import SymbolTable._
 // namespace collisions import AST._
 // namespace collisions import IR._
 //
@@ -19,8 +20,11 @@ object IRBuilder{
    def convertCalloutDecl(calloutDec: AST.CalloutDecl): IR.Callout = IR.Callout(calloutDec.id)
 //     calloutList.map(AST.CalloutDecl => IR.CalloutDecl)
    def convertFieldDecl(fieldDec: AST.FieldDecl): IR.Field = IR.Field(fieldDec.dtype,field.id,field.size)
-   def convertMethodDecl(meth: AST.MethodDecl): IR.Method = IR.Method( meth.id,meth.args,meth.returns,meth.block,meth.params)
- /*  def convertMethodDeclAgr(meth: AST.MethodDeclArg): IR.Load = meth match{
+   def convertMethodDecl(meth: AST.MethodDecl): IR.Method {
+     val method = IR.Method( meth.id,meth.args,meth.returns,meth.block,meth.params)
+     symboltable.add(method)
+     method
+     /*  def convertMethodDeclAgr(meth: AST.MethodDeclArg): IR.Load = meth match{
      
    }*/
    //for convert assign assume know how to convert location to store  
@@ -41,8 +45,13 @@ object IRBuilder{
      }
   
 
+  def locToStore(loc: AST.Location): IR.Store{
+    table = new SymbolTable
+    val field:IR.Field = table.lookup(byID(loc.id))
+    return IR.Store(field,loc.index
 
-  def locToStore( )
+
+  }
   def convertBlock(block: AST.Block ):IR.Block = IR.Block(block.decls,block.stmts)
   def convertIf(iff: AST.If): IR.If = IR.If(iff.condition,iff.then,iff.elseb)
   def convertFor(fo: AST.For): IR.For = IR.For(fo.id,fo.start,fo.iter,fo.then)
@@ -57,6 +66,3 @@ object IRBuilder{
   //  convertMany[AST.CalloutDecl](ast,"callout_many",convertCalloutDecl)
 
 }
-
-
-
