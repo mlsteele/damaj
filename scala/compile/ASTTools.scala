@@ -1,11 +1,18 @@
 package compile
+import org.antlr.runtime.tree.ParseTree
 
 // Construct an AST from a parse tree
-object ASTBuilder {
+// ptree - root program node
+// source - source code
+// Example Usage:
+//   val ast = ASTBuilder.parseProgram(parseTree).ast
+class ASTBuilder(ptree: ParseTree) {
+// class ASTBuilder(ptree: ParseTree, source: String) {
   import IRShared._
   import AST._
-  import org.antlr.runtime.tree.ParseTree
   import PTTools.HappyParseTree
+
+  val ast = parseProgram(ptree)
 
   // Exception for unexpected runtime issues.
   // These represent programming errors and should never happen.

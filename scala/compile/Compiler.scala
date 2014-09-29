@@ -131,7 +131,7 @@ object Compiler {
         case None => return 1
         case Some(parseTree) =>
 
-          val ast = ASTBuilder.parseProgram(parseTree)
+          val ast = new ASTBuilder(parseTree).ast
 
           if (CLI.debug) {
             println("\nAST:")
