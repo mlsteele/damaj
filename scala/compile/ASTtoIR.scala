@@ -1,4 +1,5 @@
 package compile 
+
 import SymbolTable._
 // namespace collisions import AST._
 // namespace collisions import IR._
@@ -17,10 +18,13 @@ object IRBuilder{
     ast.callouts.map(convertCalloutDecl),
     ast.fields.map(convertFieldDecl),
     ast.methods.map(convertMethodDecl))
-    def convertCalloutDecl(calloutDec: AST.CalloutDecl): IR.Callout = IR.Callout(calloutDec.id)
-    // calloutList.map(AST.CalloutDecl => IR.CalloutDecl)
-    def convertFieldDecl(fieldDec: AST.FieldDecl): IR.Field = IR.Field(fieldDec.dtype,field.id,field.size)
-    def convertMethodDecl(meth: AST.MethodDecl): IR.Method = {
+
+  def convertCalloutDecl(calloutDec: AST.CalloutDecl): IR.Callout = IR.Callout(calloutDec.id)
+  // calloutList.map(AST.CalloutDecl => IR.CalloutDecl)
+
+  def convertFieldDecl(fieldDec: AST.FieldDecl): IR.Field = IR.Field(fieldDec.dtype,field.id,field.size)
+
+  def convertMethodDecl(meth: AST.MethodDecl): IR.Method = {
     var method:IR.Method = IR.Method( meth.id,meth.args,meth.returns,meth.block,meth.params)
     var table = new SymbolTable()
     table.add(method)
