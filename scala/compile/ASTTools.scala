@@ -312,8 +312,8 @@ object ASTPrinter {
       case Some(expr) => "return " + printExpr(expr)
       case None => "return"
     }
-    case Break => "CANT PRINT Break's YET"
-    case Continue => "CANT PRINT Continue's YET"
+    case Break => "break"
+    case Continue => "continue"
   }
 
   def printExpr(ast: Expr): String = ast match {
