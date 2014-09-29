@@ -5,20 +5,11 @@ object ASTBuilder {
   import IRShared._
   import AST._
   import org.antlr.runtime.tree.ParseTree
+  import PTTools.HappyParseTree
 
   // Exception for unexpected runtime issues.
   // These represent programming errors and should never happen.
   class ASTConstructionException(msg: String) extends RuntimeException(msg)
-
-  // Wrapper for ParseTree to make the interface a bit nicer.
-  class HappyParseTree(pt: ParseTree) {
-    def text = pt.getText()
-    def children =
-      Range(0, pt.getChildCount())
-        .map{ i =>
-          pt.getChild(i).asInstanceOf[ParseTree]
-        } .toList
-  }
 
   implicit def parseTreeUpgrade(pt: ParseTree): HappyParseTree =
     new HappyParseTree(pt)

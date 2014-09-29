@@ -112,7 +112,7 @@ object Compiler {
           println(tree.toStringTree())
 
           println("\nParse Tree (pretty):")
-          print_tree(tree, 0)
+          Console.err.println(PTTools.prettyprint(tree))
 
         case _ =>
       }
