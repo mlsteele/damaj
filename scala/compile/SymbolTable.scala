@@ -1,8 +1,8 @@
 package compile;
 
-import IR._
-
 object SymbolTable {
+  import IR._
+  import IRShared._
 
   /**
    * Represents something that can be looked up in a symbol table.
@@ -23,6 +23,8 @@ object SymbolTable {
   type LookupPredicate = Symbol => Boolean
 
   class SymbolTable (var parent: Option[SymbolTable], var symbols: List[Symbol]) {
+    def this() = this(None, List())
+
     /**
      * Adds a symbol to the table
      * Return value is None if the insert succeeded, and returns a Some[Symbol] is the symbol was duplicate.

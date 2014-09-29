@@ -1,9 +1,11 @@
 package compile
-import AST._
-import org.antlr.runtime.tree.ParseTree
 
 // Construct an AST from a parse tree
 object ASTBuilder {
+  import IRShared._
+  import AST._
+  import org.antlr.runtime.tree.ParseTree
+
   // Exception for unexpected runtime issues.
   // These represent programming errors and should never happen.
   class ASTConstructionException(msg: String) extends RuntimeException(msg)
@@ -230,12 +232,12 @@ object ASTBuilder {
     assert(pt.text == "literal")
     val child = pt.children(0)
     child.text match {
-      case "int_literal" => parseIntLiteral(child.children(0))
+      case "int_literal" => Literal(parseIntLiteral(child.children(0)))
       case "bool_literal" => child.children(0).text match {
-        case "true" => BoolLiteral(true)
-        case "false" => BoolLiteral(false)
+        case "true" => Literal(BoolLiteral(true))
+        case "false" => Literal(BoolLiteral(false))
       }
-      case "char_literal" => parseCharLiteral(child)
+      case "char_literal" => Literal(parseCharLiteral(child))
     }
   }
 
@@ -258,6 +260,9 @@ object ASTBuilder {
 }
 
 object ASTPrinter {
+  import IRShared._
+  import AST._
+
   def printProgram(ast: ProgramAST): String = {
     lines(List(
       lines(ast.callouts.map(printCalloutDecl)),
@@ -327,7 +332,7 @@ object ASTPrinter {
     case UnaryOp(op, right) => "%s%s".format(op, printExpr(right))
     case Ternary(cond, left, right) =>
       "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
-    case lit: Literal => lit match {
+    case lit: Literal => lit.inner match {
       case IntLiteral(value) => value.toString
       case CharLiteral(value) => "'%s'".format(Escape.escape(value))
       case BoolLiteral(value) => value.toString

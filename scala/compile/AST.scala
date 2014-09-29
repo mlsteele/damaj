@@ -3,6 +3,7 @@ package compile
 // AST structure definition
 // See ASTTools for methods having to do with ASTs.
 object AST {
+  import IRShared._
   // Note: Parenthesis will be purged from the AST.
 
   // Root node
@@ -25,7 +26,7 @@ object AST {
 
   case class Block(decls: List[FieldDecl], stmts: List[Statement])
 
-  sealed abstract trait Statement
+  sealed trait Statement
   case class Assignment(left: Location, right: Expr) extends Statement
   // MethodCalls are both Statements and Exprs.
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
@@ -36,22 +37,10 @@ object AST {
   case object Break extends Statement
   case object Continue extends Statement
 
-  sealed abstract trait Expr
+  sealed trait Expr
   case class Location(id: ID, index: Option[Expr]) extends Expr
   case class BinOp(left: Expr, op: String, right: Expr) extends Expr
   case class UnaryOp(op: String, right: Expr) extends Expr
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
-
-  type ID = String
-  sealed trait DType
-  case object DTVoid extends DType
-  case object DTInt extends DType
-  case object DTBool extends DType
-
-  sealed abstract trait Literal extends Expr
-  case class IntLiteral(value: BigInt) extends Literal
-  case class CharLiteral(value: Char) extends Literal
-  case class BoolLiteral(value: Boolean) extends Literal
-  // String literal is not a literal! It's only used in callout args.
-  case class StrLiteral(value: String)
+  case class Literal(inner: CommonLiteral) extends Expr
 }

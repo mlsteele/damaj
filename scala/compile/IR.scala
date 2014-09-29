@@ -1,10 +1,11 @@
 package compile
 
-import SymbolTable._
 
 // IR structure definition
 // TODO See IRTools for methods having to do with IRs.
 object IR {
+  import SymbolTable._
+  import IRShared._
 
   // Root node
   case class ProgramIR(
@@ -19,14 +20,13 @@ object IR {
 
   case class Method(
     id: ID,
-    args: SymbolTable,
+    params: SymbolTable,
     returns: DType,
-    block: Block,
-    params: SymbolTable)
+    block: Block)
 
   case class Block(stmts: List[Statement], symbolTable: SymbolTable)
 
-  sealed abstract trait Statement
+  sealed trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement
   // MethodCalls are both Statements and Exprs. Is this ok?
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
@@ -37,27 +37,15 @@ object IR {
   case object Break extends Statement
   case object Continue extends Statement
 
-  sealed abstract trait Expr
+  sealed trait Expr
   case class BinOp(left: Expr, op: String, right: Expr) extends Expr
   // Note: Length is now a unary op
   case class UnaryOp(op: String, right: Expr) extends Expr
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
+  case class Literal(inner: CommonLiteral) extends Expr
 
-  sealed abstract trait Load extends Expr
+  sealed trait Load extends Expr
   case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load
   case class LoadLiteral(value: IntLiteral) extends Load
   case class Store(to: FieldSymbol, index: Option[Expr]) extends Expr
-
-  type ID = String
-  sealed trait DType
-  case object DTVoid extends DType
-  case object DTInt extends DType
-  case object DTBool extends DType
-
-  sealed abstract trait Literal extends Expr
-  case class IntLiteral(value: BigInt) extends Literal
-  case class CharLiteral(value: Char) extends Literal
-  case class BoolLiteral(value: Boolean) extends Literal
-  // String literal is not a literal! It's only used in callout args.
-  case class StrLiteral(value: String)
 }
