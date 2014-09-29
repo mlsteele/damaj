@@ -99,13 +99,20 @@ object ASTBuilder {
     pt.children(0).text match {
       case "assignment" => parseAssignment(pt.children(0))
       case "method_call" => parseMethodCall(pt.children(0))
-      case "if" => throw new ASTConstructionException("not implemented yet")
-      case "for" => throw new ASTConstructionException("not implemented yet")
+      case "if" => pt.children.length match {
+        case 5 => If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), None)
+        case 7 =>
+          If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), Some(parseBlock(pt.children(6))))
+      }
+      case "for" => For(pt.children(2).text,
+                        parseExpr(pt.children(4)),
+                        parseExpr(pt.children(6)),
+                        parseBlock(pt.children(8)))
       case "while" => pt.children.length match {
-        case 7 => While(
+        case 5 => While(
           parseExpr(pt.children(2)),
           parseBlock(pt.children.last), None)
-        case 5 => While(
+        case 7 => While(
           parseExpr(pt.children(2)),
           parseBlock(pt.children.last),
           Some(parseIntLiteral(pt.children(5))))
@@ -232,30 +239,20 @@ object ASTBuilder {
     }
   }
 
-  def parseIntLiteral(pt: ParseTree): IntLiteral =
-    IntLiteral(BigInt(pt.text))
+  def parseIntLiteral(pt: ParseTree): IntLiteral = IntLiteral(BigInt(pt.text))
 
   def parseStrLiteral(pt: ParseTree): StrLiteral = {
     assert(pt.text == "str_literal")
-    // TODO this needs to get rid of quotes and undo escapes!
-    StrLiteral(pt.children(0).text)
+    val inner = pt.children(0).text.drop(1).dropRight(1)
+    StrLiteral(Escape.unescape(inner))
   }
 
   def parseCharLiteral(pt: ParseTree): CharLiteral = {
     assert(pt.text == "char_literal")
     val inner = pt.children(0).text.drop(1).dropRight(1)
-    val value = inner.length match {
-      case 1 => inner
-      case _ => inner.drop(1) match {
-        case "\\" => "\\"
-        case "\"" => "\""
-        case "'" => "'"
-        case "n" => "\n"
-        case "t" => "\t"
-      }
-    }
-    assert(value.length == 1)
-    CharLiteral(value(0))
+    val str = Escape.unescape(inner)
+    assert(str.length == 1, str)
+    CharLiteral(str(0))
   }
 
 }
@@ -298,9 +295,23 @@ object ASTPrinter {
     case Assignment(left, right) =>
       "%s = %s".format(printLocation(left), printExpr(right))
     case ast: MethodCall => printMethodCall(ast)
-    case If(condition, then, elseb) => "CANT PRINT If's YET"
-    case For(id, start, iter, then) => "CANT PRINT If's YET"
-    case While(condition, block, max) => "CANT PRINT While's YET"
+    case If(condition, then, elseb) => elseb match {
+      case Some(elseb) => "if (%s) {\n%s\n} else {\n%s\n}".format(
+        printExpr(condition),
+        indent(printBlock(then)),
+        indent(printBlock(elseb)))
+      case None => "if (%s) {\n%s\n}".format(
+        printExpr(condition),
+        indent(printBlock(then)))
+    }
+    case For(id, start, iter, then) => "for (%s = %s, %s) {\n%s\n}".format(
+      id, printExpr(start), printExpr(iter), indent(printBlock(then)))
+    case While(condition, block, max) => max match {
+      case None => "while (%s) {\n%s\n}".format(
+        printExpr(condition), printBlock(block))
+      case Some(max) => "while (%s): %s {\n%s\n}".format(
+        printExpr(condition), max.value, printBlock(block))
+    }
     case Return(expr) => expr match {
       case Some(expr) => "return " + printExpr(expr)
       case None => "return"
@@ -318,7 +329,7 @@ object ASTPrinter {
       "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
     case lit: Literal => lit match {
       case IntLiteral(value) => value.toString
-      case CharLiteral(value) => "'%s'".format(value)
+      case CharLiteral(value) => "'%s'".format(Escape.escape(value))
       case BoolLiteral(value) => value.toString
     }
   }
@@ -326,14 +337,14 @@ object ASTPrinter {
   def printMethodCall(ast: MethodCall): String = {
     "%s(%s)".format(ast.id, ast.args.map{ arg =>
       arg match {
-        case Left(strl) => strl.value
+        case Left(strl) => "\"%s\"".format(Escape.escape(strl.value))
         case Right(expr) => printExpr(expr)
       }
     }.mkString(", "))
   }
 
   def printLocation(ast: Location): String = ast.index match {
-    case Some(index) => "%s[%s]".format(ast.id, index)
+    case Some(index) => "%s[%s]".format(ast.id, printExpr(index))
     case None => "%s".format(ast.id)
   }
 

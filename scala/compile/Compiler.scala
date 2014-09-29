@@ -49,7 +49,6 @@ object Compiler {
     try {
       val inputStream: ANTLRFileStream = new ANTLRFileStream(fileName)
       val scanner = new DecafScanner(inputStream)
-      // scanner.setTrace(CLI.debug)
       var done = false
       while (!done) {
         try {
@@ -142,10 +141,10 @@ object Compiler {
             println(ast_pretty)
           }
       }
-      
+
       // TODO more intermediate format stuff
 
-      0
+      return 0
   }
 
   def print_tree(tree: ParseTree, level: Int): Unit  = {

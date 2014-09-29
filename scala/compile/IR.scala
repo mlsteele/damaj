@@ -1,11 +1,10 @@
 package compile
 
+import SymbolTable._
+
 // IR structure definition
 // TODO See IRTools for methods having to do with IRs.
 object IR {
-
-  // placeholder until someone writes the real symbol tables
-  case class SymbolTable()
 
   // Root node
   case class ProgramIR(
@@ -25,7 +24,7 @@ object IR {
     block: Block,
     params: SymbolTable)
 
-  case class Block(stmts: List[Statement], environment: SymbolTable)
+  case class Block(stmts: List[Statement], symbolTable: SymbolTable)
 
   sealed abstract trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement
@@ -45,9 +44,9 @@ object IR {
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
 
   sealed abstract trait Load extends Expr
-  case class LoadField(from: Field, index: Option[Expr]) extends Load
+  case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load
   case class LoadLiteral(value: IntLiteral) extends Load
-  case class Store(to: Field, index: Option[Expr]) extends Expr
+  case class Store(to: FieldSymbol, index: Option[Expr]) extends Expr
 
   type ID = String
   sealed trait DType
