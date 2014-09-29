@@ -127,11 +127,12 @@ object Compiler {
 
   def inter(fileName: String): Int = {
       val parseTree = parse(fileName)
+      val code = io.Source.fromFile(fileName).mkString
       parseTree match {
         case None => return 1
         case Some(parseTree) =>
 
-          val ast = new ASTBuilder(parseTree).ast
+          val ast = new ASTBuilder(parseTree, fileName, code).ast
 
           if (CLI.debug) {
             println("\nAST:")
@@ -139,6 +140,10 @@ object Compiler {
 
             val ast_pretty = new ASTPrinter(ast).print
             println(ast_pretty)
+
+            println()
+            val problemNode = ast.callouts(1)
+            println(ast.srcmap.report(problemNode, "I don't like this callout"))
           }
       }
 

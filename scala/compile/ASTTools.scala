@@ -6,13 +6,13 @@ import org.antlr.runtime.tree.ParseTree
 // source - source code
 // Example Usage:
 //   val ast = ASTBuilder.parseProgram(parseTree).ast
-class ASTBuilder(ptree: ParseTree) {
+class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
 // class ASTBuilder(ptree: ParseTree, source: String) {
   import IRShared._
   import AST._
   import PTTools.HappyParseTree
 
-  val srcmap = new SourceMap()
+  val srcmap = new SourceMap(filepath, code)
   val ast = parseProgram(ptree)
 
   // Exception for unexpected runtime issues.
