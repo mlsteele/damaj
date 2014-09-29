@@ -69,7 +69,7 @@ object Compiler {
             }
           }
         } catch {
-          case ex: Exception => 
+          case ex: Exception =>
             Console.err.println(CLI.infile + " " + ex)
         }
       }
