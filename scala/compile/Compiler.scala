@@ -137,7 +137,7 @@ object Compiler {
             println("\nAST:")
             println(ast)
 
-            val ast_pretty = ASTPrinter.printProgram(ast)
+            val ast_pretty = new ASTPrinter(ast).print
             println(ast_pretty)
           }
       }

@@ -10,7 +10,8 @@ object AST {
   case class ProgramAST(
     callouts: List[CalloutDecl],
     fields: List[FieldDecl],
-    methods: List[MethodDecl])
+    methods: List[MethodDecl],
+    srcmap: SourceMap)
 
   case class CalloutDecl(id: ID)
   // FieldDecl are not analogous to field_decl in the gramar.

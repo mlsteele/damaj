@@ -12,6 +12,7 @@ class ASTBuilder(ptree: ParseTree) {
   import AST._
   import PTTools.HappyParseTree
 
+  val srcmap = new SourceMap()
   val ast = parseProgram(ptree)
 
   // Exception for unexpected runtime issues.
@@ -31,16 +32,20 @@ class ASTBuilder(ptree: ParseTree) {
       case `node_name` => pt.children.filter(_.text != ",").map(processor)
     }
 
-  def parseProgram(pt: ParseTree): ProgramAST = ProgramAST(
-    parseCalloutDecls(pt.children(0)),
-    parseFieldDecls(pt.children(1)),
-    parseMethodDecls(pt.children(2)))
+  def parseProgram(pt: ParseTree): ProgramAST = srcmap.add(
+    ProgramAST(
+      parseCalloutDecls(pt.children(0)),
+      parseFieldDecls(pt.children(1)),
+      parseMethodDecls(pt.children(2)),
+      srcmap),
+    SourceMapEntry(0, 0))
 
   def parseCalloutDecls(pt: ParseTree): List[CalloutDecl] =
     parseMany[CalloutDecl](pt, "callout_decl", parseCalloutDecl)
 
-  def parseCalloutDecl(pt: ParseTree): CalloutDecl =
-    CalloutDecl(pt.children(1).text)
+  def parseCalloutDecl(pt: ParseTree): CalloutDecl = srcmap.add(
+    CalloutDecl(pt.children(1).text),
+    pt.children(0))
 
   def parseFieldDecls(pt: ParseTree): List[FieldDecl] =
     // This one's a bit funny because there can be multiple
@@ -166,18 +171,6 @@ class ASTBuilder(ptree: ParseTree) {
     }
   }
 
-  // expr : eA ;
-  // eA : eB ;
-  // eB : eC (QUESTION eA COLON eA)? ; // ternary
-  // eC : eD (OP_OR eA)? ; // ||
-  // eD : eE (OP_AND eA)? ; // &&
-  // eE : eF ((OP_EQ | OP_NEQ) eA)? ; // == !=
-  // eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eA)? ; // < <= > >=
-  // eG : eH ((OP_PLUS | OP_MINUS) eA)? ; // + -
-  // eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eA)? ; // * /
-  // eI : ((OP_MINUS | OP_INV | AT) eA) | eZ ; // unary - !
-  // eZ : eJ | (LPAREN eA RPAREN) ; // ()
-  // eJ : location | method_call | literal ;
   def parseExpr(pt: ParseTree): Expr = {
     assert(pt.text == "expr", pt.toStringTree)
     parseExprInner(pt.children(0))
@@ -257,9 +250,14 @@ class ASTBuilder(ptree: ParseTree) {
 
 }
 
-object ASTPrinter {
+// Example Usage:
+//   println(new ASTPrinter(ast).print)
+class ASTPrinter(ast: AST.ProgramAST) {
   import IRShared._
   import AST._
+
+  val srcmap = ast.srcmap
+  val print = printProgram(ast)
 
   def printProgram(ast: ProgramAST): String = {
     lines(List(
@@ -268,7 +266,13 @@ object ASTPrinter {
       lines(ast.methods.map(printMethodDecl))))
   }
 
-  def printCalloutDecl(ast: CalloutDecl): String = "callout %s".format(ast.id)
+  def src(ast: srcmap.Key): String = {
+    val e: SourceMapEntry = srcmap(ast)
+    " (%s:%s)".format(e.line, e.char)
+  }
+
+  def printCalloutDecl(ast: CalloutDecl): String =
+    "callout %s%s".format(ast.id, src(ast))
 
   def printFieldDecl(ast: FieldDecl): String = ast match {
     case FieldDecl(dtype, id, None) => "field %s: %s".format(id, printDType(dtype))
