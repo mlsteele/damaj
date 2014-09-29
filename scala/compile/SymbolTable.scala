@@ -22,32 +22,38 @@ object SymbolTable {
 
   type LookupPredicate = Symbol => Boolean
 
-  class SymbolTable (val parent: Option[SymbolTable], val symbols: List[Symbol]) {
+  class SymbolTable (var parent: Option[SymbolTable], var symbols: List[Symbol]) {
     /**
-     * Adds a symbol to the table, and returns a tuple
-     * The first element of the tuple is the new table.
-     * The second element of the tuple is None if the insert succeeded, and returns a Some[Symbol] is the symbol was duplicate.
+     * Adds a symbol to the table
+     * Return value is None if the insert succeeded, and returns a Some[Symbol] is the symbol was duplicate.
+     * The symbol is considered duplicate if either:
+     * - The most local scope contains a field of the same name.
+     * - There is a method of the same name in any scope.
      */
-    def addSymbol (symbol: Symbol) : (SymbolTable, Option[Symbol]) = {
-      if (symbols.contains(symbols)) {
-        return (this, Some(symbol))
-      } else {
-        return (new SymbolTable(parent, symbol +: symbols), None);
+    def addSymbol (symbol: Symbol) : Option[Symbol] = {
+      // Check there's no local var of same name
+      lookupSymbolLocal(byID(symbol.id)) match {
+        case Some(s) => return Some(s)
+        // Check that there's no method in any scope of the same name
+        case None => lookupSymbol(and(byID(symbol.id), isMethod())) match {
+          case Some(s) => return Some(s)
+          case None => {
+            symbols = symbols :+ symbol
+            return None;
+          }
+        }
       }
     }
     
     /**
-     * Adds a list of symbols to a table, and returns a new table, and a list of symbols that were found to be duplicates
+     * Adds a list of symbols to a table, returns a list of symbols that were found to be duplicates
      */
-    def addSymbols (newSymbols: List[Symbol]) : (SymbolTable, List[Symbol]) = {
+    def addSymbols (newSymbols: List[Symbol]) : List[Symbol] = {
       var duplicateSymbols: List[Option[Symbol]] = List()
-      var newTable: SymbolTable = this
       for (s <- newSymbols) { 
-        val (tempTable, duplicated) = newTable.addSymbol(s);
-        newTable = tempTable
-        duplicateSymbols = duplicateSymbols :+ duplicated
+        duplicateSymbols = duplicateSymbols :+ addSymbol(s)
       }
-      return (this, duplicateSymbols flatten)
+      return duplicateSymbols flatten
     }
 
     /**
