@@ -63,14 +63,13 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
 
   def parseFieldDeclRight(pt: ParseTree, dtype: DType): FieldDecl = {
     val id = pt.children(0).text
-    pt.children.length match {
+    val node = pt.children.length match {
       case 1 => FieldDecl(dtype, id, None)
       case 4 =>
         val size = parseIntLiteral(pt.children(2))
-        srcmap.add(
-          FieldDecl(dtype, id, Some(size)),
-          pt.children(0))
+        FieldDecl(dtype, id, Some(size))
     }
+    srcmap.add(node, pt.children(0))
   }
 
   def parseMethodDecls(pt: ParseTree): List[MethodDecl] =
@@ -151,7 +150,7 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
         case 3 => srcmap.add(
           Return(Some(parseExpr(pt.children(1)))),
           head)
-        case 2 => Return(None)
+        case 2 => srcmap.add(Return(None), head)
       }
       case "break" => srcmap.add(Break, head)
       case "continue" => srcmap.add(Continue, head)
@@ -302,22 +301,41 @@ class ASTPrinter(ast: AST.ProgramAST) {
   import AST._
 
   val srcmap = ast.srcmap
-  val print = printProgram(ast)
+  val print = printASTNode(ast)
+
+  def annotate(ast: ASTNode, rep: String): String = {
+    val replines: List[String] = rep.split("\n").toList
+    val e: SourceMapEntry = srcmap(ast)
+    lines(
+      "%s (%s:%s)".format(replines(0), e.line, e.char)
+      +: replines.drop(1))
+  }
+
+  def printASTNode(ast: ASTNode): String = {
+    ast match {
+      case ast: ProgramAST => printProgram(ast)
+      case ast: CalloutDecl => annotate(ast, printCalloutDecl(ast))
+      case ast: FieldDecl => annotate(ast, printFieldDecl(ast))
+      case ast: MethodDecl => annotate(ast, printMethodDecl(ast))
+      case ast: MethodDeclArg => printMethodDeclArg(ast)
+      case ast: Block => printBlock(ast)
+      case ast: MethodCall => printMethodCall(ast)
+      case ast: Statement => annotate(ast, printStatement(ast))
+      case ast: Location => printLocation(ast)
+      case ast: Expr => printExpr(ast)
+      case ast: DType => printDType(ast)
+    }
+  }
 
   def printProgram(ast: ProgramAST): String = {
     lines(List(
-      lines(ast.callouts.map(printCalloutDecl)),
-      lines(ast.fields.map(printFieldDecl)),
-      lines(ast.methods.map(printMethodDecl))))
-  }
-
-  def src(ast: srcmap.Key): String = {
-    val e: SourceMapEntry = srcmap(ast)
-    " (%s:%s)".format(e.line, e.char)
+      lines(ast.callouts.map(printASTNode)),
+      lines(ast.fields.map(printASTNode)),
+      lines(ast.methods.map(printASTNode))))
   }
 
   def printCalloutDecl(ast: CalloutDecl): String =
-    "callout %s%s".format(ast.id, src(ast))
+    "callout %s".format(ast.id)
 
   def printFieldDecl(ast: FieldDecl): String = ast match {
     case FieldDecl(dtype, id, None) => "field %s: %s".format(id, printDType(dtype))
@@ -326,46 +344,48 @@ class ASTPrinter(ast: AST.ProgramAST) {
   }
 
   def printMethodDecl(ast: MethodDecl): String = {
-    val args = commasep(ast.args .map(arg =>
-        "%s: %s".format(arg.id, printDType(arg.dtype))))
+    val args = commasep(ast.args.map(printASTNode))
     lines(List(
       "%s %s(%s) {".format(
         printDType(ast.returns),
         ast.id,
         args),
-      indent(printBlock(ast.block)),
+      indent(printASTNode(ast.block)),
       "}"))
   }
 
+  def printMethodDeclArg(ast: MethodDeclArg): String =
+    "%s: %s".format(ast.id, printDType(ast.dtype))
+
   def printBlock(ast: Block): String = {
-    val decls = ast.decls.map(printFieldDecl)
-    val stmts = ast.stmts.map(printStatement)
+    val decls = ast.decls.map(printASTNode)
+    val stmts = ast.stmts.map(printASTNode)
     lines(decls ++ stmts)
   }
 
   def printStatement(ast: Statement): String = ast match {
     case Assignment(left, right) =>
-      "%s = %s".format(printLocation(left), printExpr(right))
-    case ast: MethodCall => printMethodCall(ast)
+      "%s = %s".format(printASTNode(left), printASTNode(right))
+    case ast: MethodCall => printASTNode(ast)
     case If(condition, then, elseb) => elseb match {
       case Some(elseb) => "if (%s) {\n%s\n} else {\n%s\n}".format(
-        printExpr(condition),
-        indent(printBlock(then)),
-        indent(printBlock(elseb)))
+        printASTNode(condition),
+        indent(printASTNode(then)),
+        indent(printASTNode(elseb)))
       case None => "if (%s) {\n%s\n}".format(
-        printExpr(condition),
-        indent(printBlock(then)))
+        printASTNode(condition),
+        indent(printASTNode(then)))
     }
     case For(id, start, iter, then) => "for (%s = %s, %s) {\n%s\n}".format(
-      id, printExpr(start), printExpr(iter), indent(printBlock(then)))
+      id, printASTNode(start), printASTNode(iter), indent(printASTNode(then)))
     case While(condition, block, max) => max match {
       case None => "while (%s) {\n%s\n}".format(
-        printExpr(condition), printBlock(block))
+        printASTNode(condition), printASTNode(block))
       case Some(max) => "while (%s): %s {\n%s\n}".format(
-        printExpr(condition), max.value, printBlock(block))
+        printASTNode(condition), max.value, printASTNode(block))
     }
     case Return(expr) => expr match {
-      case Some(expr) => "return " + printExpr(expr)
+      case Some(expr) => "return " + printASTNode(expr)
       case None => "return"
     }
     case Break => "break"
@@ -373,12 +393,12 @@ class ASTPrinter(ast: AST.ProgramAST) {
   }
 
   def printExpr(ast: Expr): String = ast match {
-    case ast: MethodCall => printMethodCall(ast)
-    case ast: Location => printLocation(ast)
-    case BinOp(left, op, right) => "(%s %s %s)".format(printExpr(left), op, printExpr(right))
-    case UnaryOp(op, right) => "%s%s".format(op, printExpr(right))
+    case ast: MethodCall => printASTNode(ast)
+    case ast: Location => printASTNode(ast)
+    case BinOp(left, op, right) => "(%s %s %s)".format(printASTNode(left), op, printExpr(right))
+    case UnaryOp(op, right) => "%s%s".format(op, printASTNode(right))
     case Ternary(cond, left, right) =>
-      "%s ? %s : %s".format(printExpr(cond), printExpr(left), printExpr(right))
+      "%s ? %s : %s".format(printASTNode(cond), printASTNode(left), printASTNode(right))
     case lit: Literal => lit.inner match {
       case IntLiteral(value) => value.toString
       case CharLiteral(value) => "'%s'".format(Escape.escape(value))
@@ -390,13 +410,13 @@ class ASTPrinter(ast: AST.ProgramAST) {
     "%s(%s)".format(ast.id, ast.args.map{ arg =>
       arg match {
         case Left(strl) => "\"%s\"".format(Escape.escape(strl.value))
-        case Right(expr) => printExpr(expr)
+        case Right(expr) => printASTNode(expr)
       }
     }.mkString(", "))
   }
 
   def printLocation(ast: Location): String = ast.index match {
-    case Some(index) => "%s[%s]".format(ast.id, printExpr(index))
+    case Some(index) => "%s[%s]".format(ast.id, printASTNode(index))
     case None => "%s".format(ast.id)
   }
 
