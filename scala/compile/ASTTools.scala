@@ -7,11 +7,11 @@ import org.antlr.runtime.tree.ParseTree
 // Example Usage:
 //   val ast = ASTBuilder.parseProgram(parseTree).ast
 class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
-// class ASTBuilder(ptree: ParseTree, source: String) {
   import IRShared._
   import AST._
   import PTTools.HappyParseTree
 
+  // Every time an AST node is constructed, it must also be added to srcmap.
   val srcmap = new SourceMap(filepath, code)
   val ast = parseProgram(ptree)
 
@@ -45,7 +45,7 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
 
   def parseCalloutDecl(pt: ParseTree): CalloutDecl = srcmap.add(
     CalloutDecl(pt.children(1).text),
-    pt.children(0))
+    pt.children(1))
 
   def parseFieldDecls(pt: ParseTree): List[FieldDecl] =
     // This one's a bit funny because there can be multiple
@@ -67,7 +67,9 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
       case 1 => FieldDecl(dtype, id, None)
       case 4 =>
         val size = parseIntLiteral(pt.children(2))
-        FieldDecl(dtype, id, Some(size))
+        srcmap.add(
+          FieldDecl(dtype, id, Some(size)),
+          pt.children(0))
     }
   }
 
@@ -79,7 +81,9 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     val args = parseMethodDeclArgs(pt.children(3))
     val returns = parseDType(pt.children(0))
     val block = parseBlock(pt.children(5))
-    MethodDecl(id, args, returns, block)
+    srcmap.add(
+      MethodDecl(id, args, returns, block),
+      pt.children(0))
   }
 
   def parseMethodDeclArgs(pt: ParseTree): List[MethodDeclArg] = {
@@ -89,45 +93,68 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
 
   def parseMethodDeclArg(pt: ParseTree): MethodDeclArg = {
     assert(pt.text == "method_decl_arg", pt.text)
-    MethodDeclArg(parseDType(pt.children(0)), pt.children(1).text)
+    srcmap.add(
+      MethodDeclArg(parseDType(pt.children(0)), pt.children(1).text),
+      pt.children(1))
   }
 
   def parseBlock(pt: ParseTree): Block = {
     assert(pt.text == "block")
     val decls = parseFieldDecls(pt.children(1))
     val stmts = parseMany[Statement](pt.children(2), "statement", parseStatement)
-    Block(decls, stmts)
+    srcmap.add(
+      Block(decls, stmts),
+      pt.children(0))
   }
 
   def parseStatement(pt: ParseTree): Statement = {
     assert(pt.text == "statement")
-    pt.children(0).text match {
-      case "assignment" => parseAssignment(pt.children(0))
-      case "method_call" => parseMethodCall(pt.children(0))
+    val head: ParseTree = pt.children(0)
+    head.text match {
+      case "assignment" => parseAssignment(head)
+      case "method_call" => parseMethodCall(head)
       case "if" => pt.children.length match {
-        case 5 => If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), None)
+        case 5 =>
+          val expr = parseExpr(pt.children(2))
+          val then = parseBlock(pt.children(4))
+          srcmap.add(
+            If(expr, then, None),
+            head)
         case 7 =>
-          If(parseExpr(pt.children(2)), parseBlock(pt.children(4)), Some(parseBlock(pt.children(6))))
+          val expr = parseExpr(pt.children(2))
+          val then = parseBlock(pt.children(4))
+          val elseb = Some(parseBlock(pt.children(6)))
+          srcmap.add(
+            If(expr, then, elseb),
+            head)
       }
-      case "for" => For(pt.children(2).text,
-                        parseExpr(pt.children(4)),
-                        parseExpr(pt.children(6)),
-                        parseBlock(pt.children(8)))
+      case "for" => srcmap.add(
+        For(pt.children(2).text,
+            parseExpr(pt.children(4)),
+            parseExpr(pt.children(6)),
+            parseBlock(pt.children(8))),
+        head)
       case "while" => pt.children.length match {
-        case 5 => While(
-          parseExpr(pt.children(2)),
-          parseBlock(pt.children.last), None)
-        case 7 => While(
-          parseExpr(pt.children(2)),
-          parseBlock(pt.children.last),
-          Some(parseIntLiteral(pt.children(5))))
+        case 5 => srcmap.add(
+          While(
+            parseExpr(pt.children(2)),
+            parseBlock(pt.children.last), None),
+          head)
+        case 7 => srcmap.add(
+          While(
+            parseExpr(pt.children(2)),
+            parseBlock(pt.children.last),
+            Some(parseIntLiteral(pt.children(5)))),
+          head)
       }
       case "return" => pt.children.length match {
-        case 3 => Return(Some(parseExpr(pt.children(1))))
+        case 3 => srcmap.add(
+          Return(Some(parseExpr(pt.children(1)))),
+          head)
         case 2 => Return(None)
       }
-      case "break" => Break
-      case "continue" => Continue
+      case "break" => srcmap.add(Break, head)
+      case "continue" => srcmap.add(Continue, head)
       case x => throw new ASTConstructionException("unrecognized expression type" + x)
     }
   }
@@ -136,18 +163,26 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     assert(pt.text == "assignment")
     val left = parseLocation(pt.children(0))
     val right = parseExpr(pt.children(2))
-    pt.children(1).children(0).text match {
+    val op = pt.children(1).children(0).text
+    val node = op match {
       case "=" => Assignment(left, right)
-      case "+=" => Assignment(left, BinOp(left, "+", right))
-      case "-=" => Assignment(left, BinOp(left, "-", right))
+      case "+=" | "-=" =>
+        // sketchy string operation op(0) extracts the + or -
+        assert(List("-", "+").contains(op(0).toString))
+        val implied = BinOp(left, op(0).toString, right)
+        srcmap.add(implied, pt.children(1))
+        Assignment(left, implied)
     }
+    srcmap.add(node, pt.children(1))
   }
 
   def parseMethodCall(pt: ParseTree): MethodCall = {
     assert(pt.text == "method_call")
     val id = pt.children(0).children(0).text
     val args = parseMethodCallArgs(pt.children(2))
-    MethodCall(id, args)
+    srcmap.add(
+      MethodCall(id, args),
+      pt.children(0).children(0))
   }
 
   def parseMethodCallArgs(pt: ParseTree): List[Either[StrLiteral, Expr]] = {
@@ -165,10 +200,11 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
 
   def parseLocation(pt: ParseTree): Location = {
     assert(pt.text == "location")
-    pt.children.length match {
+    val node = pt.children.length match {
       case 4 => Location(pt.children(0).text, Some(parseExpr(pt.children(2))))
       case 1 => Location(pt.children(0).text, None)
     }
+    srcmap.add(node, pt.children(0))
   }
 
   def parseExpr(pt: ParseTree): Expr = {
@@ -188,15 +224,15 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
           val condition = parseExprInner(c(0))
           val left = parseExprInner(c(2))
           val right = parseExprInner(c(4))
-          Ternary(condition, left, right)
+          srcmap.add(Ternary(condition, left, right), c(1))
         // binary ops
         case "eC" | "eD" | "eE" | "eF" | "eG" | "eH" =>
           val left = parseExprInner(c(0))
           val right = parseExprInner(c(2))
-          BinOp(left, c(1).text, right)
+          srcmap.add(BinOp(left, c(1).text, right), c(1))
         // unary ops- ! @
         case "eI" =>
-          UnaryOp(c(0).text, parseExprInner(c(1)))
+          srcmap.add(UnaryOp(c(0).text, parseExprInner(c(1))), c(0))
       }
     }
   }
@@ -212,32 +248,39 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
-    case "type" => parseDType(pt.children(0))
-    case "int" => DTInt
-    case "boolean" => DTBool
-    case "void" => DTVoid
+    case "type" => parseDType(pt)
+    case "int" => srcmap.add(DTInt, pt)
+    case "boolean" => srcmap.add(DTBool, pt)
+    case "void" => srcmap.add(DTVoid, pt)
     case _ => throw new ASTConstructionException("Unknown type " + pt.text)
   }
 
   def parseLiteral(pt: ParseTree): Literal = {
     assert(pt.text == "literal")
     val child = pt.children(0)
-    child.text match {
-      case "int_literal" => Literal(parseIntLiteral(child.children(0)))
-      case "bool_literal" => child.children(0).text match {
-        case "true" => Literal(BoolLiteral(true))
-        case "false" => Literal(BoolLiteral(false))
+    val gchild = child.children(0)
+    val node = child.text match {
+      case "int_literal" => parseIntLiteral(gchild)
+      case "bool_literal" => gchild.text match {
+        case "true" => srcmap.add(BoolLiteral(true), gchild)
+        case "false" => srcmap.add(BoolLiteral(false), gchild)
       }
-      case "char_literal" => Literal(parseCharLiteral(child))
+      case "char_literal" => parseCharLiteral(child)
     }
+    val wrapped = Literal(node)
+    srcmap.add(wrapped, gchild)
   }
 
-  def parseIntLiteral(pt: ParseTree): IntLiteral = IntLiteral(BigInt(pt.text))
+  def parseIntLiteral(pt: ParseTree): IntLiteral = srcmap.add(
+    IntLiteral(BigInt(pt.text)),
+    pt)
 
   def parseStrLiteral(pt: ParseTree): StrLiteral = {
     assert(pt.text == "str_literal")
     val inner = pt.children(0).text.drop(1).dropRight(1)
-    StrLiteral(Escape.unescape(inner))
+    srcmap.add(
+      StrLiteral(Escape.unescape(inner)),
+      pt.children(0))
   }
 
   def parseCharLiteral(pt: ParseTree): CharLiteral = {
@@ -245,7 +288,9 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     val inner = pt.children(0).text.drop(1).dropRight(1)
     val str = Escape.unescape(inner)
     assert(str.length == 1, str)
-    CharLiteral(str(0))
+    srcmap.add(
+      CharLiteral(str(0)),
+      pt)
   }
 
 }
