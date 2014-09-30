@@ -24,8 +24,11 @@ object SymbolTable {
 
   type LookupPredicate = Symbol => Boolean
 
-  class SymbolTable (var parent: Option[SymbolTable], var symbols: List[Symbol]) {
-    def this() = this(None, List())
+  class SymbolTable (var parent: Option[SymbolTable]) {
+
+    var symbols:List[Symbol] = List();
+
+    def this() = this(None)
 
     /**
      * Adds a symbol to the table
@@ -38,13 +41,9 @@ object SymbolTable {
       // Check there's no local var of same name
       lookupSymbolLocal(byID(symbol.id)) match {
         case Some(s) => return Some(Conflict(s, symbol))
-        // Check that there's no method in any scope of the same name
-        case None => lookupSymbol(and(byID(symbol.id), isMethod())) match {
-          case Some(s) => return Some(Conflict(s, symbol))
-          case None => {
-            symbols = symbols :+ symbol
-            return None;
-          }
+        case None => {
+          symbols = symbols :+ symbol
+          return None;
         }
       }
     }
