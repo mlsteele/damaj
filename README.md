@@ -1,8 +1,13 @@
-# DAMAJ Decaf Compiler
+# The DAMAJ Compiler
 
 A really decent Decaf compiler.
 
 "Mad decent" - Jess
+
+### Etymology
+Diony, Andres, Miles, And Jess's Compiler
+
+Don't Always Make A Java Compiler
 
 ## Building
 To build, run `make`. It will recompile the changed files.
