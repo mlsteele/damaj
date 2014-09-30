@@ -39,7 +39,7 @@ object SymbolTable {
      */
     def addSymbol (symbol: Symbol) : Option[Conflict] = {
       // Check there's no local var of same name
-      lookupSymbolLocal(byID(symbol.id)) match {
+      lookupSymbolLocal(symbol.id) match {
         case Some(s) => return Some(Conflict(s, symbol))
         case None => {
           symbols = symbols :+ symbol
@@ -63,9 +63,9 @@ object SymbolTable {
      * Looks up the first field in the current scope that matches the given predicate.
      * For example: table.lookupSymbolLocal(byID("x") and isMethod) tries to find a variable named "x" that is a method.
      */
-    def lookupSymbolLocal(pred: LookupPredicate) : Option[Symbol] = {
+    def lookupSymbolLocal(id: ID) : Option[Symbol] = {
       for (s <- symbols) {
-        if (pred(s)) {
+        if (s.id == id) {
           return Some(s)
         }
       }
@@ -75,39 +75,11 @@ object SymbolTable {
     /**
      * Similar to lookupSymbolLocal, but it also tries looking through the parent scopes.
      */
-    def lookupSymbol(pred: LookupPredicate) : Option[Symbol] = {
-      lookupSymbolLocal(pred) match {
+    def lookupSymbol(id: ID) : Option[Symbol] = {
+      lookupSymbolLocal(id) match {
         case Some(s) => Some(s)
-        case None    =>  parent.flatMap(_.lookupSymbol(pred))
+        case None    =>  parent.flatMap(_.lookupSymbol(id))
       }
     }
   }
-
-  
-
-  // Combines two predicates together into a single one
-  def and(a: LookupPredicate, b: LookupPredicate) : LookupPredicate 
-    = (s:Symbol) => a(s) && b(s)
-
-  // Matches a symbol matching the given ID
-  def byID(id: String) : LookupPredicate = _.id == id
-
-  // Matches a symbol that is a field
-  def isField() : LookupPredicate = (s:Symbol) => s match {
-    case s:FieldSymbol => true
-    case _             => false
-  }
-
-  // Matches a symbol that is a method
-  def isMethod() : LookupPredicate = (s:Symbol) => s match {
-    case s:MethodSymbol => true
-    case _              => false
-  }
-
-  // Matches a symbol that is a callout
-  def isCallout() : LookupPredicate = (s:Symbol) => s match {
-    case s:CalloutSymbol => true
-    case _               => false
-  }
-
 }
