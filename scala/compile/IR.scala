@@ -28,10 +28,9 @@ object IR {
   // Note: Length is now a unary op
   case class UnaryOp(op: String, right: Expr) extends Expr
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
-  case class Literal(inner: CommonLiteral) extends Expr
 
   sealed trait Load extends Expr
   case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load
-  case class LoadLiteral(value: IntLiteral) extends Load
+  case class LoadLiteral(inner: CommonLiteral) extends Load
   case class Store(to: FieldSymbol, index: Option[Expr]) extends Expr
 }

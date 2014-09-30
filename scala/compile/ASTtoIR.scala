@@ -29,40 +29,75 @@ object IRBuilder{
     IR.ProgramIR(symbols)
   }
 
-  def convertFieldDecl(ast: AST.FieldDecl): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
+  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
 
   def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
     val paramsTable = new SymbolTable(parent)
     val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
-    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block))
+    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable))
   }
      
-  // TODO
-  def convertExpr(expr: AST.Expr): IR.Expr = IR.Literal(BoolLiteral(true))
+  def convertExpr(expr: AST.Expr, symbols:SymbolTable): IR.Expr = expr match {
+    case AST.BinOp(left, op, right) => IR.BinOp(convertExpr(left, symbols), op, convertExpr(right, symbols))
+    case AST.UnaryOp(op, right) => IR.UnaryOp(op, convertExpr(right, symbols))
+    case AST.Ternary(condition, left, right) => 
+      IR.Ternary(convertExpr(condition, symbols), convertExpr(left, symbols), convertExpr(right, symbols))
+    case AST.Literal(l) => IR.LoadLiteral(l)
+    // TODO(jessk): pass down `symbols`
+    case AST.Location(id, index) => 
+      val fs = symbols.lookupSymbol(id)
+      assert(!fs.isEmpty(), "Use of undeclared symbol")
+      
+      IR.LoadField(fs, convertExpr(index, symbols))
+  }
+
+  def typeOfExpr(expr: IR.Expr): DType = expr match {
+    case IR.BinOp(l,o,r) => o match {
+      case "+"|"-"|"*"|"/"|"%" => DTInt
+      case "&&"|"||"|"<"|">"|"=="|"!="|"<="|">=" => DTBool
+    }
+    case IR.UnaryOp(o,r) => o match {
+      case "@"|"-" => DTInt
+      case "!" => DTBool
+    }
+    case IR.Ternary(c, l, r) => typeOfExpr(l)
+    case IR.LoadField(f,i) => f.dtype
+    case IR.LoadLiteral(i) => i match {
+      case i:IntLiteral => DTInt
+      case c:CharLiteral => DTInt
+      case b:BoolLiteral => DTBool
+    }
+    case IR.Store(t,i) => t.dtype
+  }
+
+  //def verifyExpr(expr: IR.Expr): IR.Expr = expr match {
+    // TODO
+  //}
 
   // TODO
   // def convertID()
-  def convertMethodDeclArg(ast: AST.MethodDeclArg): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
+  def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
 
-  def convertStatement(ast:AST.Statement): IR.Statement = ast match{
+  def convertStatement(ast:AST.Statement, symbols:SymbolTable): IR.Statement = ast match{
     // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
     // case a:AST.Assignment => convertAssignment(a)
     case a:AST.Assignment => IR.Break
-    case a:AST.MethodCall => convertMethodCall(a)
-    case a:AST.If => convertIf(a)
-    case a:AST.For => convertFor(a)
-    case a:AST.While => convertWhile(a)
-    case a:AST.Return => convertReturn(a)
+    case a:AST.MethodCall => convertMethodCall(a, symbols)
+    case a:AST.If => convertIf(a, symbols)
+    case a:AST.For => convertFor(a, symbols)
+    case a:AST.While => convertWhile(a, symbols)
+    case a:AST.Return => convertReturn(a, symbols)
     case AST.Break => IR.Break
     case AST.Continue => IR.Continue
   }
 
-  def convertMethodCall(ast: AST.MethodCall) = IR.MethodCall(ast.id, ast.args.map(convertMethodCallArg))
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable) =
+    IR.MethodCall(ast.id, ast.args.map(convertMethodCallArg(_,symbols)))
 
-  def convertMethodCallArg(ast: Either[StrLiteral, AST.Expr]): Either[StrLiteral, IR.Expr] = ast match {
+  def convertMethodCallArg(ast: Either[StrLiteral, AST.Expr], symbols:SymbolTable): Either[StrLiteral, IR.Expr] = ast match {
     case Left(x) => Left(x)
-    case Right(x) => Right(convertExpr(x))
+    case Right(x) => Right(convertExpr(x, symbols))
   }
 
   // def convertAssignment(assign: AST.Assignment): IR.Assignment = IR.Assignment(locToStore(assign.left), convertExpr(assign.right))
@@ -74,10 +109,10 @@ object IRBuilder{
     // // IR.Store(field, loc.index)
   // }
 
-  def convertBlock(block: AST.Block ): IR.Block = {
-    val localtable = new SymbolTable()
+  def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
+    val localtable = new SymbolTable(symbols)
     // TODO enter symbols into table
-    IR.Block(block.stmts.map(convertStatement), localtable)
+    IR.Block(block.stmts.map(convertStatement(_, localtable)), localtable)
   }
 
   // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
@@ -85,10 +120,10 @@ object IRBuilder{
   // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
   // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
   // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
-  def convertIf(iff: AST.If): IR.Statement = IR.Break
-  def convertFor(fo: AST.For): IR.Statement = IR.Break
-  def convertWhile (whil:AST.While): IR.Statement = IR.Break
-  def convertReturn (ret:AST.Return): IR.Statement = IR.Break
+  def convertIf(iff: AST.If, symbols:SymbolTable): IR.Statement = IR.Break
+  def convertFor(fo: AST.For, symbols:SymbolTable): IR.Statement = IR.Break
+  def convertWhile (whil:AST.While, symbols:SymbolTable): IR.Statement = IR.Break
+  def convertReturn (ret:AST.Return, symbols:SymbolTable): IR.Statement = IR.Break
 
   //  def convertBreak ( ) this can be done through =>
   //  def convertContinue ( ) this can be done through =>
