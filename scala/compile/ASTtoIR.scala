@@ -23,7 +23,7 @@ object IRBuilder{
     val duplicate_fields = symbols.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicate_fields.length == 0, "TODO error reporting" + duplicate_fields)
 
-    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl))
+    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl(_:AST.MethodDecl, symbols)))
     assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
 
     IR.ProgramIR(symbols)
@@ -31,11 +31,11 @@ object IRBuilder{
 
   def convertFieldDecl(ast: AST.FieldDecl): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
 
-  def convertMethodDecl(meth: AST.MethodDecl): MethodSymbol = {
-    // TODO fill table
-    val params = new SymbolTable()
-    var method:MethodSymbol = MethodSymbol(meth.id, params, meth.returns, convertBlock(meth.block))
-    method
+  def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
+    val paramsTable = new SymbolTable(parent)
+    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg))
+    assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
+    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block))
   }
      
   // TODO

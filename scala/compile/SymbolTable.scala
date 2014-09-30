@@ -29,6 +29,7 @@ object SymbolTable {
     var symbols:List[Symbol] = List();
 
     def this() = this(None)
+    def this(p: SymbolTable) = this(Some(p))
 
     /**
      * Adds a symbol to the table
