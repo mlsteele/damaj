@@ -133,17 +133,18 @@ object Compiler {
         case Some(parseTree) =>
 
           val ast = new ASTBuilder(parseTree, fileName, code).ast
+          val ir1 = IRBuilder.convertProgram(ast)
 
           if (CLI.debug) {
             println("\nAST:")
             println(ast)
 
             val ast_pretty = new ASTPrinter(ast).print
+            println("\nAST (pretty):")
             println(ast_pretty)
 
-            println()
-            val problemNode = ast.callouts(1)
-            println(ast.srcmap.report(problemNode, "I don't like this callout"))
+            println("\nIR:")
+            println(ir1)
           }
       }
 
