@@ -83,7 +83,7 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     val block = parseBlock(pt.children(5))
     srcmap.add(
       MethodDecl(id, args, returns, block),
-      pt.children(0))
+      pt.children(1))
   }
 
   def parseMethodDeclArgs(pt: ParseTree): List[MethodDeclArg] = {
@@ -170,10 +170,10 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
         // sketchy string operation op(0) extracts the + or -
         assert(List("-", "+").contains(op(0).toString))
         val implied = BinOp(left, op(0).toString, right)
-        srcmap.add(implied, pt.children(1))
+        srcmap.add(implied, pt.children(1).children(0))
         Assignment(left, implied)
     }
-    srcmap.add(node, pt.children(1))
+    srcmap.add(node, pt.children(1).children(0))
   }
 
   def parseMethodCall(pt: ParseTree): MethodCall = {
@@ -248,7 +248,7 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
   }
 
   def parseDType(pt: ParseTree): DType = pt.text match {
-    case "type" => parseDType(pt)
+    case "type" => parseDType(pt.children(0))
     case "int" => srcmap.add(DTInt, pt)
     case "boolean" => srcmap.add(DTBool, pt)
     case "void" => srcmap.add(DTVoid, pt)
@@ -290,7 +290,7 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     assert(str.length == 1, str)
     srcmap.add(
       CharLiteral(str(0)),
-      pt)
+      pt.children(0))
   }
 
 }
