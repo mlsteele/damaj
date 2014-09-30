@@ -43,7 +43,7 @@ object IRBuilder{
 
   // TODO
   // def convertID()
-  // def convertMethodDeclArg( )
+  def convertMethodDeclArg(ast: AST.MethodDeclArg): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
 
   def convertStatement(ast:AST.Statement): IR.Statement = ast match{
     // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
