@@ -23,15 +23,15 @@ object IRBuilder{
     new SymbolTable(),
     new SymbolTable())
 
-  def convertCalloutDecl(calloutDec: AST.CalloutDecl): IR.Callout = IR.Callout(calloutDec.id)
-  // calloutList.map(AST.CalloutDecl => IR.CalloutDecl)
+  def convertCalloutDecl(calloutDec: AST.CalloutDecl): CalloutSymbol = CalloutSymbol(calloutDec.id)
+  // calloutList.map(AST.CalloutDecl => CalloutSymbolDecl)
 
-  def convertFieldDecl(ast: AST.FieldDecl): IR.Field = IR.Field(ast.dtype, ast.id, ast.size)
+  def convertFieldDecl(ast: AST.FieldDecl): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
 
-  def convertMethodDecl(meth: AST.MethodDecl): IR.Method = {
+  def convertMethodDecl(meth: AST.MethodDecl): MethodSymbol = {
     // TODO fill table
     val params = new SymbolTable()
-    var method:IR.Method = IR.Method(meth.id, params, meth.returns, convertBlock(meth.block))
+    var method:MethodSymbol = MethodSymbol(meth.id, params, meth.returns, convertBlock(meth.block))
     method
   }
      
@@ -68,7 +68,7 @@ object IRBuilder{
   // def locToStore(loc: AST.Location): IR.Store = {
     // // TODO
     // val table = new SymbolTable()
-    // val field:IR.Field = table.lookup(byID(loc.id))
+    // val field:FieldSymbol = table.lookup(byID(loc.id))
     // // IR.Store(field, loc.index)
   // }
 

@@ -13,17 +13,6 @@ object IR {
     fields: SymbolTable,
     methods: SymbolTable)
 
-  case class Callout(id: ID)
-  // FieldDecl are not analogous to field_decl in the gramar.
-  // Each FieldDecl is one variable, the size option determines whether it is an array.
-  case class Field(dtype: DType, id: ID, size: Option[IntLiteral])
-
-  case class Method(
-    id: ID,
-    params: SymbolTable,
-    returns: DType,
-    block: Block)
-
   case class Block(stmts: List[Statement], symbolTable: SymbolTable)
 
   sealed trait Statement

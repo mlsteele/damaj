@@ -12,7 +12,7 @@ object SymbolTable {
   }
 
   case class CalloutSymbol(id: ID) extends Symbol
-  case class FieldSymbol(id: ID, dType: DType, size: Option[IntLiteral]) extends Symbol
+  case class FieldSymbol(dType: DType, id: ID, size: Option[IntLiteral]) extends Symbol
   case class MethodSymbol(
     id: ID,
     params: SymbolTable,
