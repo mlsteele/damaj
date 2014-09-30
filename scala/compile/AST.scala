@@ -7,6 +7,8 @@ object AST {
   // Note: Parenthesis will be purged from the AST.
 
   // Root node
+  // srcmap has an entry for every node in the ast
+  // TODO(miles): make that true
   case class ProgramAST(
     callouts: List[CalloutDecl],
     fields: List[FieldDecl],
