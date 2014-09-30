@@ -14,17 +14,20 @@ object IRBuilder{
   import IRShared._
   class IRConstructionException(msg: String) extends RuntimeException(msg)
 
-  def convertProgram(ast: AST.ProgramAST): IR.ProgramIR = IR.ProgramIR( //what is the end of this line doing?
-    // TODO
-    // ast.callouts.map(convertCalloutDecl),
-    // ast.fields.map(convertFieldDecl),
-    // ast.methods.map(convertMethodDecl))
-    new SymbolTable(),
-    new SymbolTable(),
-    new SymbolTable())
+  def convertProgram(ast: AST.ProgramAST): IR.ProgramIR = {
+    val callouts = new SymbolTable()
+    val duplicate_callouts = callouts.addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
+    assert(duplicate_callouts.length == 0, "TODO error reporting")
 
-  def convertCalloutDecl(calloutDec: AST.CalloutDecl): CalloutSymbol = CalloutSymbol(calloutDec.id)
-  // calloutList.map(AST.CalloutDecl => CalloutSymbolDecl)
+    val fields = new SymbolTable()
+    val duplicate_fields = fields.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
+    assert(duplicate_fields.length == 0, "TODO error reporting")
+
+    val methods = new SymbolTable()
+    val duplicate_methods = methods.addSymbols(ast.methods.map(convertMethodDecl))
+    assert(duplicate_methods.length == 0, "TODO error reporting")
+    IR.ProgramIR(callouts, fields, methods)
+  }
 
   def convertFieldDecl(ast: AST.FieldDecl): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
 
