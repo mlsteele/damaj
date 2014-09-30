@@ -20,6 +20,8 @@ object SymbolTable {
     block: Block
     ) extends Symbol
 
+  case class Conflict(first: Symbol, second: Symbol)
+
   type LookupPredicate = Symbol => Boolean
 
   class SymbolTable (var parent: Option[SymbolTable], var symbols: List[Symbol]) {
@@ -27,18 +29,18 @@ object SymbolTable {
 
     /**
      * Adds a symbol to the table
-     * Return value is None if the insert succeeded, and returns a Some[Symbol] is the symbol was duplicate.
+     * Return value is None if the insert succeeded, and returns a Conflict if the symbol was duplicate.
      * The symbol is considered duplicate if either:
      * - The most local scope contains a field of the same name.
      * - There is a method of the same name in any scope.
      */
-    def addSymbol (symbol: Symbol) : Option[Symbol] = {
+    def addSymbol (symbol: Symbol) : Option[Conflict] = {
       // Check there's no local var of same name
       lookupSymbolLocal(byID(symbol.id)) match {
-        case Some(s) => return Some(s)
+        case Some(s) => return Some(Conflict(s, symbol))
         // Check that there's no method in any scope of the same name
         case None => lookupSymbol(and(byID(symbol.id), isMethod())) match {
-          case Some(s) => return Some(s)
+          case Some(s) => return Some(Conflict(s, symbol))
           case None => {
             symbols = symbols :+ symbol
             return None;
@@ -48,10 +50,10 @@ object SymbolTable {
     }
     
     /**
-     * Adds a list of symbols to a table, returns a list of symbols that were found to be duplicates
+     * Adds a list of symbols to a table, returns a list of conflicts if there were any.
      */
-    def addSymbols (newSymbols: List[Symbol]) : List[Symbol] = {
-      var duplicateSymbols: List[Option[Symbol]] = List()
+    def addSymbols (newSymbols: List[Symbol]) : List[Conflict] = {
+      var duplicateSymbols: List[Option[Conflict]] = List()
       for (s <- newSymbols) { 
         duplicateSymbols = duplicateSymbols :+ addSymbol(s)
       }

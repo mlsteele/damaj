@@ -8,12 +8,9 @@ object IR {
   import IRShared._
 
   // Root node
-  case class ProgramIR(
-    callouts: SymbolTable,
-    fields: SymbolTable,
-    methods: SymbolTable)
+  case class ProgramIR(symbols: SymbolTable)
 
-  case class Block(stmts: List[Statement], symbolTable: SymbolTable)
+  case class Block(stmts: List[Statement], fields: SymbolTable)
 
   sealed trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement

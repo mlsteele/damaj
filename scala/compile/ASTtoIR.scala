@@ -15,18 +15,18 @@ object IRBuilder{
   class IRConstructionException(msg: String) extends RuntimeException(msg)
 
   def convertProgram(ast: AST.ProgramAST): IR.ProgramIR = {
-    val callouts = new SymbolTable()
-    val duplicate_callouts = callouts.addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
-    assert(duplicate_callouts.length == 0, "TODO error reporting")
+    val symbols = new SymbolTable()
+    // TODO conflicts of different types (example: callout a; int a;)
+    val duplicate_callouts = symbols.addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
+    assert(duplicate_callouts.length == 0, "TODO error reporting" + duplicate_callouts)
 
-    val fields = new SymbolTable()
-    val duplicate_fields = fields.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
-    assert(duplicate_fields.length == 0, "TODO error reporting")
+    val duplicate_fields = symbols.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
+    assert(duplicate_fields.length == 0, "TODO error reporting" + duplicate_fields)
 
-    val methods = new SymbolTable()
-    val duplicate_methods = methods.addSymbols(ast.methods.map(convertMethodDecl))
-    assert(duplicate_methods.length == 0, "TODO error reporting")
-    IR.ProgramIR(callouts, fields, methods)
+    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl))
+    assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
+
+    IR.ProgramIR(symbols)
   }
 
   def convertFieldDecl(ast: AST.FieldDecl): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
@@ -44,7 +44,6 @@ object IRBuilder{
   // TODO
   // def convertID()
   // def convertMethodDeclArg( )
-  // def convertDType( )
 
   def convertStatement(ast:AST.Statement): IR.Statement = ast match{
     // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
