@@ -82,5 +82,8 @@ object SymbolTable {
         case None    =>  parent.flatMap(_.lookupSymbol(id))
       }
     }
+
+    override
+    def toString: String = "SymbolTable(%s)".format(symbols)
   }
 }
