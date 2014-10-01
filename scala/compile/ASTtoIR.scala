@@ -37,6 +37,9 @@ object IRBuilder{
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
     return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable))
   }
+
+  // Only used after crashing because of an error
+  val dummyExpr = IR.LoadLiteral(BoolLiteral(false))
      
   def convertExpr(expr: AST.Expr, symbols:SymbolTable): IR.Expr = expr match {
     case AST.BinOp(left, op, right) => IR.BinOp(convertExpr(left, symbols), op, convertExpr(right, symbols))
@@ -47,9 +50,26 @@ object IRBuilder{
     // TODO(jessk): pass down `symbols`
     case AST.Location(id, index) => 
       val fs = symbols.lookupSymbol(id)
-      assert(!fs.isEmpty(), "Use of undeclared symbol")
-      
-      IR.LoadField(fs, convertExpr(index, symbols))
+      fs match {
+        case Some(s) => s match {
+          case f:FieldSymbol => IR.LoadField(f, convertExpr(index, symbols))
+          case _ =>
+            assert(false, "Location must be a field")
+            dummyExpr
+        }
+        case _ =>
+          assert(false, "Unknown identifier")
+          dummyExpr
+      }
+    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
+      case Some(x) => x
+      case None => assert(false, "Unknown identifier"); dummyExpr
+    }
+  }
+
+  def convertExpr(oexpr: Option[AST.Expr], symbols:SymbolTable): Option[IR.Expr] = oexpr match {
+    case Some(expr) => Some(convertExpr(expr, symbols))
+    case None => None
   }
 
   def typeOfExpr(expr: IR.Expr): DType = expr match {
@@ -69,6 +89,9 @@ object IRBuilder{
       case b:BoolLiteral => DTBool
     }
     case IR.Store(t,i) => t.dtype
+    case IR.MethodCall(method, args) => method.returns
+    case IR.CalloutCall(callout, args) => DTInt
+
   }
 
   //def verifyExpr(expr: IR.Expr): IR.Expr = expr match {
@@ -79,11 +102,15 @@ object IRBuilder{
   // def convertID()
   def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
 
+  val dummyStatement = IR.Continue
   def convertStatement(ast:AST.Statement, symbols:SymbolTable): IR.Statement = ast match{
     // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
     // case a:AST.Assignment => convertAssignment(a)
     case a:AST.Assignment => IR.Break
-    case a:AST.MethodCall => convertMethodCall(a, symbols)
+    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
+      case Some(x) => x
+      case None => assert(false, "Method does not exist"); dummyStatement
+    }
     case a:AST.If => convertIf(a, symbols)
     case a:AST.For => convertFor(a, symbols)
     case a:AST.While => convertWhile(a, symbols)
@@ -92,8 +119,17 @@ object IRBuilder{
     case AST.Continue => IR.Continue
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable) =
-    IR.MethodCall(ast.id, ast.args.map(convertMethodCallArg(_,symbols)))
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
+    val symbol = symbols.lookupSymbol(ast.id)
+    symbol match {
+      case Some(s) => s match {
+        case m:MethodSymbol => Some(IR.MethodCall(m, ast.args.map(convertMethodCallArg(_, symbols))))
+        case c:CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
+        case f:FieldSymbol => None 
+      }
+      case None => None
+    }
+  }
 
   def convertMethodCallArg(ast: Either[StrLiteral, AST.Expr], symbols:SymbolTable): Either[StrLiteral, IR.Expr] = ast match {
     case Left(x) => Left(x)
@@ -110,7 +146,7 @@ object IRBuilder{
   // }
 
   def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
-    val localtable = new SymbolTable(symbols)
+    val localtable = new SymbolTable(Some(symbols))
     // TODO enter symbols into table
     IR.Block(block.stmts.map(convertStatement(_, localtable)), localtable)
   }

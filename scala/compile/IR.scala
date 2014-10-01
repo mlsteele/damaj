@@ -15,7 +15,10 @@ object IR {
   sealed trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement
   // MethodCalls are both Statements and Exprs. Is this ok?
-  case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
+  // TODO(jessk): MethodCall can't take a StrLiteral
+  sealed trait Call extends Statement with Expr
+  case class MethodCall(method: MethodSymbol, args: List[Either[StrLiteral, Expr]]) extends Call
+  case class CalloutCall(callout: CalloutSymbol, args: List[Either[StrLiteral, Expr]]) extends Call
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
   case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement
   case class While(condition: Expr, block: Block, max: Option[BigInt]) extends Statement
