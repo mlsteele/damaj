@@ -45,7 +45,7 @@ eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eG)* ; // < <= > >=
 eG : eH ((OP_PLUS | OP_MINUS) eH)* ; // + -
 eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eI)* ; // * / %
 eI : ((OP_MINUS | OP_INV | AT) eI) | eZ ; // unary - ! @
-eZ : eJ | (LPAREN eZ RPAREN) ; // ()
+eZ : eJ | (LPAREN eA RPAREN) ; // ()
 eJ : location | method_call | literal ;
 location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
 method_call : method_name LPAREN method_call_args RPAREN ;

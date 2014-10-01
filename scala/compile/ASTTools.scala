@@ -232,6 +232,8 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
         // unary ops- ! @
         case "eI" =>
           srcmap.add(UnaryOp(c(0).text, parseExprInner(c(1))), c(0))
+        // parens
+        case "eZ" => parseExprInner(c(1))
       }
     }
   }
