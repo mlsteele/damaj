@@ -50,7 +50,7 @@ object IRBuilder{
     val paramsTable = new SymbolTable(parent)
     val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, parent)))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
-    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable))
+    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable,false))
   }
 
   // Only used after crashing because of an error
@@ -75,7 +75,7 @@ object IRBuilder{
           assert(false, "Unknown identifier")
           dummyExpr
       }
-    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
+    case a:AST.MethodCall => convertMethodCall(a, symbols,false) match {
       case Some(x) => verifyExpr(x)
       case None => assert(false, "Unknown identifier"); dummyExpr
     }
@@ -193,22 +193,26 @@ object IRBuilder{
   def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
 
   val dummyStatement = IR.Continue
-  def convertStatement(ast:AST.Statement, symbols:SymbolTable): IR.Statement = ast match{
+  def convertStatement(ast:AST.Statement, symbols:SymbolTable,inLoop:Boolean): IR.Statement = ast match{
     case a:AST.Assignment => convertAssignment(a, symbols)
-    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
+    // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
+    case a:AST.MethodCall => convertMethodCall(a, symbols,false) match {
       case Some(x) => x
       case None => assert(false, "Method does not exist " + a.id)
       dummyStatement
     }
-    case a:AST.If => convertIf(a, symbols)
-    case a:AST.For => convertFor(a, symbols)
-    case a:AST.While => convertWhile(a, symbols)
-    case a:AST.Return => convertReturn(a, symbols)
-    case AST.Break => IR.Break
-    case AST.Continue => IR.Continue
+    case a:AST.If => convertIf(a, symbols,inLoop)
+    case a:AST.For => convertFor(a, symbols,inLoop)
+    case a:AST.While => convertWhile(a, symbols,true)
+    case a:AST.Return => convertReturn(a, symbols,true)
+    case AST.Break if inLoop => IR.Break
+    case AST.Break => assert(false,"break must be in a loop")
+                      IR.Break // TODO (Andres): change this once error fixing 
+    case AST.Continue if inLoop=> IR.Continue
+    case AST.Continue => assert(false,"continue must be in a loop"); IR.Continue //IR.Continue
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable,inLoop:Boolean): Option[IR.Call] = {
     val symbol = symbols.lookupSymbol(ast.id)
     println(symbols)
     println("FOOO")
@@ -246,22 +250,26 @@ object IRBuilder{
    
     }
   }
-  def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
+  def convertBlock(block: AST.Block, symbols:SymbolTable,inLoop:Boolean): IR.Block = {
     val localtable = new SymbolTable(Some(symbols))
     val duplicates = localtable.addSymbols(block.decls.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
-    IR.Block(block.stmts.map(convertStatement(_, localtable)), localtable)
+    // TODO enter symbols into table
+    
+    
+      IR.Block(block.stmts.map(convertStatement(_, localtable,inLoop)), localtable)
+  
+    
   }
-
   // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
   // def convertIf(iff: AST.If): IR.If = IR.If(convertExpr(iff.condition), convertBlock(iff.then), iff.elseb.map(convertBlock))
   // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
   // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
   // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
-  def convertIf(iff: AST.If, symbols:SymbolTable): IR.Statement = IR.Break
-  def convertFor(fo: AST.For, symbols:SymbolTable): IR.Statement = IR.Break
-  def convertWhile (whil:AST.While, symbols:SymbolTable): IR.Statement = IR.Break
-  def convertReturn (ret:AST.Return, symbols:SymbolTable): IR.Statement = IR.Break
+  def convertIf(iff: AST.If, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
 
   //  def convertBreak ( ) this can be done through =>
   //  def convertContinue ( ) this can be done through =>
