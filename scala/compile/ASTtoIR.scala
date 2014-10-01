@@ -41,17 +41,17 @@ object IRBuilder{
   val dummyExpr = IR.LoadLiteral(BoolLiteral(false))
      
   def convertExpr(expr: AST.Expr, symbols:SymbolTable): IR.Expr = expr match {
-    case AST.BinOp(left, op, right) => IR.BinOp(convertExpr(left, symbols), op, convertExpr(right, symbols))
-    case AST.UnaryOp(op, right) => IR.UnaryOp(op, convertExpr(right, symbols))
+    case AST.BinOp(left, op, right) => verifyExpr(IR.BinOp(convertExpr(left, symbols), op, convertExpr(right, symbols)))
+    case AST.UnaryOp(op, right) => verifyExpr(IR.UnaryOp(op, convertExpr(right, symbols)))
     case AST.Ternary(condition, left, right) => 
-      IR.Ternary(convertExpr(condition, symbols), convertExpr(left, symbols), convertExpr(right, symbols))
-    case AST.Literal(l) => IR.LoadLiteral(l)
+      verifyExpr(IR.Ternary(convertExpr(condition, symbols), convertExpr(left, symbols), convertExpr(right, symbols)))
+    case AST.Literal(l) => verifyExpr(IR.LoadLiteral(l))
     // TODO(jessk): pass down `symbols`
     case AST.Location(id, index) => 
       val fs = symbols.lookupSymbol(id)
       fs match {
         case Some(s) => s match {
-          case f:FieldSymbol => IR.LoadField(f, convertExpr(index, symbols))
+          case f:FieldSymbol => verifyExpr(IR.LoadField(f, convertExpr(index, symbols)))
           case _ =>
             assert(false, "Location must be a field")
             dummyExpr
@@ -61,11 +61,12 @@ object IRBuilder{
           dummyExpr
       }
     case a:AST.MethodCall => convertMethodCall(a, symbols) match {
-      case Some(x) => x
+      case Some(x) => verifyExpr(x)
       case None => assert(false, "Unknown identifier"); dummyExpr
     }
   }
-
+  
+  // Helper for converting Option[Expr]'s. If you don't already have an Option, don't use this
   def convertExpr(oexpr: Option[AST.Expr], symbols:SymbolTable): Option[IR.Expr] = oexpr match {
     case Some(expr) => Some(convertExpr(expr, symbols))
     case None => None
@@ -93,9 +94,84 @@ object IRBuilder{
 
   }
 
-  //def verifyExpr(expr: IR.Expr): IR.Expr = expr match {
-    // TODO
-  //}
+  def verifyExpr(expr: IR.Expr): IR.Expr = expr match {
+    case IR.BinOp(l,o,r) => o match {
+      case "=="|"!=" =>
+        if (typeOfExpr(l) != typeOfExpr(r)) {
+          assert(false, "Mismatched types on == or !=")
+          dummyExpr
+        } else {
+          expr
+        }
+      case "+"|"-"|"*"|"/"|"%"|"<"|">"|"<="|">=" =>
+        if (typeOfExpr(l) != DTInt || typeOfExpr(r) != DTInt) {
+          assert (false, "Mathematical operation requires ints")
+          dummyExpr
+        } else {
+          expr
+        }
+      case "&&"|"||" =>
+        if (typeOfExpr(l) != DTBool || typeOfExpr(r) != DTBool) {
+          assert(false, "Logical expression requires booleans")
+          dummyExpr
+        } else {
+          expr
+        }
+    }
+    case IR.UnaryOp(o,r) => o match {
+      case "!" =>
+        if (typeOfExpr(r) != DTBool) {
+          assert(false, "! operator must act on a boolean expression")
+          dummyExpr
+        } else {
+          expr
+        }
+      case "@" => r match {
+        case IR.LoadField(fs, oi) => oi match {
+          case Some(i) => expr // good
+          case None => 
+            assert(false, "@ operator must act on an array")
+            dummyExpr
+        }
+        case _ =>
+          assert(false, "@ operator must act on a field")
+          dummyExpr
+      }
+      case "-" => typeOfExpr(r) match {
+        case DTInt =>
+          expr
+        case _ =>
+          assert(false, "- operator must act on an integer expression")
+          dummyExpr
+      }
+    }
+    case IR.Ternary(c,l,r) => typeOfExpr(c) match {
+      case DTBool =>
+        if (typeOfExpr(l) == typeOfExpr(r)) {
+          expr
+        } else {
+          assert(false, "Second and third parts of ternary must match in type")
+          dummyExpr
+        }
+      case _ =>
+        assert(false, "Ternary condition must be boolean")
+        dummyExpr
+    }
+    case IR.LoadField(fs, oi) => oi match {
+      case Some(i) => fs.size match {
+        case Some(int) => expr
+        case None => 
+          assert(false, "Brackets used on non-array type")
+          dummyExpr
+      }
+      case None => expr
+    }
+    // TODO(jessk,diony): Check the number and type of arguments
+    case IR.MethodCall(ms, args) => expr
+    
+    case _ => expr
+    
+  }
 
   // TODO
   // def convertID()
