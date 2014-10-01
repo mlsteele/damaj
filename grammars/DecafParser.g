@@ -37,15 +37,15 @@ assignment : location assign_op expr ;
 assign_op : OP_SET | OP_INC | OP_DEC ;
 expr : eA ;
 eA : eB ;
-eB : eC (QUESTION eC COLON eC)? ; // ternary
-eC : eD (OP_OR eD)? ; // ||
-eD : eE (OP_AND eE)? ; // &&
-eE : eF ((OP_EQ | OP_NEQ) eF)? ; // == !=
-eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eG)? ; // < <= > >=
-eG : eH ((OP_PLUS | OP_MINUS) eH)? ; // + -
-eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eI)? ; // * / %
-eI : ((OP_MINUS | OP_INV | AT) eZ) | eZ ; // unary - ! @
-eZ : eJ | (LPAREN eJ RPAREN) ; // ()
+eB : eC (QUESTION eB COLON eB)? ; // ternary
+eC : eD (OP_OR eC)? ; // ||
+eD : eE (OP_AND eD)? ; // &&
+eE : eF ((OP_EQ | OP_NEQ) eE)? ; // == !=
+eF : eG ((OP_LT | OP_GT | OP_LTE | OP_GTE) eF)? ; // < <= > >=
+eG : eH ((OP_PLUS | OP_MINUS) eG)? ; // + -
+eH : eI ((OP_STAR | OP_SLASH | OP_PERC) eH)? ; // * / %
+eI : ((OP_MINUS | OP_INV | AT) eI) | eZ ; // unary - ! @
+eZ : eJ | (LPAREN eZ RPAREN) ; // ()
 eJ : location | method_call | literal ;
 location : IDENTIFIER LSQUARE expr RSQUARE | IDENTIFIER ;
 method_call : method_name LPAREN method_call_args RPAREN ;
