@@ -25,7 +25,23 @@ object IRBuilder{
     val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl(_,symbols)))
     assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
 
-    IR.ProgramIR(symbols)
+    // Verify void main() exists
+    symbols.lookupSymbol("main") match {
+      case Some(s) => s match {
+        case MethodSymbol(id, params, returns, block) => returns match {
+          case DTVoid => IR.ProgramIR(symbols) // OK. TODO check arguments
+          case _ => 
+            assert(false, "Method `main` must return void")
+            IR.ProgramIR(symbols)
+        }
+        case _ =>
+          assert(false, "No method `main` found")
+          IR.ProgramIR(symbols)
+      }
+      case _ => 
+        assert(false, "No method `main` found")
+        IR.ProgramIR(symbols)
+    }
   }
 
   def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
