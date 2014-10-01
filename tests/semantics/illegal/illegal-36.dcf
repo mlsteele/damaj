@@ -1,0 +1,8 @@
+int helper() {
+   return 2;
+}
+
+void main() {
+   int a;
+   a=helper;
+}
