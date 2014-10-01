@@ -125,19 +125,28 @@ object Compiler {
         case None => return 1
         case Some(parseTree) =>
 
+          // building an AST can't fail.
           val ast = new ASTBuilder(parseTree, fileName, code).ast
-          val ir1 = IRBuilder.convertProgram(ast)
+          println("\nAST:")
+          println(ast)
 
-          if (CLI.debug) {
-            println("\nAST:")
-            println(ast)
+          val ast_pretty = new ASTPrinter(ast).print
+          println("\nAST (pretty):")
+          println(ast_pretty)
 
-            val ast_pretty = new ASTPrinter(ast).print
-            println("\nAST (pretty):")
-            println(ast_pretty)
+          val ir1 = new IRBuilder(ast).ir
+          ir1 match {
+            case Left(errors) =>
+              Console.err.println(
+                "\nFound %s semantic errors!".format(errors.length))
+              errors.map(Console.err.println)
+              return 1
+            case Right(ir) =>
 
-            println("\nIR:")
-            println(ir1)
+            if (CLI.debug) {
+              println("\nIR:")
+              println(ir1)
+            }
           }
       }
 

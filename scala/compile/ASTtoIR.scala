@@ -7,44 +7,75 @@ package compile
 // variable names come from the naming convention 
 // established there
 //
+// Example Usage:
+// IRBuilder(parseTree).ir match {
+//   case Left(errors) => weep
+//   case Right(ir) => rejoice
+// }
+//
 // TODO: put callouts in symbol table
 //Construct an IR from a AST
-object IRBuilder{
+class IRBuilder(input: AST.ProgramAST) {
+  import collection.mutable.ListBuffer
   import SymbolTable._
   import IRShared._
+
   class IRConstructionException(msg: String) extends RuntimeException(msg)
+  type SemanticError = String
 
-  def convertProgram(ast: AST.ProgramAST): IR.ProgramIR = {
+  val srcmap = input.srcmap
+  // Keep track of errors during construction
+  // The presence of errors in this list will cause
+  // ir to hold a failure.
+  val errors = ListBuffer[SemanticError]()
+  val ir: Either[List[SemanticError], IR.ProgramIR] = convertProgram(input)
+
+  def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
-    val duplicate_callouts = symbols.addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
-    assert(duplicate_callouts.length == 0, "TODO error reporting" + duplicate_callouts)
+    val errors= ListBuffer[SemanticError]()
 
-    val duplicate_fields = symbols.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
-    assert(duplicate_fields.length == 0, "TODO error reporting" + duplicate_fields)
+    // callouts
+    errors ++= symbols
+      .addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
+      .map{ conflict => "TODO better error reporting" }
 
-    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl(_,symbols)))
-    assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
+    // fields
+    errors ++= symbols
+      .addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
+      .map{ conflict => "TODO better error reporting" }
 
-    // Verify void main() exists
-    symbols.lookupSymbol("main") match {
-      case Some(s) => s match {
-        case MethodSymbol(id, params, returns, block) => returns match {
-          case DTVoid => IR.ProgramIR(symbols) // OK. TODO check arguments
-          case _ => 
-            assert(false, "Method `main` must return void")
-            IR.ProgramIR(symbols)
-        }
-        case _ =>
-          assert(false, "No method `main` found")
-          IR.ProgramIR(symbols)
-      }
-      case _ => 
-        assert(false, "No method `main` found")
-        IR.ProgramIR(symbols)
+    // methods
+    errors ++= symbols
+      .addSymbols(ast.methods.map(convertMethodDecl(_,symbols)))
+      .map{ conflict => "TODO better error reporting" }
+
+    val unchecked_ir = IR.ProgramIR(symbols)
+    verifyMainMethodExists(unchecked_ir)
+
+    // check the errors list to see whether an ir would be valid.
+    errors.toList match {
+      case Nil => Right(IR.ProgramIR(symbols))
+      case errors => Left(errors)
     }
   }
 
-  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, ast.size)
+  // Adds stuff to errors if there are issues.
+  def verifyMainMethodExists(unchecked_ir: IR.ProgramIR): Unit = {
+    // Verify void main() exists
+    unchecked_ir.symbols.lookupSymbol("main") match {
+      case Some(s) => s match {
+        case MethodSymbol(id, params, returns, block) => returns match {
+          case DTVoid => // OK. TODO check arguments
+          case _ => errors += "Method main 'main' must return void"
+        }
+        case _ => errors += "No method 'main' found"
+      }
+      case None => errors += "No method 'main' found"
+    }
+  }
+
+  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol =
+    FieldSymbol(ast.dtype, ast.id, ast.size)
 
   def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
     val paramsTable = new SymbolTable(parent)
