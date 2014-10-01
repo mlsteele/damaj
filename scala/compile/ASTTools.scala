@@ -416,7 +416,7 @@ class ASTPrinter(ast: AST.ProgramAST) {
     case BinOp(left, op, right) => "(%s %s %s)".format(printASTNode(left), op, printExpr(right))
     case UnaryOp(op, right) => "%s%s".format(op, printASTNode(right))
     case Ternary(cond, left, right) =>
-      "%s ? %s : %s".format(printASTNode(cond), printASTNode(left), printASTNode(right))
+      "(%s ? %s : %s)".format(printASTNode(cond), printASTNode(left), printASTNode(right))
     case lit: Literal => lit.inner match {
       case IntLiteral(value) => value.toString
       case CharLiteral(value) => "'%s'".format(Escape.escape(value))

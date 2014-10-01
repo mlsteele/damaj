@@ -37,7 +37,7 @@ assignment : location assign_op expr ;
 assign_op : OP_SET | OP_INC | OP_DEC ;
 expr : eA ;
 eA : eB ;
-eB : eC (QUESTION eC COLON eC)* ; // ternary
+eB : eC (QUESTION eB COLON eB)? ; // ternary
 eC : eD (OP_OR eD)* ; // ||
 eD : eE (OP_AND eE)* ; // &&
 eE : eF ((OP_EQ | OP_NEQ) eF)* ; // == !=
