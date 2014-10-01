@@ -16,14 +16,13 @@ object IRBuilder{
 
   def convertProgram(ast: AST.ProgramAST): IR.ProgramIR = {
     val symbols = new SymbolTable()
-    // TODO conflicts of different types (example: callout a; int a;)
     val duplicate_callouts = symbols.addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
     assert(duplicate_callouts.length == 0, "TODO error reporting" + duplicate_callouts)
 
     val duplicate_fields = symbols.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicate_fields.length == 0, "TODO error reporting" + duplicate_fields)
 
-    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl(_:AST.MethodDecl, symbols)))
+    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl))
     assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
 
     IR.ProgramIR(symbols)
@@ -139,12 +138,12 @@ object IRBuilder{
 
   // def convertAssignment(assign: AST.Assignment): IR.Assignment = IR.Assignment(locToStore(assign.left), convertExpr(assign.right))
 
-  // def locToStore(loc: AST.Location): IR.Store = {
+  def locToStore(loc: AST.Location): IR.Store = {
     // // TODO
-    // val table = new SymbolTable()
-    // val field:FieldSymbol = table.lookup(byID(loc.id))
-    // // IR.Store(field, loc.index)
-  // }
+    val table = new SymbolTable()
+    val field:FieldSymbol = table.lookupSymbol(loc.id)
+    IR.Store(field, loc.index)
+   }
 
   def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
     val localtable = new SymbolTable(Some(symbols))
