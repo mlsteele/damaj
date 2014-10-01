@@ -102,20 +102,12 @@ object Compiler {
         Console.err.println("[ERROR]: No parse error but no parse tree")
       case (false, Some(tree)) =>
         Console.err.println("[YAY]: Parse succeeded")
-    }
-
-    // Debug print
-    if (CLI.debug) {
-      tree match {
-        case Some(tree) =>
+        if (CLI.debug) {
           print("\nParse Tree:")
           println(tree.toStringTree())
-
+          
           println("\nParse Tree (pretty):")
-          Console.err.println(PTTools.prettyprint(tree))
-
-        case _ =>
-      }
+          printlt(PTTools.prettyprint(tree))
     }
 
     // return value
