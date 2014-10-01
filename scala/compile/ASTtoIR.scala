@@ -46,7 +46,6 @@ object IRBuilder{
     case AST.Ternary(condition, left, right) => 
       verifyExpr(IR.Ternary(convertExpr(condition, symbols), convertExpr(left, symbols), convertExpr(right, symbols)))
     case AST.Literal(l) => verifyExpr(IR.LoadLiteral(l))
-    // TODO(jessk): pass down `symbols`
     case AST.Location(id, index) => 
       val fs = symbols.lookupSymbol(id)
       fs match {
@@ -179,9 +178,7 @@ object IRBuilder{
 
   val dummyStatement = IR.Continue
   def convertStatement(ast:AST.Statement, symbols:SymbolTable): IR.Statement = ast match{
-    // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
-    // case a:AST.Assignment => convertAssignment(a)
-    case a:AST.Assignment => IR.Break
+    case a:AST.Assignment => convertAssignment(a, symbols)
     case a:AST.MethodCall => convertMethodCall(a, symbols) match {
       case Some(x) => x
       case None => assert(false, "Method does not exist " + a.id)
@@ -214,18 +211,22 @@ object IRBuilder{
     case Right(x) => Right(convertExpr(x, symbols))
   }
 
-  // def convertAssignment(assign: AST.Assignment): IR.Assignment = IR.Assignment(locToStore(assign.left), convertExpr(assign.right))
+  def convertAssignment(assign: AST.Assignment, symbols:SymbolTable): IR.Assignment =
+    IR.Assignment(locToStore(assign.left, symbols), convertExpr(assign.right, symbols))
 
-  def locToStore(loc: AST.Location,symbols:SymbolTable): IR.Store = {
-    // // TODO
+  def locToStore(loc: AST.Location, symbols:SymbolTable): IR.Store = {
     val table = new SymbolTable()
     val field = table.lookupSymbol(loc.id)
     field match{
       case Some(f)=> f match{
         case f:FieldSymbol => IR.Store(f, convertExpr(loc.index,symbols))
-        case _ => IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr))// TODO (Andres): replace this dummy error with an actual one
+        case _ =>
+          assert(false, "Cannot assign to non-field")
+          IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr))// TODO (Andres): replace this dummy error with an actual one
       }
-        case None =>IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr)) //TODO (Andres:) replace this dummy error with an actual one
+        case None =>
+          assert(false, "Must declare field before assignment")
+          IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr)) //TODO (Andres:) replace this dummy error with an actual one
    
     }
   }
