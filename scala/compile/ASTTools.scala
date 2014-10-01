@@ -215,7 +215,9 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     val length = pt.children.length
     val c = pt.children
     (pt.text, length) match {
+      // base case
       case ("eJ", _) => parseExprInnerDeepest(pt)
+      // descend
       case (_, 1) => parseExprInner(c(0))
       case _ => pt.text match {
         // ternary
@@ -226,15 +228,29 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
           srcmap.add(Ternary(condition, left, right), c(1))
         // binary ops
         case "eC" | "eD" | "eE" | "eF" | "eG" | "eH" =>
-          val left = parseExprInner(c(0))
-          val right = parseExprInner(c(2))
-          srcmap.add(BinOp(left, c(1).text, right), c(1))
+          processLeftToRight(c)
         // unary ops- ! @
         case "eI" =>
           srcmap.add(UnaryOp(c(0).text, parseExprInner(c(1))), c(0))
       }
     }
   }
+
+  // Consume binops in a left assosciative manner.
+  // list must be of length 1+n*2
+  def processLeftToRight(list: List[ParseTree]): Expr = list match {
+    case List(operand) => parseExprInner(operand)
+    case List(left, op, right) =>
+      parseBinOp(parseExprInner(left), op, parseExprInner(right))
+    case _ =>
+      val lefts = list.dropRight(2)
+      val op    = list.takeRight(2)(0)
+      val right = list.takeRight(1)(0)
+      parseBinOp(processLeftToRight(lefts), op, parseExprInner(right))
+  }
+
+  def parseBinOp(left: Expr, center: ParseTree, right: Expr): BinOp =
+    srcmap.add(BinOp(left, center.text, right), center)
 
   def parseExprInnerDeepest(pt: ParseTree): Expr = {
     assert(pt.text == "eJ")
