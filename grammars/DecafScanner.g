@@ -40,8 +40,8 @@ OP_PERC : '%' ;
 // Relative
 OP_LT : '<' ;
 OP_GT : '>' ;
-OP_LE : '<=' ;
-OP_GE : '>=' ;
+OP_LTE : '<=' ;
+OP_GTE : '>=' ;
 // Equality
 OP_EQ : '==' ;
 OP_NEQ : '!=' ;
