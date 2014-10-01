@@ -109,7 +109,8 @@ object IRBuilder{
     case a:AST.Assignment => IR.Break
     case a:AST.MethodCall => convertMethodCall(a, symbols) match {
       case Some(x) => x
-      case None => assert(false, "Method does not exist"); dummyStatement
+      case None => assert(false, "Method does not exist " + a.id)
+      dummyStatement
     }
     case a:AST.If => convertIf(a, symbols)
     case a:AST.For => convertFor(a, symbols)
