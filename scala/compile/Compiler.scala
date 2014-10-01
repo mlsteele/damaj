@@ -107,7 +107,8 @@ object Compiler {
           println(tree.toStringTree())
           
           println("\nParse Tree (pretty):")
-          printlt(PTTools.prettyprint(tree))
+          println(PTTools.prettyprint(tree))
+        }
     }
 
     // return value
