@@ -197,6 +197,8 @@ object IRBuilder{
 
   def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
     val symbol = symbols.lookupSymbol(ast.id)
+    println(symbols)
+    println("FOOO")
     symbol match {
       case Some(s) => s match {
         case m:MethodSymbol => Some(IR.MethodCall(m, ast.args.map(convertMethodCallArg(_, symbols))))
@@ -229,7 +231,8 @@ object IRBuilder{
   }
   def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
     val localtable = new SymbolTable(Some(symbols))
-    // TODO enter symbols into table
+    val duplicates = localtable.addSymbols(block.decls.map(x => FieldSymbol(x.dtype, x.id, x.size)))
+    assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
     IR.Block(block.stmts.map(convertStatement(_, localtable)), localtable)
   }
 
