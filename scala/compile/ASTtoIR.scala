@@ -33,7 +33,7 @@ object IRBuilder{
 
   def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
     val paramsTable = new SymbolTable(parent)
-    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg))
+    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, parent)))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
     return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable))
   }
