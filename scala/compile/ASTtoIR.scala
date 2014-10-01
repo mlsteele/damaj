@@ -22,7 +22,7 @@ object IRBuilder{
     val duplicate_fields = symbols.addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicate_fields.length == 0, "TODO error reporting" + duplicate_fields)
 
-    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl))
+    val duplicate_methods = symbols.addSymbols(ast.methods.map(convertMethodDecl(_,symbols)))
     assert(duplicate_methods.length == 0, "TODO error reporting" + duplicate_methods)
 
     IR.ProgramIR(symbols)
@@ -138,13 +138,19 @@ object IRBuilder{
 
   // def convertAssignment(assign: AST.Assignment): IR.Assignment = IR.Assignment(locToStore(assign.left), convertExpr(assign.right))
 
-  def locToStore(loc: AST.Location): IR.Store = {
+  def locToStore(loc: AST.Location,symbols:SymbolTable): IR.Store = {
     // // TODO
     val table = new SymbolTable()
-    val field:FieldSymbol = table.lookupSymbol(loc.id)
-    IR.Store(field, loc.index)
-   }
-
+    val field = table.lookupSymbol(loc.id)
+    field match{
+      case Some(f)=> f match{
+        case f:FieldSymbol => IR.Store(f, convertExpr(loc.index,symbols))
+        case _ => IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr))// TODO (Andres): replace this dummy error with an actual one
+      }
+        case None =>IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr)) //TODO (Andres:) replace this dummy error with an actual one
+   
+    }
+  }
   def convertBlock(block: AST.Block, symbols:SymbolTable): IR.Block = {
     val localtable = new SymbolTable(Some(symbols))
     // TODO enter symbols into table
