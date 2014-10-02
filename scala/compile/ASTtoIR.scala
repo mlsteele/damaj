@@ -399,7 +399,6 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   def locToStore(loc: AST.Location, ctx: Context): Option[IR.Store] = {
-    // TODO make sure left side isn't an array.
     val field = ctx.symbols.lookupSymbol(loc.id)
     field match {
       case Some(field: FieldSymbol) if field.size.isDefined && !loc.index.isDefined =>
