@@ -32,7 +32,6 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
-    val errors= ListBuffer[SemanticError]()
 
     // callouts
     errors ++= symbols
