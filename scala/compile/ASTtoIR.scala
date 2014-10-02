@@ -402,7 +402,7 @@ class IRBuilder(input: AST.ProgramAST) {
     // TODO make sure left side isn't an array.
     val field = ctx.symbols.lookupSymbol(loc.id)
     field match {
-      case Some(field: FieldSymbol) if field.size.isDefined =>
+      case Some(field: FieldSymbol) if field.size.isDefined && !loc.index.isDefined =>
         addError(loc, "Cannot assign to array"); None
       case Some(field: FieldSymbol) =>
         loc.index match {
