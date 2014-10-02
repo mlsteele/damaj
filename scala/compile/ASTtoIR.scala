@@ -390,7 +390,7 @@ class IRBuilder(input: AST.ProgramAST) {
   def convertIf(iff: AST.If, ctx:Context): Option[IR.If] = {
     // TODO(miles): report errors in blocks AFTER error in condition statement.
     val condition: IR.Expr = convertExpr(iff.condition, ctx)
-    val thenBlock: IR.Block = convertBlock(iff.then, ctx)
+    val thenBlock: IR.Block = convertBlock(iff.thenb, ctx)
     val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, ctx))
 
     typeOfExpr(condition) match {
@@ -415,7 +415,7 @@ class IRBuilder(input: AST.ProgramAST) {
         if (typeOfExpr(start) != DTInt) {assert(false, "Loop start value must be an int."); return None}
         val end:IR.Expr = convertExpr(fo.iter, ctx)
         if (typeOfExpr(end) != DTInt) {assert(false, "Loop end value must be an int."); return None}
-        val block:IR.Block = convertBlock(fo.then, Context(ctx.symbols, true, ctx.returnType))
+        val block:IR.Block = convertBlock(fo.thenb, Context(ctx.symbols, true, ctx.returnType))
         return Some(IR.For(fo.id, start, end, block))
       }
       case _ => {assert(false, "Loop variable is not a field."); return None}

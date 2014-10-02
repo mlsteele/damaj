@@ -36,8 +36,8 @@ object AST {
   case class Assignment(left: Location, right: Expr) extends Statement
   // MethodCalls are both Statements and Exprs.
   case class MethodCall(id: ID, args: List[Either[StrLiteral, Expr]]) extends Statement with Expr
-  case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
-  case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement
+  case class If(condition: Expr, thenb: Block, elseb: Option[Block]) extends Statement
+  case class For(id: ID, start: Expr, iter: Expr, thenb: Block) extends Statement
   case class While(condition: Expr, block: Block, max: Option[IntLiteral]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case object Break extends Statement

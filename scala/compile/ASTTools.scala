@@ -115,16 +115,16 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
       case "if" => pt.children.length match {
         case 5 =>
           val expr = parseExpr(pt.children(2))
-          val then = parseBlock(pt.children(4))
+          val thenb = parseBlock(pt.children(4))
           srcmap.add(
-            If(expr, then, None),
+            If(expr, thenb, None),
             head)
         case 7 =>
           val expr = parseExpr(pt.children(2))
-          val then = parseBlock(pt.children(4))
+          val thenb = parseBlock(pt.children(4))
           val elseb = Some(parseBlock(pt.children(6)))
           srcmap.add(
-            If(expr, then, elseb),
+            If(expr, thenb, elseb),
             head)
       }
       case "for" => srcmap.add(
@@ -340,8 +340,8 @@ class ASTPrinter(ast: AST.ProgramAST) {
       case ast: MethodCall => printMethodCall(ast)
       case ast: Statement => annotate(ast, printStatement(ast))
       case ast: Location => printLocation(ast)
-      case ast: Expr => printExpr(ast)
       case ast: DType => printDType(ast)
+      case ast: Expr => printExpr(ast)
     }
   }
 
@@ -385,17 +385,17 @@ class ASTPrinter(ast: AST.ProgramAST) {
     case Assignment(left, right) =>
       "%s = %s".format(printASTNode(left), printASTNode(right))
     case ast: MethodCall => printASTNode(ast)
-    case If(condition, then, elseb) => elseb match {
+    case If(condition, thenb, elseb) => elseb match {
       case Some(elseb) => "if (%s) {\n%s\n} else {\n%s\n}".format(
         printASTNode(condition),
-        indent(printASTNode(then)),
+        indent(printASTNode(thenb)),
         indent(printASTNode(elseb)))
       case None => "if (%s) {\n%s\n}".format(
         printASTNode(condition),
-        indent(printASTNode(then)))
+        indent(printASTNode(thenb)))
     }
-    case For(id, start, iter, then) => "for (%s = %s, %s) {\n%s\n}".format(
-      id, printASTNode(start), printASTNode(iter), indent(printASTNode(then)))
+    case For(id, start, iter, thenb) => "for (%s = %s, %s) {\n%s\n}".format(
+      id, printASTNode(start), printASTNode(iter), indent(printASTNode(thenb)))
     case While(condition, block, max) => max match {
       case None => "while (%s) {\n%s\n}".format(
         printASTNode(condition), printASTNode(block))
