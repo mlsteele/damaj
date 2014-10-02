@@ -136,7 +136,7 @@ class IRBuilder(input: AST.ProgramAST) {
         partialMethod.block = convertBlock(meth.block, childContext)
         return partialMethod
       }
-      case _ => assert(false, "NOOOOO"); return partialMethod
+      case _ => assert(false, "There already exists a symbol with the name of this method."); return partialMethod
     }
   }
 
