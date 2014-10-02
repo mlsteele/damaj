@@ -321,6 +321,7 @@ class IRBuilder(input: AST.ProgramAST) {
     val condition: IR.Expr = convertExpr(iff.condition, symbols)
     val thenBlock: IR.Block = convertBlock(iff.then, symbols, inLoop)
     val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
+
     typeOfExpr(condition) match {
       case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
       case _ =>
