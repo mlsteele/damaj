@@ -1,4 +1,4 @@
-all: scala_classes
+all: fsc_reset scala_classes
 
 CLASSPATH = build:vendor/antlr.jar
 
@@ -40,7 +40,7 @@ java_classes: $(JAVA_CLASSES)
 .PHONY:
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
-	fsc -deprecation -feature -cp $(CLASSPATH) -d build $(SCALA_SOURCES)
+	fsc -deprecation -feature -language:implicitConversions -cp $(CLASSPATH) -d build $(SCALA_SOURCES)
 
 .PHONY:
 antlr_classes: $(ANTLR_CLASSES)

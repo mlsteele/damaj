@@ -110,6 +110,7 @@ object SymbolTable {
       for (s <- newSymbols) { 
         duplicateSymbols = duplicateSymbols :+ addSymbol(s)
       }
+      import scala.language.postfixOps
       return duplicateSymbols flatten
     }
 
