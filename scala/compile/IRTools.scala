@@ -29,7 +29,7 @@ object IRPrinter {
   }
 
   def printMethod(m:MethodSymbol): String =
-    "%s %s(%s) %s".format(m.returns, m.id, printParams(m.params), printBlock(m.block))
+    "%s %s(%s) %s".format(printDType(m.returns), m.id, printParams(m.params), printBlock(m.block))
 
   def printParams(p:SymbolTable): String =
     p.getFields.map(x => "%s %s".format(printDType(x.dtype), x.id)).mkString(", ")
@@ -77,6 +77,9 @@ object IRPrinter {
       }
     }
     case s:Store => printStore(s)
+    case MethodCall(method, args) => "%s(%s)".format(method.id, printArgs(args))
+    case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
+  
   }
 
   def printStore(store:Store): String = store.index match {

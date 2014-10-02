@@ -147,7 +147,7 @@ object Compiler {
             case Right(ir1) =>
               if (CLI.debug) {
                 println("\nIR:")
-                println(ir1.symbols.prettyprint)
+                println(IRPrinter.print(ir1))
               }
 
               Console.err.println("\n[YAY]: Semantic checks passed")
