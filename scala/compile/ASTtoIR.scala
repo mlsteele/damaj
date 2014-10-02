@@ -53,7 +53,7 @@ class IRBuilder(input: AST.ProgramAST) {
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
-    verifyMainMethodExists(unchecked_ir)
+    checkMainMethod(unchecked_ir)
 
     // check the errors list to see whether an ir would be valid.
     errors.toList match {
@@ -62,20 +62,24 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
+  // Make sure the the main method exists.
+  // And has the correct signature. (void main())
   // Adds stuff to errors if there are issues.
-  def verifyMainMethodExists(unchecked_ir: IR.ProgramIR): Unit = {
-    // Verify void main() exists
+  def checkMainMethod(unchecked_ir: IR.ProgramIR): Unit = {
+    // Verify main exists
     unchecked_ir.symbols.lookupSymbol("main") match {
-      case Some(s) => s match {
-        case MethodSymbol(id, params, returns, block) => returns match {
-          case DTVoid => // OK. TODO check arguments
-          case _ => errors += "Method main 'main' must return void"
+      case Some(m: MethodSymbol) =>
+        // Check arguments
+        m.args match {
+          case List() => // ok.
+          case _ => errors += "Method `main` must take no arguments."
         }
-        // main exists as a symbol but is not a method
-        case _ => errors += "No method 'main' found"
-      }
-      // no main symbol at all
-      case None => errors += "No method 'main' found"
+        // Check return type
+        m.returns match {
+          case DTVoid => // ok.
+          case _ => // maybe this ok too? TODO(miles): resolve ambiguity.
+        }
+      case _ => errors += "No method `main` found"
     }
   }
 
