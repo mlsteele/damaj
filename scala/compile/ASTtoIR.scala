@@ -327,7 +327,7 @@ class IRBuilder(input: AST.ProgramAST) {
           IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr))// TODO (Andres): replace this dummy error with an actual one
       }
         case None =>
-          assert(false, "Must declare field before assignment")
+          assert(false, "Field not found in %s".format(ctx.symbols))
           IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr)) //TODO (Andres:) replace this dummy error with an actual one
    
     }
