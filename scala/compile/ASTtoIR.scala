@@ -121,7 +121,7 @@ class IRBuilder(input: AST.ProgramAST) {
           assert(false, "Unknown identifier")
           dummyExpr
       }
-    case a:AST.MethodCall => convertMethodCall(a, symbols,false) match {
+    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
       case Some(x) => verifyExpr(x)
       case None => assert(false, "Unknown identifier"); dummyExpr
     }
@@ -236,39 +236,35 @@ class IRBuilder(input: AST.ProgramAST) {
 
   // TODO
   // def convertID()
-  def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol = FieldSymbol(ast.dtype, ast.id, None)
+  def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol =
+    FieldSymbol(ast.dtype, ast.id, None)
 
-  val dummyStatement = IR.Continue
-  def convertStatement(ast:AST.Statement, symbols:SymbolTable,inLoop:Boolean): IR.Statement = ast match{
-    case a:AST.Assignment => convertAssignment(a, symbols)
-    // TODO uncomment/comment these and uncomment convertAssignment when you're ready to work on it.
-    case a:AST.MethodCall => convertMethodCall(a, symbols,false) match {
-      case Some(x) => x
-      case None => assert(false, "Method does not exist " + a.id)
-      dummyStatement
-    }
-    case a:AST.If => convertIf(a, symbols,inLoop)
-    case a:AST.For => convertFor(a, symbols,inLoop)
-    case a:AST.While => convertWhile(a, symbols,true)
-    case a:AST.Return => convertReturn(a, symbols,true)
-    case AST.Break if inLoop => IR.Break
+  def convertStatement(ast:AST.Statement, symbols:SymbolTable, inLoop:Boolean): Option[IR.Statement] = ast match{
+    /// TODO(miles): remove ALL of these Some's in favor of error-determined options.
+    case a: AST.Assignment => Some(convertAssignment(a, symbols))
+    case a: AST.MethodCall => convertMethodCall(a, symbols)
+    case a: AST.If => convertIf(a, symbols,inLoop)
+    case a: AST.For => Some(convertFor(a, symbols,inLoop))
+    case a: AST.While => Some(convertWhile(a, symbols,true))
+    case a: AST.Return => Some(convertReturn(a, symbols,true))
+    case AST.Break if inLoop => Some(IR.Break)
     case AST.Break => assert(false,"break must be in a loop")
-                      IR.Break // TODO (Andres): change this once error fixing 
-    case AST.Continue if inLoop=> IR.Continue
-    case AST.Continue => assert(false,"continue must be in a loop"); IR.Continue //IR.Continue
+                      None
+    case AST.Continue if inLoop => Some(IR.Continue)
+    case AST.Continue => assert(false, "continue must be in a loop");
+                         None
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable,inLoop:Boolean): Option[IR.Call] = {
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
     val symbol = symbols.lookupSymbol(ast.id)
-    println(symbols)
-    println("FOOO")
     symbol match {
       case Some(s) => s match {
-        case m:MethodSymbol => Some(IR.MethodCall(m, ast.args.map(convertMethodCallArg(_, symbols))))
-        case c:CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
-        case f:FieldSymbol => None 
+        case m: MethodSymbol => Some(IR.MethodCall(m, ast.args.map(convertMethodCallArg(_, symbols))))
+        case c: CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
+        case f: FieldSymbol => None 
       }
-      case None => None
+      case None => assert(false, "Method does not exist " + ast.id)
+                   None
     }
   }
 
@@ -296,29 +292,33 @@ class IRBuilder(input: AST.ProgramAST) {
    
     }
   }
-  def convertBlock(block: AST.Block, symbols:SymbolTable,inLoop:Boolean): IR.Block = {
+
+  def convertBlock(block: AST.Block, symbols:SymbolTable, inLoop:Boolean): IR.Block = {
     val localtable = new SymbolTable(Some(symbols))
     val duplicates = localtable.addSymbols(block.decls.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
     // TODO enter symbols into table
-    
-    
-      IR.Block(block.stmts.map(convertStatement(_, localtable,inLoop)), localtable)
-  
-    
+    // flatten is used here to drop the None's from the stmt list.
+    val stmts = block.stmts.map(convertStatement(_, localtable, inLoop)).flatten
+    IR.Block(stmts, localtable)
   }
+
   // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
   // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
   // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
   // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
 
   def convertIf(iff: AST.If, symbols: SymbolTable, inLoop: Boolean): Option[IR.Statement] = {
+    // TODO(miles): report errors in blocks AFTER error in condition statement.
+    val condition: IR.Expr = convertExpr(iff.condition, symbols)
     val thenBlock: IR.Block = convertBlock(iff.then, symbols, inLoop)
     val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
-    val condition: IR.Expr = convertExpr(iff.condition, symbols)
-    typeOfExpr(condition)
-    assert(typeOfExpr(condition) == DTBool, "TODO: Non-boolean condition found in if statement.")
-    return IR.If(condition, thenBlock, elseBlock)
+    typeOfExpr(condition) match {
+      case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
+      case _ =>
+        errors += srcmap.report(iff, "If condition must be a boolean")
+        None
+    }
   }
 
   def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
