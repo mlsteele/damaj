@@ -258,9 +258,9 @@ class IRBuilder(input: AST.ProgramAST) {
         assert(false, "Ternary condition must be boolean")
         dummyExpr
     }
-    case IR.LoadField(fs, oi) => oi match {
-      case Some(i) => fs.size match {
-        case Some(int) => typeOfExpr(expr) match {
+    case IR.LoadField(field, optIndex) => optIndex match {
+      case Some(indexExpr) => field.size match {
+        case Some(sizeOfField) => typeOfExpr(indexExpr) match {
           case DTInt => expr
           case _ =>
             assert(false, "Array index must be type int")
