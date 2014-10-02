@@ -9,7 +9,7 @@ class SourceMap(filepath: String, code: String) {
 
   type Key = Any
 
-  private var store: Map[Any, SourceMapEntry] = Map()
+  private val store = new IdentityMap[Any, SourceMapEntry]()
   private val codelines = code.split("\n")
 
   // Failing a lookup in a SourceMap is a programming error.
@@ -23,16 +23,27 @@ class SourceMap(filepath: String, code: String) {
     case None => throw new SourceMapBadLookup("Can't find '%s' in this source map".format(key))
   }
 
-  def add[T](key: T, e: SourceMapEntry): T = {
-    store += key -> e
+  def add[T <: Key](key: T, e: SourceMapEntry): T = {
+    store.put(key, e)
     return key
   }
 
   // pt must be a leaf node (whose payload is a Token, not a String)
-  def add[T](key: T, pt: ParseTree): T = {
+  def add[T <: Key](key: T, pt: ParseTree): T = {
     val pl = pt.payload.asInstanceOf[Token]
     val entry = SourceMapEntry(pl.getLine(), pl.getCharPositionInLine())
     add(key, entry)
+  }
+
+  // Add an entry for b that points to the same thing as a.
+  // Useful if b is created by deriving a.
+  // a must already be in this map
+  def alias[T](a: Key, b: T): T = {
+    store(a) match {
+      case None => assert(false, "Can not alias because a is not in SourceMap.")
+        .asInstanceOf[T]
+      case Some(entry) => add[T](b, entry)
+    }
   }
 
   // Format an error message.
@@ -49,4 +60,18 @@ class SourceMap(filepath: String, code: String) {
   }
 
   def lines(strs: List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
+}
+
+class IdentityMap[K,V] {
+  import java.util.IdentityHashMap
+
+  private val store = new IdentityHashMap[K,V]
+
+  def get(k: K): Option[V] = Option(store.get(k))
+
+  def apply(k: K): Option[V] = get(k)
+
+  def put(k: K, v: V): Unit = store.put(k, v)
+
+  def contains(k: K): Boolean = store.containsKey(k)
 }
