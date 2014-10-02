@@ -141,14 +141,13 @@ object Compiler {
                 "\nFound %s semantic errors!".format(errors.length))
               errors.map(Console.err.println)
               return 1
-            case Right(ir) =>
+            case Right(ir1) =>
+              if (CLI.debug) {
+                println("\nIR:")
+                println(ir1.symbols.prettyprint)
+              }
 
-            if (CLI.debug) {
-              println("\nIR:")
-              println(ir1)
-            }
-
-            Console.err.println("\n[YAY]: Semantic checks passed")
+              Console.err.println("\n[YAY]: Semantic checks passed")
           }
       }
 

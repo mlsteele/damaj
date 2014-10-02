@@ -137,7 +137,11 @@ object SymbolTable {
     }
 
     override
-    def toString: String = "SymbolTable(%s, parent=%s)"
-      .format(symbols.map(_.id), parent)
+    def toString: String =
+      "SymbolTable(%s, parent=%s)".format(symbols.map(_.id), parent)
+
+    def prettyprint: String =
+      "SymbolTable(%s, parent=%s)".format(symbols, parent)
+
   }
 }
