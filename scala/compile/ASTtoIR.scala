@@ -316,11 +316,9 @@ class IRBuilder(input: AST.ProgramAST) {
     case a: AST.While => convertWhile(a, ctx)
     case a: AST.Return => convertReturn(a, ctx)
     case AST.Break if ctx.inLoop => Some(IR.Break)
-    case AST.Break => assert(false,"break must be in a loop")
-                      None
+    case AST.Break => addError(ast, "break must be in a loop"); None
     case AST.Continue if ctx.inLoop => Some(IR.Continue)
-    case AST.Continue => assert(false, "continue must be in a loop");
-                         None
+    case AST.Continue => addError(ast, "continue must be in a loop"); None
   }
 
   def convertMethodCall(ast: AST.MethodCall, ctx:Context): Option[IR.Call] = {
@@ -348,12 +346,10 @@ class IRBuilder(input: AST.ProgramAST) {
             case Some(methodCallArgs) => Some(IR.CalloutCall(c, methodCallArgs))
           }
         case f:FieldSymbol =>
-          assert(false, "Cannot call a field")
-          None
+          addError("Cannot call a field"); None
       }
       case None =>
-        assert(false, "Name %s not found in %s".format(ast.id, ctx.symbols))
-        None
+        addError("Name %s not found in %s".format(ast.id, ctx.symbols)); None
     }
   }
 
