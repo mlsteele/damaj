@@ -1,0 +1,10 @@
+void main() {
+    int i;
+    int a[0xf0];
+    i = 0;
+    i = 0xf0f0;
+    i = 0xf0f;
+    i = 0xf - 0xf;
+
+    while (true) : 0xd {}
+}
