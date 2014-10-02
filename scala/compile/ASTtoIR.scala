@@ -381,7 +381,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case (Some(store), Some(rhs)) =>
         (store.to.dtype == typeOfExpr(rhs)) match {
           case false =>
-            addError("Left and right sides of assignment must be the same type"); None
+            addError(assign, "Left and right sides of assignment must be the same type"); None
           case true =>
             store.index match {
               // normal variable assignment
@@ -389,8 +389,8 @@ class IRBuilder(input: AST.ProgramAST) {
               // Array access
               case Some(i) =>
                 (typeOfExpr(i) == DTInt, store.to.isArray) match {
-                  case (false, _) => addError("Array index must be an integer"); None
-                  case (_, false) => addError("Cannot index into scalar"); None
+                  case (false, _) => addError(assign, "Array index must be an integer"); None
+                  case (_, false) => addError(assign, "Cannot index into scalar"); None
                   case (true, true) => Some(IR.Assignment(store, rhs))
                 }
             }
@@ -457,11 +457,11 @@ class IRBuilder(input: AST.ProgramAST) {
         (start, end, field.dtype == DTInt) match {
           case (None, _, _) => None // invalid start
           case (_, None, _) => None // invalid end
-          case (_, _, false) => addError("Must loop over int var"); None
+          case (_, _, false) => addError(fo, "Must loop over int var"); None
           case (Some(start), _, _) if typeOfExpr(start) != DTInt =>
-            addError("For loop start must an int expression"); None
+            addError(fo, "For loop start must be an int expression"); None
           case (_, Some(end), _) if typeOfExpr(end) != DTInt =>
-            addError("For loop end must an int expression"); None
+            addError(fo, "For loop end must be an int expression"); None
           case (Some(start), Some(end), true) =>
             Some(IR.For(fo.id, start, end, block))
         }
