@@ -49,9 +49,10 @@ class IRBuilder(input: AST.ProgramAST) {
       .map{ conflict => "TODO better error reporting" }
 
     // methods
-    errors ++= ast.methods
-      .map{ m => symbols.addSymbol(convertMethodDecl(m, Context(symbols, false, DTVoid))) }
-      .flatten.map{ conflict => "TODO better error reporting" }
+    // TODO(miles)
+    // convetMethodDecl already adds itself to the symbol table, fix error reporting
+    ast.methods
+      .map(convertMethodDecl(_, Context(symbols, false, DTVoid)))
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
@@ -96,14 +97,13 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertMethodDecl(meth: AST.MethodDecl, ctx:Context): MethodSymbol = {
     val paramsTable = new SymbolTable(ctx.symbols)
-    val childContext = Context(paramsTable, false, meth.returns)
-    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, childContext)))
+    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, ctx)))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
-    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, childContext))
-  }
 
-  // Only used after crashing because of an error
-  val dummyExpr = IR.LoadLiteral(BoolLiteral(false))
+    //  partialy construct the method so we can insert it into the symbol table
+    // this is neccessary in order for the block to be able to refer to the method
+    val partialMethod = MethodSymbol(meth.id, paramsTable, meth.returns, IR.Block(List(), paramsTable));
+
     ctx.symbols.addSymbol(partialMethod) match {
       case None => {
         val childContext = Context(paramsTable, false, meth.returns)
@@ -365,7 +365,6 @@ class IRBuilder(input: AST.ProgramAST) {
           case Some(s) => assert(false, "Cannot use an array as a for-loop variable"); return None
           case None =>
         }
-        ///           Must loop over a variable isn't the best error message. params must be int? 
         if (f.dtype != DTInt) {assert(false, "Must loop over a variable."); return None}
         val start:IR.Expr = convertExpr(fo.start, ctx)
         if (typeOfExpr(start) != DTInt) {assert(false, "Loop start value must be an int."); return None}
@@ -394,6 +393,18 @@ class IRBuilder(input: AST.ProgramAST) {
   // TODO implement convertReturn
   def convertReturn (ret:AST.Return, ctx:Context): Option[IR.Statement] = {
     val optionExpr = convertExpr(ret.expr, ctx)
+    optionExpr match {
+      case Some(expr) => typeOfExpr(expr) match {
+        case ctx.returnType => Some(IR.Return(optionExpr))
+        case _ =>
+          errors += srcmap.report(ret, "Return type must match the method signature")
+          None
+      }
+      case None => ctx.returnType match {
+        case DTVoid => Some(IR.Return(optionExpr))
+        case _ =>
+          errors += srcmap.report(ret, "Non-void method requires a return value")
+          None
       }
     }
   }
