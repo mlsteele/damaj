@@ -339,7 +339,7 @@ class IRBuilder(input: AST.ProgramAST) {
     assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
     // TODO enter symbols into table
     // flatten is used here to drop the None's from the stmt list.
-    val stmts = block.stmts.map(convertStatement(_, ctx)).flatten
+    val stmts = block.stmts.map(convertStatement(_, Context(localtable, ctx.inLoop, ctx.returnType))).flatten
     IR.Block(stmts, localtable)
   }
 
