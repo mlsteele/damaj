@@ -52,6 +52,7 @@ fsc_reset:
 
 .PHONY:
 clean:
+	fsc -reset
 	rm -rf build/*
 
 # Magically print any Makefile variable from the command line
