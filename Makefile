@@ -40,7 +40,7 @@ java_classes: $(JAVA_CLASSES)
 .PHONY:
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
-	fsc -deprecation -cp $(CLASSPATH) -d build $(SCALA_SOURCES)
+	TMPDIR=build fsc -deprecation -cp $(CLASSPATH) -d build $(SCALA_SOURCES)
 
 .PHONY:
 antlr_classes: $(ANTLR_CLASSES)
