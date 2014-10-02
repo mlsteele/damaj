@@ -1,0 +1,6 @@
+boolean main() {
+    boolean i;
+    i=true;
+    return i;
+    // main can return any type
+}

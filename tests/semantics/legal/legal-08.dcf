@@ -1,0 +1,6 @@
+int main() {
+    int i;
+    i=4;
+    return i;
+    // main can return any type
+}
