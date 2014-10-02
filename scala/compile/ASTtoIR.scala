@@ -36,8 +36,11 @@ class IRBuilder(input: AST.ProgramAST) {
 
     // callouts
     errors ++= symbols
-      .addSymbols(ast.callouts.map(x => CalloutSymbol(x.id)))
-      .map{ conflict => "TODO better error reporting" }
+      .addSymbols(ast.callouts.map(x => srcmap.alias(x, CalloutSymbol(x.id))))
+      .map{ conflict =>
+        srcmap.report(conflict.second,
+          "Duplicate callout declaration '%s'.".format(conflict.second.id))
+      }
 
     // fields
     errors ++= symbols
