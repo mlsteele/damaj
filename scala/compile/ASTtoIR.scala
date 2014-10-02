@@ -44,9 +44,13 @@ class IRBuilder(input: AST.ProgramAST) {
       }
 
     // fields
-    errors ++= symbols
-      .addSymbols(ast.fields.map(convertFieldDecl(_, Context(symbols, false, DTVoid))))
-      .map{ conflict => "TODO better error reporting" }
+    errors ++= ast.fields
+      .map{ f =>
+        convertFieldDecl(f) match {
+          case Some(f) => symbols.addSymbol(f)
+          case None => None
+        }
+      }.flatten.map{ conflict => "TODO better error reporting (double var)" }
 
     // methods
     // TODO(miles)
@@ -86,13 +90,27 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertFieldDecl(ast: AST.FieldDecl, ctx:Context): FieldSymbol = {
-    printf("Converting field decl " + ast)
+  def convertFieldDecl(ast: AST.FieldDecl): Option[FieldSymbol] = {
     ast.size match {
-      case Some(s) => assert(s.value > 0, "Array must have size greater than 0")
-      case _ => // ok
+      case Some(lit) => convertIntLiteral(lit) match {
+        case None => None
+        case Some(v) if v <= 0 =>
+          errors += srcmap.report(ast, "Array field must have length > 0")
+          None
+        case Some(v) => Some(FieldSymbol(ast.dtype, ast.id, Some(v)))
+      }
+      case None => Some(FieldSymbol(ast.dtype, ast.id, None))
     }
-    FieldSymbol(ast.dtype, ast.id, ast.size)
+  }
+
+  def convertIntLiteral(ast: IntLiteral): Option[Long] = ast.value match {
+    case v if v < Long.MinValue =>
+      errors += srcmap.report(ast, "Int literal is too damn negative.")
+      None
+    case v if v > Long.MaxValue =>
+      errors += srcmap.report(ast, "Int literal is too damn big.")
+      None
+    case v => Some(v.toLong)
   }
 
   def convertMethodDecl(meth: AST.MethodDecl, ctx:Context): MethodSymbol = {
@@ -335,9 +353,13 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertBlock(block: AST.Block, ctx:Context): IR.Block = {
     val localtable = new SymbolTable(ctx.symbols)
-    val duplicates = localtable.addSymbols(block.decls.map(x => FieldSymbol(x.dtype, x.id, x.size)))
-    assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
-    // TODO enter symbols into table
+
+    block.decls.map{ f =>
+      convertFieldDecl(f).map{ s =>
+        localtable.addSymbol(s)
+      }
+    }.flatten.map{ conflict => "TODO better error reporting" }
+
     // flatten is used here to drop the None's from the stmt list.
     val stmts = block.stmts.map(convertStatement(_, Context(localtable, ctx.inLoop, ctx.returnType))).flatten
     IR.Block(stmts, localtable)

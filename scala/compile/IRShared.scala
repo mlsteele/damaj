@@ -3,6 +3,7 @@ package compile
 // Leaf types used in multiple IRs including the AST
 object IRShared {
   type ID = String
+
   sealed trait DType
   case object DTVoid extends DType
   case object DTInt extends DType

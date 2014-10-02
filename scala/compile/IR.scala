@@ -23,6 +23,7 @@ object IR {
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
   case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement
   //TODO(andres) decide whether or not we want an intliteral
+  //TODO(miles) I don't think we want Long instead of IntLiteral.
   case class While(condition: Expr, block: Block, max: Option[IntLiteral]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case object Break extends Statement
