@@ -483,13 +483,16 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertWhile(whil: AST.While, ctx:Context): Option[IR.While] = {
     val condition: Option[IR.Expr] = convertExpr(whil.condition, ctx)
+    // Note: We can use map here because convertIntLiteral will add errors
+    // and we want to create the while even if the intliteral is invalid.
+    val max: Option[Long] = whil.max.flatMap(convertIntLiteral)
     val block = convertBlock(whil.block, Context(ctx.symbols, true, ctx.returnType))
 
     condition match {
       case None => None
       case Some(condition) =>
         typeOfExpr(condition) match {
-          case DTBool => Some(IR.While(condition, block, whil.max))
+          case DTBool => Some(IR.While(condition, block, max))
           case _ =>
             addError(whil.condition, "While condition must be a boolean"); None
         }

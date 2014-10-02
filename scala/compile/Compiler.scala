@@ -154,8 +154,6 @@ object Compiler {
           }
       }
 
-      // TODO more intermediate format stuff
-
       return 0
   }
 
