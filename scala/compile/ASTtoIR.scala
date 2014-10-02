@@ -33,10 +33,10 @@ class IRBuilder(input: AST.ProgramAST) {
   case class Context(symbols:SymbolTable, inLoop:Boolean, returnType:DType)
 
   def addError(msg: String): Unit =
-    errors += msg
+    errors += "%s\n".format(msg)
 
   def addError(node: srcmap.Key, msg: String): Unit =
-    addError(srcmap.report(node, msg))
+    errors += srcmap.report(node, msg)
 
   def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
@@ -53,10 +53,8 @@ class IRBuilder(input: AST.ProgramAST) {
     addFieldsToTable(symbols, ast.fields)
 
     // methods
-    // TODO(miles)
-    // convetMethodDecl already adds itself to the symbol table, fix error reporting
-    ast.methods
-      .map(convertMethodDecl(_, Context(symbols, false, DTVoid)))
+    // convetMethodDecl already adds itself to the symbol table
+    ast.methods.map(convertMethodDecl(_, Context(symbols, false, DTVoid)))
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
@@ -125,22 +123,27 @@ class IRBuilder(input: AST.ProgramAST) {
     case v => Some(v.toLong)
   }
 
-  def convertMethodDecl(meth: AST.MethodDecl, ctx:Context): MethodSymbol = {
+  // Returns Unit it adds itself to the ctx symbol table.
+  def convertMethodDecl(meth: AST.MethodDecl, ctx: Context): Unit = {
     val paramsTable = new SymbolTable(ctx.symbols)
     val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, ctx)))
-    assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
+    duplicate_args.map{ conflict =>
+      addError("Duplicate argument '%s' for method '%s'".format(conflict.second.id, meth.id))
+    }
 
-    //  partialy construct the method so we can insert it into the symbol table
-    // this is neccessary in order for the block to be able to refer to the method
+    // partialy construct the method so we can insert it into the symbol table
+    // this is neccessary in order for the block to be able to refer to the method for recursion.
     val partialMethod = MethodSymbol(meth.id, paramsTable, meth.returns, IR.Block(List(), paramsTable));
 
     ctx.symbols.addSymbol(partialMethod) match {
       case None => {
         val childContext = Context(paramsTable, false, meth.returns)
+        // Complete partial method.
         partialMethod.block = convertBlock(meth.block, childContext)
-        return partialMethod
       }
-      case _ => assert(false, "There already exists a symbol with the name of this method."); return partialMethod
+      case Some(conflict) =>
+        addError(meth, "There already exists a symbol with the name of this method '%s'"
+          .format(conflict.second.id))
     }
   }
 
