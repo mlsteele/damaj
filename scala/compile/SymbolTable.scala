@@ -17,7 +17,7 @@ object SymbolTable {
     id: ID,
     params: SymbolTable,
     returns: DType,
-    block: Block
+    var block: Block
     ) extends Symbol
 
   class EnhancedSymbol(s: Symbol) {

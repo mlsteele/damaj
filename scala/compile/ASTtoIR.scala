@@ -49,9 +49,10 @@ class IRBuilder(input: AST.ProgramAST) {
       .map{ conflict => "TODO better error reporting" }
 
     // methods
-    errors ++= ast.methods
-      .map{ m => symbols.addSymbol(convertMethodDecl(m, Context(symbols, false, DTVoid))) }
-      .flatten.map{ conflict => "TODO better error reporting" }
+    // TODO(miles)
+    // convetMethodDecl already adds itself to the symbol table, fix error reporting
+    ast.methods
+      .map(convertMethodDecl(_, Context(symbols, false, DTVoid)))
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
@@ -96,10 +97,21 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertMethodDecl(meth: AST.MethodDecl, ctx:Context): MethodSymbol = {
     val paramsTable = new SymbolTable(ctx.symbols)
-    val childContext = Context(paramsTable, false, meth.returns)
-    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, childContext)))
+    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, ctx)))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
-    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, childContext))
+
+    //  partialy construct the method so we can insert it into the symbol table
+    // this is neccessary in order for the block to be able to refer to the method
+    val partialMethod = MethodSymbol(meth.id, paramsTable, meth.returns, IR.Block(List(), paramsTable));
+
+    ctx.symbols.addSymbol(partialMethod) match {
+      case None => {
+        val childContext = Context(paramsTable, false, meth.returns)
+        partialMethod.block = convertBlock(meth.block, childContext)
+        return partialMethod
+      }
+      case _ => assert(false, "NOOOOO"); return partialMethod
+    }
   }
 
   // Only used after crashing because of an error
