@@ -44,13 +44,7 @@ class IRBuilder(input: AST.ProgramAST) {
       }
 
     // fields
-    errors ++= ast.fields
-      .map{ f =>
-        convertFieldDecl(f) match {
-          case Some(f) => symbols.addSymbol(f)
-          case None => None
-        }
-      }.flatten.map{ conflict => "TODO better error reporting (double var)" }
+    addFieldsToTable(symbols, ast.fields)
 
     // methods
     // TODO(miles)
@@ -66,6 +60,20 @@ class IRBuilder(input: AST.ProgramAST) {
     errors.toList match {
       case Nil => Right(IR.ProgramIR(symbols))
       case errors => Left(errors)
+    }
+  }
+
+  // Adds fields to table.
+  // Adds errors about poorly constructed fields.
+  // Adds errors about conflicts.
+  def addFieldsToTable(symbols: SymbolTable, fields: List[AST.FieldDecl]): Unit = {
+    errors ++= fields.map{ fd =>
+      convertFieldDecl(fd) match {
+        case Some(fs) => symbols.addSymbol(fs)
+        case None => None
+      }
+    }.flatten.map{
+      conflict => "TODO better error reporting (double var)"
     }
   }
 
@@ -354,11 +362,7 @@ class IRBuilder(input: AST.ProgramAST) {
   def convertBlock(block: AST.Block, ctx:Context): IR.Block = {
     val localtable = new SymbolTable(ctx.symbols)
 
-    block.decls.map{ f =>
-      convertFieldDecl(f).map{ s =>
-        localtable.addSymbol(s)
-      }
-    }.flatten.map{ conflict => "TODO better error reporting" }
+    addFieldsToTable(localtable, block.decls)
 
     // flatten is used here to drop the None's from the stmt list.
     val stmts = block.stmts.map(convertStatement(_, Context(localtable, ctx.inLoop, ctx.returnType))).flatten
