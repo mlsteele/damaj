@@ -13,6 +13,7 @@ object IR {
   case class Block(stmts: List[Statement], fields: SymbolTable)
 
   sealed trait Statement
+
   case class Assignment(left: Store, right: Expr) extends Statement
   // MethodCalls are both Statements and Exprs. Is this ok?
   // TODO(jessk): MethodCall can't take a StrLiteral

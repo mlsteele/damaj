@@ -308,11 +308,18 @@ class IRBuilder(input: AST.ProgramAST) {
     
   }
   // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
-  // def convertIf(iff: AST.If): IR.If = IR.If(convertExpr(iff.condition), convertBlock(iff.then), iff.elseb.map(convertBlock))
   // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
   // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
   // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
-  def convertIf(iff: AST.If, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+
+  def convertIf(iff: AST.If, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
+    val condition:IR.Expr = convertExpr(iff.condition, symbols)
+    assert(typeOfExpr(condition) == DTBool, "TODO: Non-boolean condition found in if statement.")
+    val thenBlock:IR.Block = convertBlock(iff.then, symbols, inLoop)
+    val elseBlock:Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
+    return IR.If(condition, thenBlock, elseBlock)
+
+  }
   def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
   def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
   def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
