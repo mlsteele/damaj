@@ -365,6 +365,7 @@ class IRBuilder(input: AST.ProgramAST) {
           case Some(s) => assert(false, "Cannot use an array as a for-loop variable"); return None
           case None =>
         }
+        // Must loop over a variable isn't the best error message. params must be int?
         if (f.dtype != DTInt) {assert(false, "Must loop over a variable."); return None}
         val start:IR.Expr = convertExpr(fo.start, ctx)
         if (typeOfExpr(start) != DTInt) {assert(false, "Loop start value must be an int."); return None}
