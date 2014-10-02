@@ -147,6 +147,8 @@ object Compiler {
               println("\nIR:")
               println(ir1)
             }
+
+            Console.err.println("\n[YAY]: Semantic checks passed")
           }
       }
 
