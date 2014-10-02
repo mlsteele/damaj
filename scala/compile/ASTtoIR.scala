@@ -234,10 +234,21 @@ class IRBuilder(input: AST.ProgramAST) {
     
   }
 
-  // TODO
-  // def convertID()
   def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol =
     FieldSymbol(ast.dtype, ast.id, None)
+
+  def convertID(id: ID, symbols:SymbolTable) = symbols.lookupSymbol(id) match {
+    case Some(s) => s match {
+      case f:FieldSymbol => IR.LoadField(f, None)
+      case _ =>
+        assert(false, "Location must be a field")
+        dummyExpr
+    }
+    case _ =>
+      assert(false, "Unknown identifier")
+      dummyExpr
+  }
+
 
   def convertStatement(ast:AST.Statement, symbols:SymbolTable, inLoop:Boolean): Option[IR.Statement] = ast match{
     /// TODO(miles): remove ALL of these Some's in favor of error-determined options.
