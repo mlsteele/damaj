@@ -217,7 +217,6 @@ class IRBuilder(input: AST.ProgramAST) {
       case c:CharLiteral => DTInt
       case b:BoolLiteral => DTBool
     }
-    case IR.Store(t,i) => t.dtype
     case IR.MethodCall(method, args) => method.returns
     case IR.CalloutCall(callout, args) => DTInt
 
