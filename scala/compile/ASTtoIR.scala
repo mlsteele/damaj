@@ -75,11 +75,14 @@ class IRBuilder(input: AST.ProgramAST) {
   def addFieldsToTable(symbols: SymbolTable, fields: List[AST.FieldDecl]): Unit = {
     fields.map{ fd =>
       convertFieldDecl(fd) match {
-        case Some(fs) => symbols.addSymbol(fs)
+        case Some(fs) =>
+          srcmap.alias(fd, fs)
+          symbols.addSymbol(fs)
         case None => None
       }
     }.flatten.map{
-      conflict => addError("TODO better error reporting (double var)")
+      conflict => addError(conflict.second,
+        "Duplicate field declaration for '%s'".format(conflict.second.id))
     }
   }
 
