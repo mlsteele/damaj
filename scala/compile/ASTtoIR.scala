@@ -127,7 +127,7 @@ class IRBuilder(input: AST.ProgramAST) {
     val paramsTable = new SymbolTable(ctx.symbols)
     val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, ctx)))
     duplicate_args.map{ conflict =>
-      addError("Duplicate argument '%s' for method '%s'".format(conflict.second.id, meth.id))
+      addError(meth, "Duplicate argument '%s' for method '%s'".format(conflict.second.id, meth.id))
     }
 
     // partialy construct the method so we can insert it into the symbol table
@@ -322,10 +322,10 @@ class IRBuilder(input: AST.ProgramAST) {
               val arg_types_correct_list: List[Boolean] = (symbol.args zip methodCallArgs).map{
                 case (f:FieldSymbol, Right(expr)) => f.dtype == typeOfExpr(expr) match {
                   case true => true
-                  case false => addError("Method called with mismatched argument type"); false
+                  case false => addError(ast, "Method called with mismatched argument type"); false
                 }
                 case (f:FieldSymbol, Left(expr)) =>
-                  addError("Method cannot be called with a string literal argument"); false
+                  addError(ast, "Method cannot be called with a string literal argument"); false
               }
               val arg_types_correct: Boolean = !arg_types_correct_list.filter(!_).nonEmpty
 
@@ -344,10 +344,10 @@ class IRBuilder(input: AST.ProgramAST) {
             case Some(methodCallArgs) => Some(IR.CalloutCall(c, methodCallArgs))
           }
         case f:FieldSymbol =>
-          addError("Cannot call a field"); None
+          addError(ast, "Cannot call a field"); None
       }
       case None =>
-        addError("Method '%s' does not exist".format(ast.id)); None
+        addError(ast, "Method '%s' does not exist".format(ast.id)); None
     }
   }
 
