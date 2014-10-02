@@ -273,9 +273,11 @@ class IRBuilder(input: AST.ProgramAST) {
     case Right(x) => Right(convertExpr(x, symbols))
   }
 
+  // TODO(miles): Does this check for matching types yet?
   def convertAssignment(assign: AST.Assignment, symbols:SymbolTable): IR.Assignment =
     IR.Assignment(locToStore(assign.left, symbols), convertExpr(assign.right, symbols))
 
+  // TODO(miles): Does this make sur ethat that the left is not an array?
   def locToStore(loc: AST.Location, symbols:SymbolTable): IR.Store = {
     val table = new SymbolTable()
     val field = table.lookupSymbol(loc.id)
