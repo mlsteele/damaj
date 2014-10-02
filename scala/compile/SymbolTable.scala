@@ -137,6 +137,16 @@ object SymbolTable {
       }
     }
 
+    /**
+     * Get all symbols a type T.
+     */
+    def getFields = symbols.map{
+      _ match {
+        case s: FieldSymbol => Some(s)
+        case _ => None
+      }
+    }.flatten
+
     override
     def toString: String =
       "SymbolTable(%s, parent=%s)".format(symbols.map(_.id), parent)
