@@ -1,0 +1,7 @@
+void main() {
+  int  a; a =0;
+  a = foo(a);
+}
+int foo(int b){
+  return b-1;
+}

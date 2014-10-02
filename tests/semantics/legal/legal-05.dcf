@@ -5,4 +5,4 @@ void main ( ) {
     nicetry('c');
     // can't send a string literal to a non-callout
     // not true. sends char literal as int.
-
+}
