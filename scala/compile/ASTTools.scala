@@ -288,9 +288,14 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
     srcmap.add(wrapped, gchild)
   }
 
-  def parseIntLiteral(pt: ParseTree): IntLiteral = srcmap.add(
-    IntLiteral(BigInt(pt.text)),
-    pt)
+  def parseIntLiteral(pt: ParseTree): IntLiteral = {
+    val num = pt.text match {
+      case hex if hex.startsWith("0x") => BigInt(hex.drop(2), 16)
+      case dec => BigInt(dec)
+    }
+
+    srcmap.add(IntLiteral(num), pt)
+  }
 
   def parseStrLiteral(pt: ParseTree): StrLiteral = {
     assert(pt.text == "str_literal")
