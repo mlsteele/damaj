@@ -13,7 +13,6 @@ package compile
 //   case Right(ir) => rejoice
 // }
 //
-// TODO: put callouts in symbol table
 //Construct an IR from a AST
 class IRBuilder(input: AST.ProgramAST) {
   import collection.mutable.ListBuffer
@@ -288,7 +287,7 @@ class IRBuilder(input: AST.ProgramAST) {
       }
       case None => Some(expr)
     }
-    // TODO(jessk,diony): Check the number and type of arguments
+    // Argument checking is being done by convertMethodCall
     case IR.MethodCall(ms, args) => Some(expr)
     case _ => Some(expr)
   }
@@ -296,19 +295,7 @@ class IRBuilder(input: AST.ProgramAST) {
   def convertMethodDeclArg(ast: AST.MethodDeclArg, ctx:Context): FieldSymbol =
     FieldSymbol(ast.dtype, ast.id, None)
 
-  // TODO(miles): is this dead code?
-  def convertID(id: ID, ctx:Context): Option[IR.LoadField] = ctx.symbols.lookupSymbol(id) match {
-    case None => addError("Unknown identifier"); None
-    case Some(s) => s match {
-      case f:FieldSymbol => Some(IR.LoadField(f, None))
-      case _ =>
-        addError("Location must be a field"); None
-    }
-  }
-
-
   def convertStatement(ast:AST.Statement, ctx:Context): Option[IR.Statement] = ast match{
-    /// TODO(miles): remove ALL of these Some's in favor of error-determined options.
     case a: AST.Assignment => convertAssignment(a, ctx)
     case a: AST.MethodCall => convertMethodCall(a, ctx)
     case a: AST.If => convertIf(a, ctx)
@@ -411,8 +398,8 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  // TODO(miles): Does this make sure that that the left is not an array?
   def locToStore(loc: AST.Location, ctx: Context): Option[IR.Store] = {
+    // TODO make sure left side isn't an array.
     val field = ctx.symbols.lookupSymbol(loc.id)
     field match {
       case Some(field: FieldSymbol) =>
