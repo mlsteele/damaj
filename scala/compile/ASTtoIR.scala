@@ -53,6 +53,7 @@ class IRBuilder(input: AST.ProgramAST) {
       .map{ conflict => "TODO better error reporting" }
 
     val unchecked_ir = IR.ProgramIR(symbols)
+    // post-process checks
     verifyMainMethodExists(unchecked_ir)
 
     // check the errors list to see whether an ir would be valid.
@@ -71,8 +72,10 @@ class IRBuilder(input: AST.ProgramAST) {
           case DTVoid => // OK. TODO check arguments
           case _ => errors += "Method main 'main' must return void"
         }
+        // main exists as a symbol but is not a method
         case _ => errors += "No method 'main' found"
       }
+      // no main symbol at all
       case None => errors += "No method 'main' found"
     }
   }
