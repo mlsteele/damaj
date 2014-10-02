@@ -95,11 +95,6 @@ class IRBuilder(input: AST.ProgramAST) {
           case List() => // ok.
           case _ => addError("Method `main` must take no arguments.")
         }
-        // Check return type
-        m.returns match {
-          case DTVoid => // ok.
-          case _ => // maybe this ok too? TODO(miles): resolve ambiguity.
-        }
       case _ => addError("No method `main` found")
     }
   }
