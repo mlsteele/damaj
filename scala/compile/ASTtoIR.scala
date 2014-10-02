@@ -312,14 +312,15 @@ class IRBuilder(input: AST.ProgramAST) {
   // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
   // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
 
-  def convertIf(iff: AST.If, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
-    val condition:IR.Expr = convertExpr(iff.condition, symbols)
+  def convertIf(iff: AST.If, symbols: SymbolTable, inLoop: Boolean): Option[IR.Statement] = {
+    val thenBlock: IR.Block = convertBlock(iff.then, symbols, inLoop)
+    val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
+    val condition: IR.Expr = convertExpr(iff.condition, symbols)
+    typeOfExpr(condition)
     assert(typeOfExpr(condition) == DTBool, "TODO: Non-boolean condition found in if statement.")
-    val thenBlock:IR.Block = convertBlock(iff.then, symbols, inLoop)
-    val elseBlock:Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
     return IR.If(condition, thenBlock, elseBlock)
-
   }
+
   def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
   def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
     val expr = convertExpr(whil.condition,symbols)
