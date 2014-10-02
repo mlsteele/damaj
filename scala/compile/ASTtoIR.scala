@@ -402,6 +402,8 @@ class IRBuilder(input: AST.ProgramAST) {
     // TODO make sure left side isn't an array.
     val field = ctx.symbols.lookupSymbol(loc.id)
     field match {
+      case Some(field: FieldSymbol) if field.size.isDefined =>
+        addError(loc, "Cannot assign to array"); None
       case Some(field: FieldSymbol) =>
         loc.index match {
           // Scalar store
@@ -413,7 +415,7 @@ class IRBuilder(input: AST.ProgramAST) {
               case Some(index) => Some(IR.Store(field, Some(index)))
             }
         }
-      case Some(_) => addError("Cannot assign to non-field"); None
+      case Some(_) => addError(loc, "Cannot assign to non-field"); None
       case None => addError(loc, "Unknown identifier '%s'".format(loc.id)); None
     }
   }
