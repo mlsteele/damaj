@@ -30,6 +30,8 @@ class IRBuilder(input: AST.ProgramAST) {
   val errors = ListBuffer[SemanticError]()
   val ir: Either[List[SemanticError], IR.ProgramIR] = convertProgram(input)
 
+  case class Context(symbols:SymbolTable, inLoop:Boolean, returnType:DType)
+
   def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
 
@@ -43,12 +45,12 @@ class IRBuilder(input: AST.ProgramAST) {
 
     // fields
     errors ++= symbols
-      .addSymbols(ast.fields.map(convertFieldDecl(_, symbols)))
+      .addSymbols(ast.fields.map(convertFieldDecl(_, Context(symbols, false, DTVoid))))
       .map{ conflict => "TODO better error reporting" }
 
     // methods
     errors ++= ast.methods
-      .map{ m => symbols.addSymbol(convertMethodDecl(m, symbols)) }
+      .map{ m => symbols.addSymbol(convertMethodDecl(m, Context(symbols, false, DTVoid))) }
       .flatten.map{ conflict => "TODO better error reporting" }
 
     val unchecked_ir = IR.ProgramIR(symbols)
@@ -83,7 +85,7 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol = {
+  def convertFieldDecl(ast: AST.FieldDecl, ctx:Context): FieldSymbol = {
     printf("Converting field decl " + ast)
     ast.size match {
       case Some(s) => assert(s.value > 0, "Array must have size greater than 0")
@@ -92,27 +94,28 @@ class IRBuilder(input: AST.ProgramAST) {
     FieldSymbol(ast.dtype, ast.id, ast.size)
   }
 
-  def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
-    val paramsTable = new SymbolTable(parent)
-    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, parent)))
+  def convertMethodDecl(meth: AST.MethodDecl, ctx:Context): MethodSymbol = {
+    val paramsTable = new SymbolTable(ctx.symbols)
+    val childContext = Context(paramsTable, false, meth.returns)
+    val duplicate_args = paramsTable.addSymbols(meth.args.map(convertMethodDeclArg(_, childContext)))
     assert(duplicate_args.length == 0, "TODO error reporting" + duplicate_args)
-    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, paramsTable,false))
+    return MethodSymbol(meth.id, paramsTable, meth.returns, convertBlock(meth.block, childContext))
   }
 
   // Only used after crashing because of an error
   val dummyExpr = IR.LoadLiteral(BoolLiteral(false))
      
-  def convertExpr(expr: AST.Expr, symbols:SymbolTable): IR.Expr = expr match {
-    case AST.BinOp(left, op, right) => verifyExpr(IR.BinOp(convertExpr(left, symbols), op, convertExpr(right, symbols)))
-    case AST.UnaryOp(op, right) => verifyExpr(IR.UnaryOp(op, convertExpr(right, symbols)))
+  def convertExpr(expr: AST.Expr, ctx:Context): IR.Expr = expr match {
+    case AST.BinOp(left, op, right) => verifyExpr(IR.BinOp(convertExpr(left, ctx), op, convertExpr(right, ctx)))
+    case AST.UnaryOp(op, right) => verifyExpr(IR.UnaryOp(op, convertExpr(right, ctx)))
     case AST.Ternary(condition, left, right) => 
-      verifyExpr(IR.Ternary(convertExpr(condition, symbols), convertExpr(left, symbols), convertExpr(right, symbols)))
+      verifyExpr(IR.Ternary(convertExpr(condition, ctx), convertExpr(left, ctx), convertExpr(right, ctx)))
     case AST.Literal(l) => verifyExpr(IR.LoadLiteral(l))
     case AST.Location(id, index) => 
-      val fs = symbols.lookupSymbol(id)
+      val fs = ctx.symbols.lookupSymbol(id)
       fs match {
         case Some(s) => s match {
-          case f:FieldSymbol => verifyExpr(IR.LoadField(f, convertExpr(index, symbols)))
+          case f:FieldSymbol => verifyExpr(IR.LoadField(f, convertExpr(index, ctx)))
           case _ =>
             assert(false, "Location must be a field")
             dummyExpr
@@ -121,15 +124,15 @@ class IRBuilder(input: AST.ProgramAST) {
           assert(false, "Unknown identifier")
           dummyExpr
       }
-    case a:AST.MethodCall => convertMethodCall(a, symbols) match {
+    case a:AST.MethodCall => convertMethodCall(a, ctx) match {
       case Some(x) => verifyExpr(x)
       case None => assert(false, "Unknown identifier"); dummyExpr
     }
   }
   
   // Helper for converting Option[Expr]'s. If you don't already have an Option, don't use this
-  def convertExpr(oexpr: Option[AST.Expr], symbols:SymbolTable): Option[IR.Expr] = oexpr match {
-    case Some(expr) => Some(convertExpr(expr, symbols))
+  def convertExpr(oexpr: Option[AST.Expr], ctx:Context): Option[IR.Expr] = oexpr match {
+    case Some(expr) => Some(convertExpr(expr, ctx))
     case None => None
   }
 
@@ -233,10 +236,10 @@ class IRBuilder(input: AST.ProgramAST) {
     
   }
 
-  def convertMethodDeclArg(ast: AST.MethodDeclArg, symbols:SymbolTable): FieldSymbol =
+  def convertMethodDeclArg(ast: AST.MethodDeclArg, ctx:Context): FieldSymbol =
     FieldSymbol(ast.dtype, ast.id, None)
 
-  def convertID(id: ID, symbols:SymbolTable) = symbols.lookupSymbol(id) match {
+  def convertID(id: ID, ctx:Context) = ctx.symbols.lookupSymbol(id) match {
     case Some(s) => s match {
       case f:FieldSymbol => IR.LoadField(f, None)
       case _ =>
@@ -249,30 +252,30 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
 
-  def convertStatement(ast:AST.Statement, symbols:SymbolTable, inLoop:Boolean): Option[IR.Statement] = ast match{
+  def convertStatement(ast:AST.Statement, ctx:Context): Option[IR.Statement] = ast match{
     /// TODO(miles): remove ALL of these Some's in favor of error-determined options.
-    case a: AST.Assignment => Some(convertAssignment(a, symbols))
-    case a: AST.MethodCall => convertMethodCall(a, symbols)
-    case a: AST.If => convertIf(a, symbols, inLoop)
-    case a: AST.For => convertFor(a, symbols)
-    case a: AST.While => convertWhile(a, symbols)
-    case a: AST.Return => convertReturn(a, symbols)
-    case AST.Break if inLoop => Some(IR.Break)
+    case a: AST.Assignment => Some(convertAssignment(a, ctx))
+    case a: AST.MethodCall => convertMethodCall(a, ctx)
+    case a: AST.If => convertIf(a, ctx)
+    case a: AST.For => convertFor(a, ctx)
+    case a: AST.While => convertWhile(a, ctx)
+    case a: AST.Return => convertReturn(a, ctx)
+    case AST.Break if ctx.inLoop => Some(IR.Break)
     case AST.Break => assert(false,"break must be in a loop")
                       None
-    case AST.Continue if inLoop => Some(IR.Continue)
+    case AST.Continue if ctx.inLoop => Some(IR.Continue)
     case AST.Continue => assert(false, "continue must be in a loop");
                          None
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
-    val oSymbol = symbols.lookupSymbol(ast.id)
-    println(symbols)
+  def convertMethodCall(ast: AST.MethodCall, ctx:Context): Option[IR.Call] = {
+    val oSymbol = ctx.symbols.lookupSymbol(ast.id)
+    println(ctx.symbols)
     println("FOOO")
     oSymbol match {
       case Some(s) => s match {
         case symbol:MethodSymbol => 
-          val methodCallArgs = ast.args.map(convertMethodCallArg(_, symbols))
+          val methodCallArgs = ast.args.map(convertMethodCallArg(_, ctx))
           assert(methodCallArgs.length == symbol.args.length, "Method called with wrong number of arguments")
           (symbol.args zip methodCallArgs) map {
             case (f:FieldSymbol, Right(expr)) =>
@@ -281,32 +284,32 @@ class IRBuilder(input: AST.ProgramAST) {
               assert(false, "Method cannot be called with a string literal argument")
           }
           Some(IR.MethodCall(symbol, methodCallArgs))
-        case c:CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
+        case c:CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, ctx))))
         case f:FieldSymbol => 
           assert(false, "Cannot call a field")
           None 
       }
       case None => 
-        assert(false, "Name %s not found in %s".format(ast.id, symbols))
+        assert(false, "Name %s not found in %s".format(ast.id, ctx.symbols))
         None
     }
   }
 
-  def convertMethodCallArg(ast: Either[StrLiteral, AST.Expr], symbols:SymbolTable): Either[StrLiteral, IR.Expr] = ast match {
+  def convertMethodCallArg(ast: Either[StrLiteral, AST.Expr], ctx:Context): Either[StrLiteral, IR.Expr] = ast match {
     case Left(x) => Left(x)
-    case Right(x) => Right(convertExpr(x, symbols))
+    case Right(x) => Right(convertExpr(x, ctx))
   }
 
   // TODO(miles): Does this check for matching types yet?
-  def convertAssignment(assign: AST.Assignment, symbols:SymbolTable): IR.Assignment =
-    IR.Assignment(locToStore(assign.left, symbols), convertExpr(assign.right, symbols))
+  def convertAssignment(assign: AST.Assignment, ctx:Context): IR.Assignment =
+    IR.Assignment(locToStore(assign.left, ctx), convertExpr(assign.right, ctx))
 
   // TODO(miles): Does this make sur ethat that the left is not an array?
-  def locToStore(loc: AST.Location, symbols:SymbolTable): IR.Store = {
-    val field = symbols.lookupSymbol(loc.id)
+  def locToStore(loc: AST.Location, ctx:Context): IR.Store = {
+    val field = ctx.symbols.lookupSymbol(loc.id)
     field match{
       case Some(f)=> f match{
-        case f:FieldSymbol => IR.Store(f, convertExpr(loc.index,symbols))
+        case f:FieldSymbol => IR.Store(f, convertExpr(loc.index, ctx))
         case _ =>
           assert(false, "Cannot assign to non-field")
           IR.Store(FieldSymbol(DTVoid,"void",None),Some(dummyExpr))// TODO (Andres): replace this dummy error with an actual one
@@ -318,21 +321,21 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertBlock(block: AST.Block, symbols:SymbolTable, inLoop:Boolean): IR.Block = {
-    val localtable = new SymbolTable(Some(symbols))
+  def convertBlock(block: AST.Block, ctx:Context): IR.Block = {
+    val localtable = new SymbolTable(ctx.symbols)
     val duplicates = localtable.addSymbols(block.decls.map(x => FieldSymbol(x.dtype, x.id, x.size)))
     assert(duplicates.length == 0, "Duplicate field declarations " + duplicates)
     // TODO enter symbols into table
     // flatten is used here to drop the None's from the stmt list.
-    val stmts = block.stmts.map(convertStatement(_, localtable, inLoop)).flatten
+    val stmts = block.stmts.map(convertStatement(_, ctx)).flatten
     IR.Block(stmts, localtable)
   }
 
-  def convertIf(iff: AST.If, symbols: SymbolTable, inLoop: Boolean): Option[IR.If] = {
+  def convertIf(iff: AST.If, ctx:Context): Option[IR.If] = {
     // TODO(miles): report errors in blocks AFTER error in condition statement.
-    val condition: IR.Expr = convertExpr(iff.condition, symbols)
-    val thenBlock: IR.Block = convertBlock(iff.then, symbols, inLoop)
-    val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, symbols, inLoop))
+    val condition: IR.Expr = convertExpr(iff.condition, ctx)
+    val thenBlock: IR.Block = convertBlock(iff.then, ctx)
+    val elseBlock: Option[IR.Block] = iff.elseb.map(convertBlock(_, ctx))
 
     typeOfExpr(condition) match {
       case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
@@ -342,7 +345,7 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertFor(fo: AST.For, symbols: SymbolTable): Option[IR.Statement] = symbols.lookupSymbol(fo.id) match {
+  def convertFor(fo: AST.For, ctx:Context): Option[IR.Statement] = ctx.symbols.lookupSymbol(fo.id) match {
     case None => assert(false, "Symbol not found."); None
     case Some(field) => field match {
       case f:FieldSymbol => {
@@ -351,21 +354,21 @@ class IRBuilder(input: AST.ProgramAST) {
           case None =>
         }
         if (f.dtype != DTInt) {assert(false, "Must loop over a variable."); return None}
-        val start:IR.Expr = convertExpr(fo.start, symbols)
+        val start:IR.Expr = convertExpr(fo.start, ctx)
         if (typeOfExpr(start) != DTInt) {assert(false, "Loop start value must be an int."); return None}
-        val end:IR.Expr = convertExpr(fo.iter, symbols)
+        val end:IR.Expr = convertExpr(fo.iter, ctx)
         if (typeOfExpr(end) != DTInt) {assert(false, "Loop end value must be an int."); return None}
-        val block:IR.Block = convertBlock(fo.then, symbols, true)
+        val block:IR.Block = convertBlock(fo.then, Context(ctx.symbols, true, ctx.returnType))
         return Some(IR.For(fo.id, start, end, block))
       }
       case _ => {assert(false, "Loop variable is not a field."); return None}
     }
   }
 
-  def convertWhile(whil: AST.While, symbols: SymbolTable): Option[IR.While] = {
+  def convertWhile(whil: AST.While, ctx:Context): Option[IR.While] = {
     // TODO(miles): report errors in blocks AFTER error in condition statement.
-    val cond = convertExpr(whil.condition, symbols)
-    val block = convertBlock(whil.block, symbols, true)
+    val cond = convertExpr(whil.condition, ctx)
+    val block = convertBlock(whil.block, Context(ctx.symbols, true, ctx.returnType))
 
     typeOfExpr(cond) match {
       case DTBool => Some(IR.While(cond, block, whil.max))
@@ -376,6 +379,6 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   // TODO implement convertReturn
-  def convertReturn (ret:AST.Return, symbols:SymbolTable): Option[IR.Statement] =
+  def convertReturn (ret:AST.Return, ctx:Context): Option[IR.Statement] =
     Some(IR.Break)
 }
