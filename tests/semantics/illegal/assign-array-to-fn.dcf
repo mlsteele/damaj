@@ -1,0 +1,6 @@
+int helper(int x) {}
+
+void main() {
+int b;
+helper = b;
+}
