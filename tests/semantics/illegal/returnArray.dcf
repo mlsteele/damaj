@@ -1,0 +1,7 @@
+int dummy() {
+  int a[10];
+  return a;
+}
+void main(){
+ dummy();
+}
