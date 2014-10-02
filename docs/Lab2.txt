@@ -1,0 +1,8 @@
+IR Structure:
+
+Symbol Table Structure:
+
+
+Semantic Checking design:
+
+
