@@ -43,7 +43,7 @@ class IRBuilder(input: AST.ProgramAST) {
 
     // fields
     errors ++= symbols
-      .addSymbols(ast.fields.map(x => FieldSymbol(x.dtype, x.id, x.size)))
+      .addSymbols(ast.fields.map(convertFieldDecl(_, symbols)))
       .map{ conflict => "TODO better error reporting" }
 
     // methods
@@ -79,8 +79,14 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol =
+  def convertFieldDecl(ast: AST.FieldDecl, symbols:SymbolTable): FieldSymbol = {
+    printf("Converting field decl " + ast)
+    ast.size match {
+      case Some(s) => assert(s.value > 0, "Array must have size greater than 0")
+      case _ => // ok
+    }
     FieldSymbol(ast.dtype, ast.id, ast.size)
+  }
 
   def convertMethodDecl(meth: AST.MethodDecl, parent: SymbolTable): MethodSymbol = {
     val paramsTable = new SymbolTable(parent)
