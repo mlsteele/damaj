@@ -20,9 +20,20 @@ object SymbolTable {
     block: Block
     ) extends Symbol
 
-  case class Conflict(first: Symbol, second: Symbol)
+  class EnhancedMethodSymbol(m: MethodSymbol) {
+    /**
+      * Gets the list of arguments to this function.
+      */
+    def args(): List[FieldSymbol] = m.params.symbols.filter(s => s match {
+      case f:FieldSymbol => true
+      case _             => {assert(false, "Non-field symbol found in method's symbol table."); false}
+    }) map (_.asInstanceOf[FieldSymbol])
+  }
 
-  type LookupPredicate = Symbol => Boolean
+  // Automatically converts a MethodSymbol to an EnhancedMethodSymbol in order to add a .args method to method symbols
+  implicit def enhancedMethodSymbol(m: MethodSymbol) = new EnhancedMethodSymbol(m)
+
+  case class Conflict(first: Symbol, second: Symbol)
 
   class SymbolTable (var parent: Option[SymbolTable]) {
 
@@ -30,6 +41,14 @@ object SymbolTable {
 
     def this() = this(None)
     def this(p: SymbolTable) = this(Some(p))
+
+    /**
+      * Returns the symbol table representing the global scope.
+      */
+    def globalScope() : SymbolTable = parent match {
+      case None    => this
+      case Some(p) => p.globalScope();
+    }
 
     /**
      * Adds a symbol to the table
