@@ -266,7 +266,7 @@ class IRBuilder(input: AST.ProgramAST) {
                          None
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable,inLoop:Boolean): Option[IR.Call] = {
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
     val oSymbol = symbols.lookupSymbol(ast.id)
     println(symbols)
     println("FOOO")
