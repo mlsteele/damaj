@@ -27,7 +27,7 @@ void main() {
     e = (c * 3);
     e = (e + 1);
     if (2 > 4 * 3) {
-        printf("That's weird.\n");
+        printf("That\'s weird.\n");
     } else {
         printf("Hello, World.\n");
     }
@@ -37,6 +37,6 @@ void main() {
     }
 
     while (a < 10) {
-        a = a + func(a)
+        a = a + func(a);
     }
 }
