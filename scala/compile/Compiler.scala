@@ -102,12 +102,21 @@ object Compiler {
         Console.err.println("[ERROR]: No parse error but no parse tree")
       case (false, Some(tree)) =>
         Console.err.println("[YAY]: Parse succeeded")
-        if (CLI.debug) {
-          print("\nParse Tree:")
-          println(tree.toStringTree())
+        if (CLI.debug && (CLI.target == CLI.Action.PARSE)) {
+          // print("\nParse Tree:")
+          // println(tree.toStringTree())
           
           println("\nParse Tree (pretty):")
           println(PTTools.prettyprint(tree))
+
+          val code = io.Source.fromFile(fileName).mkString
+          val ast = new ASTBuilder(tree, fileName, code).ast
+          // println("\nAST:")
+          // println(ast)
+
+          val ast_pretty = new ASTPrinter(ast).print
+          println("\nAST (pretty):")
+          println(ast_pretty)
         }
     }
 
@@ -128,15 +137,6 @@ object Compiler {
           // building an AST can't fail.
           val ast = new ASTBuilder(parseTree, fileName, code).ast
 
-          if(CLI.debug) {
-            println("\nAST:")
-            println(ast)
-
-            val ast_pretty = new ASTPrinter(ast).print
-            println("\nAST (pretty):")
-            println(ast_pretty)
-          }
-
           val ir1 = new IRBuilder(ast).ir
           ir1 match {
             case Left(errors) =>
@@ -146,7 +146,7 @@ object Compiler {
               return 1
             case Right(ir1) =>
               if (CLI.debug) {
-                println("\nIR:")
+                println("\nIR (pretty):")
                 println(IRPrinter.print(ir1))
               }
 
