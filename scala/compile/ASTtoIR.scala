@@ -260,7 +260,12 @@ class IRBuilder(input: AST.ProgramAST) {
     }
     case IR.LoadField(fs, oi) => oi match {
       case Some(i) => fs.size match {
-        case Some(int) => expr
+        case Some(int) => typeOfExpr(expr) match {
+          case DTInt => expr
+          case _ =>
+            assert(false, "Array index must be type int")
+            dummyExpr
+        }
         case None => 
           assert(false, "Brackets used on non-array type")
           dummyExpr
