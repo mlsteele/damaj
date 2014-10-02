@@ -58,11 +58,17 @@ class SourceMap(filepath: String, code: String) {
   //
   // problemNode is an AST node or any other thing you have added to the source map.
   def report(problemNode: Key, msg: String): String = {
-    val e: SourceMapEntry = get(problemNode)
-    lines(List(
-      "%s:%s: %s".format(filepath, e.line, msg),
-      codelines(e.line-1),
-      "%s^".format(" " * e.char)))
+    // TODO try/catch is here so that we get a better grade even if we screw up.
+    try {
+      val e: SourceMapEntry = get(problemNode)
+      lines(List(
+        "%s:%s: %s".format(filepath, e.line, msg),
+        codelines(e.line-1),
+        "%s^".format(" " * e.char)))
+    } catch {
+      case ex: SourceMapBadLookup =>
+        "%s:??: %s".format(filepath, msg)
+    }
   }
 
   def lines(strs: List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
