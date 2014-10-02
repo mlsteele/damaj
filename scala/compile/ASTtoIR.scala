@@ -47,9 +47,9 @@ class IRBuilder(input: AST.ProgramAST) {
       .map{ conflict => "TODO better error reporting" }
 
     // methods
-    errors ++= symbols
-      .addSymbols(ast.methods.map(convertMethodDecl(_,symbols)))
-      .map{ conflict => "TODO better error reporting" }
+    errors ++= ast.methods
+      .map{ m => symbols.addSymbol(convertMethodDecl(m, symbols)) }
+      .flatten.map{ conflict => "TODO better error reporting" }
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
