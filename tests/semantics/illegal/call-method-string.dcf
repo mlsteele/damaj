@@ -1,0 +1,4 @@
+void helper(int a) {}
+void main() {
+helper("foo");
+}
