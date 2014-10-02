@@ -55,6 +55,8 @@ class SourceMap(filepath: String, code: String) {
   // foo/bar/baz.dcf:12: Undefined symbol 'y'.
   // x = a + b + y + z;
   //             ^
+  //
+  // problemNode is an AST node or any other thing you have added to the source map.
   def report(problemNode: Key, msg: String): String = {
     val e: SourceMapEntry = get(problemNode)
     lines(List(

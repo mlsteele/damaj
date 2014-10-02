@@ -379,6 +379,21 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   // TODO implement convertReturn
-  def convertReturn (ret:AST.Return, ctx:Context): Option[IR.Statement] =
-    Some(IR.Break)
+  def convertReturn (ret:AST.Return, ctx:Context): Option[IR.Statement] = {
+    val optionExpr = convertExpr(ret.expr, ctx)
+    optionExpr match {
+      case Some(expr) => typeOfExpr(expr) match {
+        case ctx.returnType => Some(IR.Return(optionExpr))
+        case _ =>
+          errors += srcmap.report(ret, "Return type must match the method signature")
+          None
+      }
+      case None => ctx.returnType match {
+        case DTVoid => Some(IR.Return(optionExpr))
+        case _ =>
+          errors += srcmap.report(ret, "Non-void method requires a return value")
+          None
+      }
+    }
+  }
 }
