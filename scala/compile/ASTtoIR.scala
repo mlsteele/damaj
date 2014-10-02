@@ -32,14 +32,20 @@ class IRBuilder(input: AST.ProgramAST) {
 
   case class Context(symbols:SymbolTable, inLoop:Boolean, returnType:DType)
 
+  def addError(msg: String): Unit =
+    errors += msg
+
+  def addError(node: srcmap.Key, msg: String): Unit =
+    addError(srcmap.report(node, msg))
+
   def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
 
     // callouts
-    errors ++= symbols
+    symbols
       .addSymbols(ast.callouts.map(x => srcmap.alias(x, CalloutSymbol(x.id))))
       .map{ conflict =>
-        srcmap.report(conflict.second,
+        addError(conflict.second,
           "Duplicate callout declaration '%s'.".format(conflict.second.id))
       }
 
@@ -67,13 +73,13 @@ class IRBuilder(input: AST.ProgramAST) {
   // Adds errors about poorly constructed fields.
   // Adds errors about conflicts.
   def addFieldsToTable(symbols: SymbolTable, fields: List[AST.FieldDecl]): Unit = {
-    errors ++= fields.map{ fd =>
+    fields.map{ fd =>
       convertFieldDecl(fd) match {
         case Some(fs) => symbols.addSymbol(fs)
         case None => None
       }
     }.flatten.map{
-      conflict => "TODO better error reporting (double var)"
+      conflict => addError("TODO better error reporting (double var)")
     }
   }
 
@@ -87,14 +93,14 @@ class IRBuilder(input: AST.ProgramAST) {
         // Check arguments
         m.args match {
           case List() => // ok.
-          case _ => errors += "Method `main` must take no arguments."
+          case _ => addError("Method `main` must take no arguments.")
         }
         // Check return type
         m.returns match {
           case DTVoid => // ok.
           case _ => // maybe this ok too? TODO(miles): resolve ambiguity.
         }
-      case _ => errors += "No method `main` found"
+      case _ => addError("No method `main` found")
     }
   }
 
@@ -103,7 +109,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case Some(lit) => convertIntLiteral(lit) match {
         case None => None
         case Some(v) if v <= 0 =>
-          errors += srcmap.report(ast, "Array field must have length > 0")
+          addError(ast, "Array field must have length > 0")
           None
         case Some(v) => Some(FieldSymbol(ast.dtype, ast.id, Some(v)))
       }
@@ -113,10 +119,10 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertIntLiteral(ast: IntLiteral): Option[Long] = ast.value match {
     case v if v < Long.MinValue =>
-      errors += srcmap.report(ast, "Int literal is too damn negative.")
+      addError(ast, "Int literal is too damn negative.")
       None
     case v if v > Long.MaxValue =>
-      errors += srcmap.report(ast, "Int literal is too damn big.")
+      addError(ast, "Int literal is too damn big.")
       None
     case v => Some(v.toLong)
   }
@@ -398,7 +404,7 @@ class IRBuilder(input: AST.ProgramAST) {
     typeOfExpr(condition) match {
       case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
       case _ =>
-        errors += srcmap.report(iff.condition, "If condition must be a boolean")
+        addError(iff.condition, "If condition must be a boolean")
         None
     }
   }
@@ -432,7 +438,7 @@ class IRBuilder(input: AST.ProgramAST) {
     typeOfExpr(cond) match {
       case DTBool => Some(IR.While(cond, block, whil.max))
       case _ =>
-        errors += srcmap.report(whil.condition, "While condition must be a boolean")
+        addError(whil.condition, "While condition must be a boolean")
         None
     }
   }
@@ -444,13 +450,13 @@ class IRBuilder(input: AST.ProgramAST) {
       case Some(expr) => typeOfExpr(expr) match {
         case ctx.returnType => Some(IR.Return(optionExpr))
         case _ =>
-          errors += srcmap.report(ret, "Return type must match the method signature")
+          addError(ret, "Return type must match the method signature")
           None
       }
       case None => ctx.returnType match {
         case DTVoid => Some(IR.Return(optionExpr))
         case _ =>
-          errors += srcmap.report(ret, "Non-void method requires a return value")
+          addError(ret, "Non-void method requires a return value")
           None
       }
     }
