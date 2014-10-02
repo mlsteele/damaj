@@ -1,4 +1,4 @@
-all: fsc_reset scala_classes
+all: scala_classes
 
 CLASSPATH = build:vendor/antlr.jar
 
