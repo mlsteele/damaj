@@ -321,7 +321,17 @@ class IRBuilder(input: AST.ProgramAST) {
 
   }
   def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
-  def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
+    val expr = convertExpr(whil.condition,symbols)
+    val typ = typeOfExpr(expr)
+    if (typ != DTBool){
+      assert(false,"while must take a boolean")
+      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
+    }
+    else{
+      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
+    }
+  }
   def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
 
   //  def convertBreak ( ) this can be done through =>

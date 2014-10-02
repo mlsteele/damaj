@@ -22,7 +22,8 @@ object IR {
   case class CalloutCall(callout: CalloutSymbol, args: List[Either[StrLiteral, Expr]]) extends Call
   case class If(condition: Expr, then: Block, elseb: Option[Block]) extends Statement
   case class For(id: ID, start: Expr, iter: Expr, then: Block) extends Statement
-  case class While(condition: Expr, block: Block, max: Option[BigInt]) extends Statement
+  //TODO(andres) decide whether or not we want an intliteral
+  case class While(condition: Expr, block: Block, max: Option[IntLiteral]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case object Break extends Statement
   case object Continue extends Statement
