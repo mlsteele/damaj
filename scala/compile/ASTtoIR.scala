@@ -343,9 +343,22 @@ class IRBuilder(input: AST.ProgramAST) {
     case Right(x) => Right(convertExpr(x, ctx))
   }
 
-  // TODO(miles): Does this check for matching types yet?
-  def convertAssignment(assign: AST.Assignment, ctx:Context): IR.Assignment =
-    IR.Assignment(locToStore(assign.left, ctx), convertExpr(assign.right, ctx))
+  def convertAssignment(assign: AST.Assignment, ctx:Context): IR.Assignment = {
+    val store = locToStore(assign.left, ctx)
+    val rhs = convertExpr(assign.right, ctx)
+    store.index match {
+      // normal variable assignment
+      case None => {
+        assert(store.to.dtype == typeOfExpr(rhs), "Assignment left and right sides must be of the same type.");
+      }
+      // Array access
+      case Some(i) => {
+        assert(typeOfExpr(i) == DTInt, "Array index must be an integer.")
+        assert(store.to.isArray, "Cannot index into a scalar.")
+      }
+    }
+    return IR.Assignment(store, rhs)
+  }
 
   // TODO(miles): Does this make sur ethat that the left is not an array?
   def locToStore(loc: AST.Location, ctx:Context): IR.Store = {
