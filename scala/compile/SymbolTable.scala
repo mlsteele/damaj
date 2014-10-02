@@ -103,6 +103,6 @@ object SymbolTable {
     }
 
     override
-    def toString: String = "SymbolTable(%s)".format(symbols)
+    def toString: String = "SymbolTable(%s, parent=%s)".format(symbols, parent)
   }
 }

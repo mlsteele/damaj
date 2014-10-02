@@ -266,16 +266,30 @@ class IRBuilder(input: AST.ProgramAST) {
                          None
   }
 
-  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable): Option[IR.Call] = {
-    val symbol = symbols.lookupSymbol(ast.id)
-    symbol match {
+  def convertMethodCall(ast: AST.MethodCall, symbols:SymbolTable,inLoop:Boolean): Option[IR.Call] = {
+    val oSymbol = symbols.lookupSymbol(ast.id)
+    println(symbols)
+    println("FOOO")
+    oSymbol match {
       case Some(s) => s match {
-        case m: MethodSymbol => Some(IR.MethodCall(m, ast.args.map(convertMethodCallArg(_, symbols))))
-        case c: CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
-        case f: FieldSymbol => None 
+        case symbol:MethodSymbol => 
+          val methodCallArgs = ast.args.map(convertMethodCallArg(_, symbols))
+          assert(methodCallArgs.length == symbol.args.length, "Method called with wrong number of arguments")
+          (symbol.args zip methodCallArgs) map {
+            case (f:FieldSymbol, Right(expr)) =>
+              assert(f.dtype == typeOfExpr(expr), "Method called with the wrong argument types")
+            case (f:FieldSymbol, Left(expr)) =>
+              assert(false, "Method cannot be called with a string literal argument")
+          }
+          Some(IR.MethodCall(symbol, methodCallArgs))
+        case c:CalloutSymbol => Some(IR.CalloutCall(c, ast.args.map(convertMethodCallArg(_, symbols))))
+        case f:FieldSymbol => 
+          assert(false, "Cannot call a field")
+          None 
       }
-      case None => assert(false, "Method does not exist " + ast.id)
-                   None
+      case None => 
+        assert(false, "Name %s not found in %s".format(ast.id, symbols))
+        None
     }
   }
 
@@ -290,8 +304,7 @@ class IRBuilder(input: AST.ProgramAST) {
 
   // TODO(miles): Does this make sur ethat that the left is not an array?
   def locToStore(loc: AST.Location, symbols:SymbolTable): IR.Store = {
-    val table = new SymbolTable()
-    val field = table.lookupSymbol(loc.id)
+    val field = symbols.lookupSymbol(loc.id)
     field match{
       case Some(f)=> f match{
         case f:FieldSymbol => IR.Store(f, convertExpr(loc.index,symbols))
