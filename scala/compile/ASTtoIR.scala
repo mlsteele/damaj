@@ -1,10 +1,10 @@
-package compile 
+package compile
 
 // namespace collisions import AST._
 // namespace collisions import IR._
 //
 // Code primarily borromed from ASTTools.scala.
-// variable names come from the naming convention 
+// variable names come from the naming convention
 // established there
 //
 // Example Usage:
@@ -155,7 +155,7 @@ class IRBuilder(input: AST.ProgramAST) {
         case Some(right) => verifyExpr(IR.UnaryOp(op, right))
         case None => None
       }
-    case AST.Ternary(condition, left, right) => 
+    case AST.Ternary(condition, left, right) =>
       (convertExpr(condition, ctx), convertExpr(left, ctx), convertExpr(right, ctx)) match {
         case (Some(c), Some(l), Some(r)) => verifyExpr(IR.Ternary(c, l, r))
         case _ => None
@@ -177,7 +177,7 @@ class IRBuilder(input: AST.ProgramAST) {
               case (true, Some(idx)) =>
                 convertExpr(idx, ctx) match {
                   case None => None
-                  case Some(idx) => 
+                  case Some(idx) =>
                     verifyExpr(IR.LoadField(field_symbol, Some(idx)))
                 }
             }
@@ -280,7 +280,7 @@ class IRBuilder(input: AST.ProgramAST) {
           case _ =>
             addError("Array index must be type int"); None
         }
-        case None => 
+        case None =>
           addError("Brackets used on non-array type"); None
       }
       case None => Some(expr)
@@ -324,7 +324,7 @@ class IRBuilder(input: AST.ProgramAST) {
     val oSymbol = ctx.symbols.lookupSymbol(ast.id)
     oSymbol match {
       case Some(s) => s match {
-        case symbol:MethodSymbol => 
+        case symbol:MethodSymbol =>
           val methodCallArgs = ast.args.map(convertMethodCallArg(_, ctx))
           detectBadArgs(methodCallArgs) match {
             case None => None // some args were invalid expressions.
@@ -344,11 +344,11 @@ class IRBuilder(input: AST.ProgramAST) {
             case None => None // some args were invalid expressions.
             case Some(methodCallArgs) => Some(IR.CalloutCall(c, methodCallArgs))
           }
-        case f:FieldSymbol => 
+        case f:FieldSymbol =>
           assert(false, "Cannot call a field")
-          None 
+          None
       }
-      case None => 
+      case None =>
         assert(false, "Name %s not found in %s".format(ast.id, ctx.symbols))
         None
     }
@@ -383,7 +383,7 @@ class IRBuilder(input: AST.ProgramAST) {
     (store, rhs) match {
       case (Some(store), Some(rhs)) =>
         (store.to.dtype == typeOfExpr(rhs)) match {
-          case false => 
+          case false =>
             addError("Assignment left and right sides must be of the same type"); None
           case true =>
             store.index match {
@@ -406,7 +406,7 @@ class IRBuilder(input: AST.ProgramAST) {
   def locToStore(loc: AST.Location, ctx: Context): Option[IR.Store] = {
     val field = ctx.symbols.lookupSymbol(loc.id)
     field match {
-      case Some(field: FieldSymbol) => 
+      case Some(field: FieldSymbol) =>
         loc.index match {
           // Scalar store
           case None => Some(IR.Store(field, None))
@@ -500,7 +500,7 @@ class IRBuilder(input: AST.ProgramAST) {
         case None => None
         case Some(expr) => typeOfExpr(expr) match {
           case ctx.returnType => Some(IR.Return(Some(expr)))
-          case _ => 
+          case _ =>
             addError(ret, "Return type must match the method signature"); None
         }
       }
