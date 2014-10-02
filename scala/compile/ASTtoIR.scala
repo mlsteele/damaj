@@ -318,7 +318,7 @@ class IRBuilder(input: AST.ProgramAST) {
     typeOfExpr(condition) match {
       case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
       case _ =>
-        errors += srcmap.report(iff, "If condition must be a boolean")
+        errors += srcmap.report(iff.condition, "If condition must be a boolean")
         None
     }
   }
