@@ -147,52 +147,53 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertExpr(expr: AST.Expr, ctx:Context): Option[IR.Expr] = expr match {
-    case AST.BinOp(left, op, right) =>
-      (convertExpr(left, ctx), convertExpr(right, ctx)) match {
-        case (Some(left), Some(right)) => verifyExpr(IR.BinOp(left, op, right))
-        case _ => None
-      }
-    case AST.UnaryOp(op, right) =>
-      convertExpr(right, ctx) match {
-        case Some(right) => verifyExpr(IR.UnaryOp(op, right))
-        case None => None
-      }
-    case AST.Ternary(condition, left, right) =>
-      (convertExpr(condition, ctx), convertExpr(left, ctx), convertExpr(right, ctx)) match {
-        case (Some(c), Some(l), Some(r)) => verifyExpr(IR.Ternary(c, l, r))
-        case _ => None
-      }
-    case AST.Literal(l) => verifyExpr(IR.LoadLiteral(l))
-    case AST.Location(id, index) => {
-      val symbol: Option[Symbol] = ctx.symbols.lookupSymbol(id)
-      symbol match {
-        case None => addError(expr, "Unknown identifier '%s'".format(id)); None
-        case Some(symbol) => symbol match {
-          case field_symbol: FieldSymbol => {
-            (field_symbol.isArray, index) match {
-              case (true, None) =>
-                addError(expr, "Expression cannot be an array"); None
-              case (false, Some(idx)) =>
-                addError(expr, "Cannot index into scalar"); None
-              case (false, None) =>
-                verifyExpr(IR.LoadField(field_symbol, None))
-              case (true, Some(idx)) =>
-                convertExpr(idx, ctx) match {
-                  case None => None
-                  case Some(idx) =>
-                    verifyExpr(IR.LoadField(field_symbol, Some(idx)))
-                }
+  def convertExpr(ast: AST.Expr, ctx:Context): Option[IR.Expr] = {
+    val unchecked: Option[IR.Expr] = ast match {
+      case AST.BinOp(left, op, right) =>
+        (convertExpr(left, ctx), convertExpr(right, ctx)) match {
+          case (Some(left), Some(right)) => Some(IR.BinOp(left, op, right))
+          case _ => None
+        }
+      case AST.UnaryOp(op, right) =>
+        convertExpr(right, ctx) match {
+          case Some(right) => Some(IR.UnaryOp(op, right))
+          case None => None
+        }
+      case AST.Ternary(condition, left, right) =>
+        (convertExpr(condition, ctx), convertExpr(left, ctx), convertExpr(right, ctx)) match {
+          case (Some(c), Some(l), Some(r)) => Some(IR.Ternary(c, l, r))
+          case _ => None
+        }
+      case AST.Literal(l) => Some(IR.LoadLiteral(l))
+      case AST.Location(id, index) => {
+        val symbol: Option[Symbol] = ctx.symbols.lookupSymbol(id)
+        symbol match {
+          case None => addError(ast, "Unknown identifier '%s'".format(id)); None
+          case Some(symbol) => symbol match {
+            case field_symbol: FieldSymbol => {
+              (field_symbol.isArray, index) match {
+                case (true, None) =>
+                  addError(ast, "Expression cannot be an array"); None
+                case (false, Some(idx)) =>
+                  addError(ast, "Cannot index into scalar"); None
+                case (false, None) =>
+                  Some(IR.LoadField(field_symbol, None))
+                case (true, Some(idx)) =>
+                  convertExpr(idx, ctx) match {
+                    case None => None
+                    case Some(idx) =>
+                      Some(IR.LoadField(field_symbol, Some(idx)))
+                  }
+              }
             }
+            case _ => addError(ast, "Location must refer to field"); None
           }
-          case _ => addError(expr, "Location must refer to field"); None
         }
       }
+      case a:AST.MethodCall => convertMethodCall(a, ctx)
     }
-    case a:AST.MethodCall => convertMethodCall(a, ctx) match {
-      case Some(x) => verifyExpr(x)
-      case None => None
-    }
+
+    unchecked.map(ir => srcmap.alias(ast, ir)).flatMap(verifyExpr)
   }
 
   // // Helper for converting Option[Expr]'s. If you don't already have an Option, don't use this
@@ -226,19 +227,19 @@ class IRBuilder(input: AST.ProgramAST) {
     case IR.BinOp(l,o,r) => o match {
       case "=="|"!=" =>
         if (typeOfExpr(l) != typeOfExpr(r)) {
-          addError("Mismatched types on == or !="); None
+          addError(expr, "Mismatched types for %s".format(o)); None
         } else {
           Some(expr)
         }
       case "+"|"-"|"*"|"/"|"%"|"<"|">"|"<="|">=" =>
         if (typeOfExpr(l) != DTInt || typeOfExpr(r) != DTInt) {
-          addError("Mathematical operation requires ints"); None
+          addError(expr, "Operator %s requires int operands".format(o)); None
         } else {
           Some(expr)
         }
       case "&&"|"||" =>
         if (typeOfExpr(l) != DTBool || typeOfExpr(r) != DTBool) {
-          addError("Logical expression requires booleans"); None
+          addError(expr, "Operator %s requires boolean operands".format(o)); None
         } else {
           Some(expr)
         }
@@ -246,23 +247,23 @@ class IRBuilder(input: AST.ProgramAST) {
     case IR.UnaryOp(o,r) => o match {
       case "!" =>
         if (typeOfExpr(r) != DTBool) {
-          addError("! operator must act on a boolean expression"); None
+          addError(expr, "Operator ! requires a boolean operand"); None
         } else {
           Some(expr)
         }
       case "@" => r match {
         case IR.LoadField(fs, oi) => fs.size match {
           case Some(x)=> Some(expr)
-          case None => addError("@ operator must act an an array"); None
+          case None => addError(expr, "Operator @ requires an array operand"); None
         }
         case _ =>
-          addError("@ operator must act on a field"); None
+          addError(expr, "Operator @ requires an array operand"); None
       }
       case "-" => typeOfExpr(r) match {
         case DTInt =>
           Some(expr)
         case _ =>
-          addError("- operator must act on an integer expression"); None
+          addError(expr, "- operator must act on an integer expression"); None
       }
     }
     case IR.Ternary(c,l,r) => typeOfExpr(c) match {
@@ -270,20 +271,20 @@ class IRBuilder(input: AST.ProgramAST) {
         if (typeOfExpr(l) == typeOfExpr(r)) {
           Some(expr)
         } else {
-          addError("Second and third parts of ternary must match in type"); None
+          addError(expr, "Second and third parts of ternary must match in type"); None
         }
       case _ =>
-        addError("Ternary condition must be boolean"); None
+        addError(expr, "Ternary condition must be boolean"); None
     }
     case IR.LoadField(field, optIndex) => optIndex match {
       case Some(indexExpr) => field.size match {
         case Some(sizeOfField) => typeOfExpr(indexExpr) match {
           case DTInt => Some(expr)
           case _ =>
-            addError("Array index must be type int"); None
+            addError(expr, "Array index must be type int"); None
         }
         case None =>
-          addError("Brackets used on non-array type"); None
+          addError(expr, "Brackets used on non-array type"); None
       }
       case None => Some(expr)
     }
