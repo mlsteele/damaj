@@ -346,11 +346,10 @@ class IRBuilder(input: AST.ProgramAST) {
   def convertAssignment(assign: AST.Assignment, ctx:Context): IR.Assignment = {
     val store = locToStore(assign.left, ctx)
     val rhs = convertExpr(assign.right, ctx)
+    assert(store.to.dtype == typeOfExpr(rhs), "Assignment left and right sides must be of the same type.");
     store.index match {
       // normal variable assignment
-      case None => {
-        assert(store.to.dtype == typeOfExpr(rhs), "Assignment left and right sides must be of the same type.");
-      }
+      case None => 
       // Array access
       case Some(i) => {
         assert(typeOfExpr(i) == DTInt, "Array index must be an integer.")
