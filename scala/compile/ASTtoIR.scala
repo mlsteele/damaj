@@ -323,7 +323,9 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
+  // TODO implement convertFor
   def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+
   def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
     val expr = convertExpr(whil.condition,symbols)
     val typ = typeOfExpr(expr)
@@ -335,9 +337,7 @@ class IRBuilder(input: AST.ProgramAST) {
       IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
     }
   }
-  def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
 
-  //  def convertBreak ( ) this can be done through =>
-  //  def convertContinue ( ) this can be done through =>
-  //  convertMany[AST.CalloutDecl](ast, "callout_many", convertCalloutDecl)
+  // TODO implement convertReturn
+  def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
 }
