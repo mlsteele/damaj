@@ -1,0 +1,5 @@
+callout a;
+callout b;
+
+void main(int a, int b) {
+}
