@@ -343,9 +343,31 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
+<<<<<<< HEAD
   // TODO implement convertFor
   def convertFor(fo: AST.For, symbols: SymbolTable): Option[IR.Statement] =
     Some(IR.Break)
+=======
+  def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): Option[IR.Statement] = symbols.lookupSymbol(fo.id) match {
+    case None => assert(false, "Symbol not found."); None
+    case Some(field) => field match {
+      case f:FieldSymbol => {
+        f.size match {
+          case Some(s) => assert(false, "Cannot use an array as a for-loop variable"); return None
+          case None =>
+        }
+        if (f.dtype != DTInt) {assert(false, "Must loop over a variable."); return None}
+        val start:IR.Expr = convertExpr(fo.start, symbols)
+        if (typeOfExpr(start) != DTInt) {assert(false, "Loop start value must be an int."); return None}
+        val end:IR.Expr = convertExpr(fo.iter, symbols)
+        if (typeOfExpr(end) != DTInt) {assert(false, "Loop end value must be an int."); return None}
+        val block:IR.Block = convertBlock(fo.then, symbols, inLoop)
+        return Some(IR.For(fo.id, start, end, block))
+      }
+      case _ => {assert(false, "Loop variable is not a field."); return None}
+    }
+  }
+>>>>>>> Implemented convertFor.
 
   def convertWhile(whil: AST.While, symbols: SymbolTable): Option[IR.While] = {
     // TODO(miles): report errors in blocks AFTER error in condition statement.
