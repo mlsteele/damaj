@@ -153,7 +153,10 @@ class IRBuilder(input: AST.ProgramAST) {
       val fs = ctx.symbols.lookupSymbol(id)
       fs match {
         case Some(s) => s match {
-          case f:FieldSymbol => verifyExpr(IR.LoadField(f, convertExpr(index, ctx)))
+          case f:FieldSymbol => {
+            assert(!f.isArray, "Expression cannot be an array.")
+            verifyExpr(IR.LoadField(f, convertExpr(index, ctx)))
+          }
           case _ =>
             assert(false, "Location must be a field")
             dummyExpr
