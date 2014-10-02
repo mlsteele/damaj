@@ -127,12 +127,15 @@ object Compiler {
 
           // building an AST can't fail.
           val ast = new ASTBuilder(parseTree, fileName, code).ast
-          println("\nAST:")
-          println(ast)
 
-          val ast_pretty = new ASTPrinter(ast).print
-          println("\nAST (pretty):")
-          println(ast_pretty)
+          if(CLI.debug) {
+            println("\nAST:")
+            println(ast)
+
+            val ast_pretty = new ASTPrinter(ast).print
+            println("\nAST (pretty):")
+            println(ast_pretty)
+          }
 
           val ir1 = new IRBuilder(ast).ir
           ir1 match {
