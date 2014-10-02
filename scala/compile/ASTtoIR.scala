@@ -93,9 +93,9 @@ class IRBuilder(input: AST.ProgramAST) {
         // Check arguments
         m.args match {
           case List() => // ok.
-          case _ => addError("Method `main` must take no arguments.")
+          case _ => addError(m, "Method 'main' must take no arguments.")
         }
-      case _ => addError("No method `main` found")
+      case _ => addError("No method 'main' found")
     }
   }
 
@@ -133,6 +133,7 @@ class IRBuilder(input: AST.ProgramAST) {
     // partialy construct the method so we can insert it into the symbol table
     // this is neccessary in order for the block to be able to refer to the method for recursion.
     val partialMethod = MethodSymbol(meth.id, paramsTable, meth.returns, IR.Block(List(), paramsTable));
+    srcmap.alias(meth, partialMethod)
 
     ctx.symbols.addSymbol(partialMethod) match {
       case None => {
