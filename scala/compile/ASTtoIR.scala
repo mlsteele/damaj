@@ -329,15 +329,25 @@ class IRBuilder(input: AST.ProgramAST) {
           val methodCallArgs = ast.args.map(convertMethodCallArg(_, ctx))
           detectBadArgs(methodCallArgs) match {
             case None => None // some args were invalid expressions.
-            case Some(methodCallArgs) =>
-              assert(methodCallArgs.length == symbol.args.length, "Method called with wrong number of arguments")
-              (symbol.args zip methodCallArgs) map {
-                case (f:FieldSymbol, Right(expr)) =>
-                  assert(f.dtype == typeOfExpr(expr), "Method called with the wrong argument types")
+            case Some(methodCallArgs) => {
+              val arg_count_correct: Boolean = methodCallArgs.length == symbol.args.length
+              val arg_types_correct_list: List[Boolean] = (symbol.args zip methodCallArgs).map{
+                case (f:FieldSymbol, Right(expr)) => f.dtype == typeOfExpr(expr) match {
+                  case true => true
+                  case false => addError("Method called with mismatched argument type"); false
+                }
                 case (f:FieldSymbol, Left(expr)) =>
-                  assert(false, "Method cannot be called with a string literal argument")
+                  addError("Method cannot be called with a string literal argument"); false
               }
-              Some(IR.MethodCall(symbol, methodCallArgs))
+              val arg_types_correct: Boolean = !arg_types_correct_list.filter(!_).nonEmpty
+
+              (arg_count_correct, arg_types_correct) match {
+                case (true, true) => Some(IR.MethodCall(symbol, methodCallArgs))
+                case (false, true) =>
+                  addError(ast, "Method called with wrong number of arguments"); None
+                case (_, false) => None
+              }
+            }
           }
         case c:CalloutSymbol =>
           val methodCallArgs = ast.args.map(convertMethodCallArg(_, ctx))
@@ -349,7 +359,7 @@ class IRBuilder(input: AST.ProgramAST) {
           addError("Cannot call a field"); None
       }
       case None =>
-        addError("Name %s not found in %s".format(ast.id, ctx.symbols)); None
+        addError("Method '%s' does not exist".format(ast.id)); None
     }
   }
 
@@ -383,7 +393,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case (Some(store), Some(rhs)) =>
         (store.to.dtype == typeOfExpr(rhs)) match {
           case false =>
-            addError("Assignment left and right sides must be of the same type"); None
+            addError("Left and right sides of assignment must be the same type"); None
           case true =>
             store.index match {
               // normal variable assignment
