@@ -188,11 +188,10 @@ class IRBuilder(input: AST.ProgramAST) {
           expr
         }
       case "@" => r match {
-        case IR.LoadField(fs, oi) => oi match {
-          case Some(i) => expr // good
-          case None => 
-            assert(false, "@ operator must act on an array")
-            dummyExpr
+        case IR.LoadField(fs, oi) => fs.size match {
+          case Some(x)=> expr
+          case None => assert(false, "@ operator must act an an array")
+                       dummyExpr
         }
         case _ =>
           assert(false, "@ operator must act on a field")
