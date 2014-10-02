@@ -1,0 +1,21 @@
+int Rec1(int a){
+   if (a>0){
+	return Rec2(a-1);
+}
+   else{
+     return 0;
+} 
+}
+
+int Rec2(int b){
+  if (b >0){
+	return Rec1(b-1);
+}
+  else{
+       return 1;
+}
+}
+
+void main( ){
+   Rec1(4);
+}
