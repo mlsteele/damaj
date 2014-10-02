@@ -1,0 +1,4 @@
+void main() {
+int a;
+for(a = 1, true) {}
+}
