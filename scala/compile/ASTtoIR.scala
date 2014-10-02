@@ -53,7 +53,7 @@ class IRBuilder(input: AST.ProgramAST) {
 
     val unchecked_ir = IR.ProgramIR(symbols)
     // post-process checks
-    checkMainMethod(unchecked_ir)
+    verifyMainMethodExists(unchecked_ir)
 
     // check the errors list to see whether an ir would be valid.
     errors.toList match {
@@ -62,24 +62,20 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  // Make sure the the main method exists.
-  // And has the correct signature. (void main())
   // Adds stuff to errors if there are issues.
-  def checkMainMethod(unchecked_ir: IR.ProgramIR): Unit = {
-    // Verify main exists
+  def verifyMainMethodExists(unchecked_ir: IR.ProgramIR): Unit = {
+    // Verify void main() exists
     unchecked_ir.symbols.lookupSymbol("main") match {
-      case Some(m: MethodSymbol) =>
-        // Check arguments
-        m.args match {
-          case List() => // ok.
-          case _ => errors += "Method `main` must take no arguments."
+      case Some(s) => s match {
+        case MethodSymbol(id, params, returns, block) => returns match {
+          case DTVoid => // OK. TODO check arguments
+          case _ => errors += "Method main 'main' must return void"
         }
-        // Check return type
-        m.returns match {
-          case DTVoid => // ok.
-          case _ => // maybe this ok too? TODO(miles): resolve ambiguity.
-        }
-      case _ => errors += "No method `main` found"
+        // main exists as a symbol but is not a method
+        case _ => errors += "No method 'main' found"
+      }
+      // no main symbol at all
+      case None => errors += "No method 'main' found"
     }
   }
 
@@ -188,12 +184,16 @@ class IRBuilder(input: AST.ProgramAST) {
           expr
         }
       case "@" => r match {
-        case IR.LoadField(fs, oi) => oi match {
-          case Some(i) => expr // good
+        case IR.LoadField(fs, oi) => fs.size match{
+                case  Some(x)=> expr
+                case None => assert(false, "@ operator must act an an array")
+                             dummyExpr
+              }
+        /*  case Some(i) => expr // good
           case None => 
             assert(false, "@ operator must act on an array")
-            dummyExpr
-        }
+            dummyExpr */
+        
         case _ =>
           assert(false, "@ operator must act on a field")
           dummyExpr
@@ -340,7 +340,23 @@ class IRBuilder(input: AST.ProgramAST) {
       case _ =>
         errors += srcmap.report(iff.condition, "If condition must be a boolean")
         None
-    }
+  }
+  }
+  // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
+  // def convertIf(iff: AST.If): IR.If = IR.If(convertExpr(iff.condition), convertBlock(iff.then), iff.elseb.map(convertBlock))
+  // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
+  // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
+  // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
+  def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
+    val expr = convertExpr(whil.condition,symbols)
+    val typ = typeOfExpr(expr)
+    if (typ != DTBool){
+      assert(false,"while must take a boolean")
+      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
+   }
+      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
+      
   }
 
 <<<<<<< HEAD

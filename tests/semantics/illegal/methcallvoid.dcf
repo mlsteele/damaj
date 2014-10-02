@@ -1,0 +1,7 @@
+void dummy () {
+}
+void main () {
+  int a;
+  a = dummy();
+
+}
