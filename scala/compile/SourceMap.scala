@@ -9,6 +9,10 @@ class SourceMap(filepath: String, code: String) {
 
   type Key = Any
 
+  // This thing is backed by an IdentityMap which considers
+  // unique objects instead of using == comparators.
+  // This is because ast/ir nodes could 'look' (==) equivalent
+  // but come from different locations in source code.
   private val store = new IdentityMap[Any, SourceMapEntry]()
   private val codelines = code.split("\n")
 
