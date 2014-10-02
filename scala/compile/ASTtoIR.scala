@@ -254,10 +254,10 @@ class IRBuilder(input: AST.ProgramAST) {
     /// TODO(miles): remove ALL of these Some's in favor of error-determined options.
     case a: AST.Assignment => Some(convertAssignment(a, symbols))
     case a: AST.MethodCall => convertMethodCall(a, symbols)
-    case a: AST.If => convertIf(a, symbols,inLoop)
-    case a: AST.For => Some(convertFor(a, symbols,inLoop))
-    case a: AST.While => Some(convertWhile(a, symbols,true))
-    case a: AST.Return => Some(convertReturn(a, symbols,true))
+    case a: AST.If => convertIf(a, symbols, inLoop)
+    case a: AST.For => convertFor(a, symbols)
+    case a: AST.While => convertWhile(a, symbols)
+    case a: AST.Return => convertReturn(a, symbols)
     case AST.Break if inLoop => Some(IR.Break)
     case AST.Break => assert(false,"break must be in a loop")
                       None
@@ -316,12 +316,7 @@ class IRBuilder(input: AST.ProgramAST) {
     IR.Block(stmts, localtable)
   }
 
-  // TODO these just return dummies for now. Comment/Uncomment when you start working on these.
-  // def convertFor(fo: AST.For): IR.For = IR.For(fo.id, convertExpr(fo.start), convertExpr(fo.iter), convertBlock(fo.then))
-  // def convertWhile (whil:AST.While): IR.While = IR.While(convertExpr(whil.condition), convertBlock(whil.block), whil.max)
-  // def convertReturn (ret:AST.Return): IR.Return = IR.Return(ret.expr.map(convertExpr))
-
-  def convertIf(iff: AST.If, symbols: SymbolTable, inLoop: Boolean): Option[IR.Statement] = {
+  def convertIf(iff: AST.If, symbols: SymbolTable, inLoop: Boolean): Option[IR.If] = {
     // TODO(miles): report errors in blocks AFTER error in condition statement.
     val condition: IR.Expr = convertExpr(iff.condition, symbols)
     val thenBlock: IR.Block = convertBlock(iff.then, symbols, inLoop)
@@ -335,20 +330,23 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   // TODO implement convertFor
-  def convertFor(fo: AST.For, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertFor(fo: AST.For, symbols: SymbolTable): Option[IR.Statement] =
+    Some(IR.Break)
 
-  def convertWhile (whil:AST.While, symbols:SymbolTable,inLoop:Boolean): IR.Statement = {
-    val expr = convertExpr(whil.condition,symbols)
-    val typ = typeOfExpr(expr)
-    if (typ != DTBool){
-      assert(false,"while must take a boolean")
-      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
-    }
-    else{
-      IR.While(expr,convertBlock(whil.block,symbols,inLoop),whil.max)
+  def convertWhile(whil: AST.While, symbols: SymbolTable): Option[IR.While] = {
+    // TODO(miles): report errors in blocks AFTER error in condition statement.
+    val cond = convertExpr(whil.condition, symbols)
+    val block = convertBlock(whil.block, symbols, true)
+
+    typeOfExpr(cond) match {
+      case DTBool => Some(IR.While(cond, block, whil.max))
+      case _ =>
+        errors += srcmap.report(whil.condition, "While condition must be a boolean")
+        None
     }
   }
 
   // TODO implement convertReturn
-  def convertReturn (ret:AST.Return, symbols:SymbolTable,inLoop:Boolean): IR.Statement = IR.Break
+  def convertReturn (ret:AST.Return, symbols:SymbolTable): Option[IR.Statement] =
+    Some(IR.Break)
 }
