@@ -1,0 +1,6 @@
+void main(){
+  int b[10];
+  int c;
+  int a[-10];
+  c = -1;
+}
