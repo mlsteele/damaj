@@ -8,6 +8,8 @@
   Run ~add -f scala~. use ~scala -version~ to make sure that scala is using version 2.11.2.
   We use ~fsc~ to compile scala a little faster. If you happen to have any trouble because of weird
   fsc version conflicts, please try killing your fsc server (find it with ~ps aux | grep fsc~).
+  Don't set any env variables like ~SCALA_HOME~ as this could force you to use the wrong version
+  of scala.
   
   Once you have the right version of scala run ~make~ or ~build.sh~ to compile the project.
   If you have trouble with this or later steps, try `make clean` to reset the build files.
