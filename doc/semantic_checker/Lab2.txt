@@ -1,3 +1,22 @@
+* Building & Running
+Steps to build and run our DAMAJ Decaf Compiler.
+
+These instructions assume you are running on Athena.
+
+Clone the repository or otherwise obtain a copy of the code.
+
+Run `add -f scala`. use `scala -version` to make sure that scala is using version 2.11.2.
+We use `fsc` to compile scala a little faster. If you happen to have any trouble because of weird
+fsc version conflicts, please try killing your fsc server (find it with `ps aux | grep fsc`).
+
+Once you have the right version of scala run `make` or `build.sh` to compile the project.
+If you have trouble with this or later steps, try `make clean` to reset the build files.
+
+Now you should be able to run the compiler using run.sh.
+For example:
+./run.sh -t inter --debug tests/semantics/illegal/illegal-01.dcf
+./run.sh -t inter --debug tests/semantics/legal/legal-01.dcf
+
 * Data Structures
 
 ** Symbols
