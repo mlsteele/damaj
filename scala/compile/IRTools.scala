@@ -35,7 +35,8 @@ object IRPrinter {
     p.getFields.map(x => "%s %s".format(printDType(x.dtype), x.id)).mkString(", ")
 
   def printBlock(b:Block): String =
-    "{\n%s%s\n}".format(indent(b.fields.getFields.map(printField)), indent(b.stmts.map(printStatement)))
+    "{\n%s\n%s\n}".format(indent(lines(b.fields.getFields.map(printField))), 
+      indent(lines(b.stmts.map(printStatement))))
 
   def printStatement(s:Statement): String = s match {
     case Assignment(left, right) => "%s = %s".format(printStore(left), printExpr(right))
@@ -88,12 +89,11 @@ object IRPrinter {
   }
 
   def printArgs(args:List[Either[StrLiteral, Expr]]): String = args.map(_ match {
-    case Left(str) => "\"%s\"".format(str.value)
+    case Left(str) => "\"%s\"".format(str.value.replace("\n","\\n").replace("\t","\\t"))
     case Right(expr) => printExpr(expr)
   }).mkString(", ")
 
   // Helpers
   def lines(strs:List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
-  def indent(strs:List[String]): String = lines(strs.map("  " + _))
-  def indent(str:String): String = indent(str.split("\n").toList)
+  def indent(str:String): String = lines(str.split("\n").map("  " + _).toList)
 }

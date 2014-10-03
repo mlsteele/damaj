@@ -26,7 +26,7 @@ object Compiler {
 
   def main(args: Array[String]): Unit = {
     CLI.parse(args, Array[String]());
-    if (!(new java.io.File(CLI.infile).exists)){
+    if (CLI.infile == null || !(new java.io.File(CLI.infile).exists)){
         Console.err.println(CLI.infile + ": No such file or directory")
         System.exit(1)
     }
