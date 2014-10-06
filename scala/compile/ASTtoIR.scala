@@ -196,12 +196,6 @@ class IRBuilder(input: AST.ProgramAST) {
     unchecked.map(ir => srcmap.alias(ast, ir)).flatMap(verifyExpr)
   }
 
-  // // Helper for converting Option[Expr]'s. If you don't already have an Option, don't use this
-  // def convertExpr(oexpr: Option[AST.Expr], ctx:Context): Option[IR.Expr] = oexpr match {
-    // case Some(expr) => Some(convertExpr(expr, ctx))
-    // case None => None
-  // }
-
   def typeOfExpr(expr: IR.Expr): DType = expr match {
     case IR.BinOp(l,o,r) => o match {
       case "+"|"-"|"*"|"/"|"%" => DTInt
