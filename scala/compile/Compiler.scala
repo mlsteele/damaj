@@ -101,7 +101,7 @@ object Compiler {
       case (false, None) =>
         Console.err.println("[ERROR]: No parse error but no parse tree")
       case (false, Some(tree)) =>
-        Console.err.println("[YAY]: Parse succeeded")
+        // Parse succeeded!
         if (CLI.debug && (CLI.target == CLI.Action.PARSE)) {
           // print("\nParse Tree:")
           // println(tree.toStringTree())
@@ -145,12 +145,11 @@ object Compiler {
               errors.map(Console.err.println)
               return 1
             case Right(ir1) =>
+              // Semantic checks passed!
               if (CLI.debug) {
                 println("\nIR (pretty):")
                 println(IRPrinter.print(ir1))
               }
-
-              Console.err.println("\n[YAY]: Semantic checks passed")
           }
       }
 
