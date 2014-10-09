@@ -33,7 +33,8 @@ object IR {
 
   sealed trait Load extends Expr
   case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load
-  case class LoadLiteral(inner: CommonLiteral) extends Load
+  case class LoadInt(value: Long) extends Load
+  case class LoadBool(value: Boolean) extends Load
 
   case class Store(to: FieldSymbol, index: Option[Expr])
 }

@@ -164,7 +164,9 @@ class IRBuilder(input: AST.ProgramAST) {
           case (Some(c), Some(l), Some(r)) => Some(IR.Ternary(c, l, r))
           case _ => None
         }
-      case AST.Literal(l) => Some(IR.LoadLiteral(l))
+      case AST.Literal(l: IntLiteral) => convertIntLiteral(l).map(IR.LoadInt)
+      case AST.Literal(CharLiteral(v)) => convertIntLiteral(IntLiteral(v)).map(IR.LoadInt)
+      case AST.Literal(BoolLiteral(v)) => Some(IR.LoadBool(v))
       case AST.Location(id, index) => {
         val symbol: Option[Symbol] = ctx.symbols.lookupSymbol(id)
         symbol match {
@@ -207,11 +209,8 @@ class IRBuilder(input: AST.ProgramAST) {
     }
     case IR.Ternary(c, l, r) => typeOfExpr(l)
     case IR.LoadField(f,i) => f.dtype
-    case IR.LoadLiteral(i) => i match {
-      case i:IntLiteral => DTInt
-      case c:CharLiteral => DTInt
-      case b:BoolLiteral => DTBool
-    }
+    case l: IR.LoadInt => DTInt
+    case l: IR.LoadBool => DTBool
     case IR.MethodCall(method, args) => method.returns
     case IR.CalloutCall(callout, args) => DTInt
 
@@ -466,7 +465,7 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def convertWhile(whil: AST.While, ctx:Context): Option[IR.While] = {
     val condition: Option[IR.Expr] = convertExpr(whil.condition, ctx)
-    // Note: We can use map here because convertIntLiteral will add errors
+    // Note: We can use flatMap here because convertIntLiteral will add errors
     // and we want to create the while even if the intliteral is invalid.
     val max: Option[Long] = whil.max.flatMap(convertIntLiteral)
     val block = convertBlock(whil.block, Context(ctx.symbols, true, ctx.returnType))

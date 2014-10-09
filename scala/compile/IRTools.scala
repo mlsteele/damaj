@@ -69,14 +69,8 @@ object IRPrinter {
       case Some(i) => "%s[%s]".format(from.id, printExpr(i))
       case None => from.id
     }
-    case LoadLiteral(inner) => inner match {
-      case IntLiteral(value) => value.toString
-      case CharLiteral(value) => "'%s'".format(value)
-      case BoolLiteral(value) => value match {
-        case true => "true"
-        case false => "false"
-      }
-    }
+    case LoadInt(value) => value.toString
+    case LoadBool(value) => value.toString
     case s:Store => printStore(s)
     case MethodCall(method, args) => "%s(%s)".format(method.id, printArgs(args))
     case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
