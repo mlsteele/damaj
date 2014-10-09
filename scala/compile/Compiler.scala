@@ -21,27 +21,38 @@ object Compiler {
     DecafScanner.BOOL_LITERAL -> "BOOLEANLITERAL"
   )
 
-  var outFile = if (CLI.outfile == null) Console.out else (new java.io.PrintStream(
-    new java.io.FileOutputStream(CLI.outfile)))
+  var outFile = Console.out
 
   def main(args: Array[String]): Unit = {
     CLI.parse(args, Array[String]());
+    outFile = Option(CLI.outfile) match {
+      case None => Console.out
+      case Some(file) => new java.io.PrintStream(new java.io.FileOutputStream(file))
+    }
     if (CLI.infile == null || !(new java.io.File(CLI.infile).exists)){
         Console.err.println(CLI.infile + ": No such file or directory")
         System.exit(1)
     }
-    if (CLI.target == CLI.Action.SCAN) {
-      scan(CLI.infile)
-      System.exit(0)
-    } else if (CLI.target == CLI.Action.PARSE) {
-      val tree = parse(CLI.infile)
-      tree match {
-        case Some(tree) => System.exit(0)
-        case None => System.exit(1)
-      }
-    } else if (CLI.target == CLI.Action.INTER) {
-      val result = inter(CLI.infile)
-      System.exit(result)
+    CLI.target match {
+      case CLI.Action.SCAN =>
+        scan(CLI.infile)
+        System.exit(0)
+      case CLI.Action.PARSE =>
+        val tree = parse(CLI.infile)
+        tree match {
+          case Some(tree) => System.exit(0)
+          case None => System.exit(1)
+        }
+      case CLI.Action.INTER =>
+        val result = inter(CLI.infile)
+        System.exit(result)
+      case CLI.Action.ASSEMBLY | CLI.Action.DEFAULT =>
+        inter(CLI.infile) match {
+          case 0 =>
+            assembly
+          case fail =>
+            System.exit(fail)
+        }
     }
   }
 
@@ -154,6 +165,10 @@ object Compiler {
       }
 
       return 0
+  }
+
+  def assembly = {
+    outFile.print(AsmGen.example)
   }
 
   def print_tree(tree: ParseTree, level: Int): Unit  = {
