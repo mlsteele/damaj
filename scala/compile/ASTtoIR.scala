@@ -282,7 +282,10 @@ class IRBuilder(input: AST.ProgramAST) {
       case None => Some(expr)
     }
     // Argument checking is being done by convertMethodCall
-    case IR.MethodCall(ms, args) => Some(expr)
+    case IR.MethodCall(ms, args) => ms.returns match {
+      case DTVoid => addError(expr, "Void method used as value in expr"); None
+      case _ => Some(expr)
+    }
     case _ => Some(expr)
   }
 
