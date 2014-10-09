@@ -7,7 +7,7 @@ object FunctionalUtils {
   /**
     * An enhanced Either type that implements map and flatMap
     */
-  class EnhancedEither[E,A](e: Either[E,A]) {
+  implicit class EnhancedEither[E,A](e: Either[E,A]) {
 
     /**
       * Applies a function if the Either is a Right
@@ -27,9 +27,4 @@ object FunctionalUtils {
       case Right(x) => f(x)
     }
   }
-
-  /**
-    * Automagically adds new methods to Either
-    */
-  implicit def enhanceEither[E,A](e: Either[E,A]) = new EnhancedEither(e)
 }

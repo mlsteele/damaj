@@ -43,9 +43,8 @@ object SymbolTable {
     }
   }
 
-  implicit def enhanceSymbol(s:Symbol) = new EnhancedSymbol(s)
-
-  class EnhancedMethodSymbol(m: MethodSymbol) {
+  // Automatically converts a MethodSymbol to an EnhancedMethodSymbol in order to add a .args method to method symbols
+  implicit class EnhancedMethodSymbol(m: MethodSymbol) {
     /**
       * Gets the list of arguments to this function.
       */
@@ -55,17 +54,12 @@ object SymbolTable {
     }) map (_.asInstanceOf[FieldSymbol])
   }
 
-  // Automatically converts a MethodSymbol to an EnhancedMethodSymbol in order to add a .args method to method symbols
-  implicit def enhancedMethodSymbol(m: MethodSymbol) = new EnhancedMethodSymbol(m)
-
-  class EnhancedFieldSymbol(f: FieldSymbol) {
+  implicit class EnhancedFieldSymbol(f: FieldSymbol) {
     def isArray(): Boolean = f.size match {
       case None   => false
       case Some(s) => true
     }
   }
-
-  implicit def enhanceFieldSymbol(f: FieldSymbol) = new EnhancedFieldSymbol(f)
 
   case class Conflict(first: Symbol, second: Symbol)
 
