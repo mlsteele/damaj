@@ -58,7 +58,7 @@ class SourceMap(filepath: String, code: String) {
   //
   // problemNode is an AST node or any other thing you have added to the source map.
   def report(problemNode: Key, msg: String): String = {
-    // TODO try/catch is here so that we get a better grade even if we screw up.
+    // NOTE(miles): try/catch is here so that we get a better grade even if we screw up.
     try {
       val e: SourceMapEntry = get(problemNode)
       lines(List(

@@ -139,7 +139,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case None => {
         val childContext = Context(paramsTable, false, meth.returns)
         // Complete partial method.
-        partialMethod.block = convertBlock(meth.block, childContext)
+        partialMethod.block = convertBlock(meth.block, true, childContext)
       }
       case Some(conflict) =>
         addError(meth, "There already exists a symbol with the name of this method '%s'"
@@ -416,13 +416,33 @@ class IRBuilder(input: AST.ProgramAST) {
     }
   }
 
-  def convertBlock(block: AST.Block, ctx:Context): IR.Block = {
+  def convertBlock(block: AST.Block, ctx: Context): IR.Block =
+    convertBlock(block, false, ctx)
+
+  def convertBlock(block: AST.Block, isMethodBlock: Boolean, ctx: Context): IR.Block = {
+    // methodBlock is whether this block is the top-level block of a method.
+    val paramstable = ctx.symbols
     val localtable = new SymbolTable(ctx.symbols)
 
-    addFieldsToTable(localtable, block.decls)
+    // Immediate locals cannot shadow parameters
+    isMethodBlock match {
+      case true =>
+        block.decls.filter{ decl =>
+          // Make sure no locals are shadowing parameters.
+          paramstable.lookupSymbolLocal(decl.id) match {
+            case None => true
+            case Some(_) => addError(decl, "Method block local cannot shadow parameter"); false
+          }
+        }.map{ decl =>
+          addFieldsToTable(localtable, List(decl))
+        }
+      case false =>
+        addFieldsToTable(localtable, block.decls)
+    }
 
     // flatten is used here to drop the None's from the stmt list.
-    val stmts = block.stmts.map(convertStatement(_, Context(localtable, ctx.inLoop, ctx.returnType))).flatten
+    val stmt_context = Context(localtable, ctx.inLoop, ctx.returnType)
+    val stmts = block.stmts.map(convertStatement(_, stmt_context)).flatten
     IR.Block(stmts, localtable)
   }
 
