@@ -1,0 +1,4 @@
+void main() {
+boolean a;
+for(a = 1, 4) {}
+}
