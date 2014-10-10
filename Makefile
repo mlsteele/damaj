@@ -50,6 +50,11 @@ antlr_classes: $(ANTLR_CLASSES)
 fsc_reset:
 	fsc -reset
 
+# Runs the scala REPL with our files added to the path
+.PHONY:
+repl: scala_classes
+	CLASSPATH=$(CLASSPATH) scala
+
 .PHONY:
 clean:
 	fsc -reset
