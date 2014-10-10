@@ -1,6 +1,6 @@
 package compile
 
-object CFG {
+object IR2 {
   import SymbolTable._
   import IR._
   import IRShared._
@@ -10,7 +10,11 @@ object CFG {
   case class Program(fields: List[Field], methods: List[Method])
 
   case class Field(id: ID, size: Option[Long])
-  case class Method(id: ID, params: List[Field], start: Block, edges: IdentityMap[Block, Transition])
+  case class Method(id: ID, params: List[Field], cfg: CFG)
+
+  // Mostly corresponds to an IR block
+  // Holds on to end so we can connect CFGs via edges
+  case class CFG(start: Block, end: Block, edges: IdentityMap[Block, Transition])
   
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
