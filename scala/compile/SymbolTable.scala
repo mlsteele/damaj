@@ -141,6 +141,12 @@ object SymbolTable {
       }
     }.flatten
 
+    def copy() : SymbolTable = {
+      val table = new SymbolTable(parent)
+      table.symbols = symbols
+      return table
+    }
+
     override
     def toString: String =
       "SymbolTable(%s, parent=%s)".format(symbols.map(_.id), parent)
