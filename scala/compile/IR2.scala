@@ -12,10 +12,6 @@ object IR2 {
   case class Field(id: ID, size: Option[Long])
   case class Method(id: ID, params: List[Field], cfg: CFG)
 
-  // Mostly corresponds to an IR block
-  // Holds on to end so we can connect CFGs via edges
-  case class CFG(start: Block, end: Block, edges: IdentityMap[Block, Transition])
-  
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
   case class Block(stmts: List[Statement])
@@ -24,6 +20,22 @@ object IR2 {
   sealed trait Transition
   case class Edge(to: Block) extends Transition
   case class Fork(condition: IR.Expr, ifTrue: Block, ifFalse: Block) extends Transition
-  case class End(from: Block) extends Transition
 
 }
+
+// A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
+// There is a single entry point and a single exit point, marked as start and end.
+// So a control flow of a -> b -> c may look like (pseudocode)
+//   CFG(a, c, {a -> Edge(b), b -> Edge(c)})
+// We hold on to the end so that CFGs can be easily chained/combined
+class CFG(val start:IR2.Block, val end:IR2.Block, val edges:IdentityMap[IR2.Block, IR2.Transition]) {
+
+  // Requires that there are no blocks in both CFGs
+  def ++(cfg:CFG): CFG = {
+    val newEdges = edges ++ cfg.edges
+    newEdges.put(end, IR2.Edge(cfg.start))
+    new CFG(start, cfg.end, newEdges)
+  }
+
+}
+

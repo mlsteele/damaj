@@ -85,5 +85,14 @@ class IdentityMap[K,V] {
 
   def put(k: K, v: V): Unit = store.put(k, v)
 
+  def putAll(m: IdentityMap[K,V]): Unit = store.putAll(m.store)
+
   def contains(k: K): Boolean = store.containsKey(k)
+
+  def ++(other: IdentityMap[K,V]): IdentityMap[K,V] = {
+    val newMap = new IdentityMap[K,V]()
+    newMap.putAll(this)
+    newMap.putAll(other)
+    newMap
+  }
 }
