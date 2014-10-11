@@ -118,8 +118,8 @@ object IRShared {
 
   implicit class EnhancedUnaryOp (op: UnaryOpType) {
     def operandType(): DType = op match {
-      case _:Not      => DTInt
-      case _:Negative => DTBool
+      case _:Not      => DTBool
+      case _:Negative => DTInt
       case _:Length   => DTInt
     }
 
