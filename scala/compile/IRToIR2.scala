@@ -14,15 +14,13 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
   def convertProgram(ir: IR.ProgramIR): IR2.Program = {
     
     val fields = ir.symbols.symbols.flatMap(_ match {
-      case c:CalloutSymbol => None
-      case m:MethodSymbol => None
       case f:FieldSymbol => Some(convertField(f))
+      case _ => None
     })
 
     val methods = ir.symbols.symbols.flatMap(_ match {
-      case c:CalloutSymbol => None
-      case f:FieldSymbol => None
       case m:MethodSymbol => Some(convertMethod(m))
+      case _ => None
     })
 
     IR2.Program(fields, methods)
