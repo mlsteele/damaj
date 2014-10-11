@@ -1,5 +1,6 @@
 package compile
 
+
 object IR2 {
   import SymbolTable._
   import IR._
@@ -21,6 +22,8 @@ object IR2 {
   case class Edge(to: Block) extends Transition
   case class Fork(condition: IR.Expr, ifTrue: Block, ifFalse: Block) extends Transition
 
+  type edgeMap = IdentityMap[IR2.Block, IR2.Transition]
+
 }
 
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
@@ -28,7 +31,7 @@ object IR2 {
 // So a control flow of a -> b -> c may look like (pseudocode)
 //   CFG(a, c, {a -> Edge(b), b -> Edge(c)})
 // We hold on to the end so that CFGs can be easily chained/combined
-class CFG(val start:IR2.Block, val end:IR2.Block, val edges:IdentityMap[IR2.Block, IR2.Transition]) {
+class CFG(val start:IR2.Block, val end:IR2.Block, val edges:IR2.edgeMap) {
 
   // Requires that there are no blocks in both CFGs
   def ++(cfg:CFG): CFG = {

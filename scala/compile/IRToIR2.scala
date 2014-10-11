@@ -43,12 +43,18 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
     new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
   }
 
-  def convertStatement(statement: IR.Statement): CFG = {
+  val dummyCFG = new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
+  def convertStatement(statement: IR.Statement): CFG = statement match {
     // TODO
     // Most statements will be just copied verbatim into the new block
     // If's, while's, and for's are the interesting parts
     // Don't forget to convert expressions
-    new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
+    case ifb:IR.If => dummyCFG //TODO
+    case forb:IR.For => dummyCFG //TODO
+    case whileb:IR.While => dummyCFG //TODO
+    case _ =>
+      val b = IR2.Block(List(statement))
+      new CFG(b, b, new IR2.edgeMap())
   }
 
   def convertExpression(expr: IR.Expr) = {
