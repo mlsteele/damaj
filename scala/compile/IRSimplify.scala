@@ -38,6 +38,43 @@ object IRSimplifier {
       })
       case l:Load => true
     }
+
+    def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+      case BinOp(left, op, right) => (left, right) match {
+        case (_:Load, _:Load) => return (List(), BinOp(left, op, right)) // Already simple!
+        case (l:Expr, r:Load) => { // Left-operand is complex
+          // Flatten the leftside
+          val (leftStatements, finalLeftExpr) = l.flatten(tempGen)
+          // Generate a temporary var for the left side of the expression
+          val leftType = op match {
+            case _:ArithmeticBinOp => DTInt
+            case _:RelationalBinOp => DTInt
+            case _:EqualityBinOp   => r.dtype()
+            case _:BooleanBinOp    => DTBool
+          }
+          val leftTempVar = tempGen.newVar(leftType)
+          val statements = leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr)
+          val finalExpr = BinOp(LoadField(leftTempVar, None), op, r)
+          return (statements, finalExpr)
+        }
+        case (l:Load, r:Expr) => { // Right-operand is complex
+          // Flatten the right side
+          val (rightStatements, finalRightExpr) = r.flatten(tempGen)
+          // Generate a temporary var for the right side of the expression
+          val rightType = op match {
+            case _:ArithmeticBinOp => DTInt
+            case _:RelationalBinOp => DTInt
+            case _:EqualityBinOp   => l.dtype()
+            case _:BooleanBinOp    => DTBool
+          }
+          val rightTempVar = tempGen.newVar(rightType)
+          val statements = rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr)
+          val finalExpr = BinOp(l, op, LoadField(rightTempVar, None))
+          return (statements, finalExpr)
+
+        }
+      }
+    }
   }
 
   // Construct an AST from a parse tree
