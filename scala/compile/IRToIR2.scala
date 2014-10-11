@@ -40,6 +40,25 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
 
   def convertBlock(block: IR.Block): IR2.CFG = {
     // TODO
+    // For each statement convert it to a CFG, then combine them
+    // with some soon-to-be-defined method on CFGs
     IR2.CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
   }
+
+  def convertStatement(statement: IR.Statement): IR2.CFG = {
+    // TODO
+    // Most statements will be just copied verbatim into the new block
+    // If's, while's, and for's are the interesting parts
+    // Don't forget to convert expressions
+    IR2.CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
+  }
+
+  def convertExpression(expr: IR.Expr) = {
+    // TODO
+    // What should this return?
+    // Here is when we do and/or short circuiting
+    // but for any other type of expr you don't need to do anything
+  }
+
+
 }
