@@ -40,6 +40,57 @@ object IRShared {
   case class Not()              extends UnaryOpType
   case class Negative()         extends UnaryOpType
 
+  val stringToBinOpMap : Map[String, BinOpType] =
+    Map(
+      "+" ->  Add(),
+      "-" -> Subtract(),
+      "*" -> Multiply(),
+      "/" -> Divide(),
+      "%" -> Mod(),
+      "<" -> LessThan(),
+      ">" -> GreaterThan(),
+      "<=" -> LessThanEqual(),
+      ">=" -> GreaterThanEqual(),
+      "==" -> Equals(),
+      "!=" -> NotEquals(),
+      "&&" -> And(),
+      "||" -> Or()
+    )
+
+  val binToStringOpMap : Map[BinOpType, String] = stringToBinOpMap.map(_.swap)
+
+  val stringToUnaryOpMap : Map[String, UnaryOpType] = 
+    Map(
+      "-" -> Negative(),
+      "!" -> Not()
+    )
+
+  val unaryOpToStringMap : Map[UnaryOpType, String] = stringToUnaryOpMap.map(_.swap)
+
+  // Converts strings to bin ops
+  implicit def StringToBinOp(s: String) : BinOpType = stringToBinOpMap get s match {
+    case None => assert(false, "Failed to convert string to bin op. This shouldn't happen."); Add()
+    case Some(b) => b
+  }
+
+  // Implicit convert bin ops to strings
+  implicit def BinOpToString(b: BinOpType) : String = binToStringOpMap get b match {
+    case None => assert(false, "Failed to convert bin op to string. This shouldn't happen."); "WTF"
+    case Some(s) => s
+  }
+
+  // Converts strings to unary ops
+  implicit def StringToUnaryOp(s: String) : UnaryOpType = stringToUnaryOpMap get s match {
+    case None => assert(false, "Failed to convert string to unary op. This shouldn't happen."); Not()
+    case Some(u) => u
+  }
+
+  // Implicitly convert a unary op to a string
+  implicit def UnaryOpToString(u: UnaryOpType) : String = unaryOpToStringMap get u match {
+    case None => assert(false, "Failed to convert unary to string. This shouldn't happen."); "WTF"
+    case Some(s) => s
+  }
+
   implicit class EnhancedBinOpType (op: BinOpType) {
     /**
       * Returns the type of the operand.  Returns None if the operand
