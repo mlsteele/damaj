@@ -4,6 +4,12 @@ package compile;
   * Classes to make scala a little more functional
   */
 object FunctionalUtils {
+
+  /**
+    * Checks if all of the booleans in the list are true
+    */
+  def all(conds: List[Boolean]) : Boolean = conds.filter(_==false).length == 0
+
   /**
     * An enhanced Either type that implements map and flatMap
     */

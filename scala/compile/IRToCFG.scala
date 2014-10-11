@@ -1,12 +1,11 @@
 package compile
 
-import IR._
-import IRShared._
-import SymbolTable._
-import TempVarGen._
-
 object IRToCFG {
-  def all(conds: List[Boolean]) : Boolean = conds.filter(_==false).length == 0
+  import IR._
+  import IRShared._
+  import SymbolTable._
+  import TempVarGen._
+  import FunctionalUtils._
 
   implicit class EnhancedLoad(load: Load) {
     // Gets the type of a load
