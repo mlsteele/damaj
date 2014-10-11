@@ -8,6 +8,15 @@ import TempVarGen._
 object IRToCFG {
   def all(conds: List[Boolean]) : Boolean = conds.filter(_==false).length == 0
 
+  implicit class EnhancedLoad(load: Load) {
+    // Gets the type of a load
+    def dtype(): DType = load match {
+      case LoadField(from, _) => from.dtype
+      case LoadInt(_)         => DTInt
+      case LoadBool(_)        => DTBool
+    }
+  }
+
   implicit class MaybeSimpleExpr (expr: Expr) {
     def isLoad() : Boolean = expr match {
       case l:Load => true
