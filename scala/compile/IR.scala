@@ -27,8 +27,8 @@ object IR {
   case object Continue extends Statement
 
   sealed trait Expr
-  case class BinOp(left: Expr, op: String, right: Expr) extends Expr
-  case class UnaryOp(op: String, right: Expr) extends Expr
+  case class BinOp(left: Expr, op: BinOpType, right: Expr) extends Expr
+  case class UnaryOp(op: UnaryOpType, right: Expr) extends Expr
   case class Ternary(condition: Expr, left: Expr, right: Expr) extends Expr
 
   sealed trait Load extends Expr

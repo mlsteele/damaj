@@ -29,8 +29,10 @@ object IRShared {
   case class GreaterThan()      extends RelationalBinOp
   case class LessThanEqual()    extends RelationalBinOp
   case class GreaterThanEqual() extends RelationalBinOp
-  case class Equals()           extends RelationalBinOp
-  case class NotEquals()        extends RelationalBinOp
+
+  sealed trait EqualityBinOp extends BinOpType
+  case class Equals()           extends EqualityBinOp
+  case class NotEquals()        extends EqualityBinOp
 
   sealed trait BooleanBinOp extends BinOpType
   case class And()              extends BooleanBinOp
@@ -39,6 +41,7 @@ object IRShared {
   sealed trait UnaryOpType
   case class Not()              extends UnaryOpType
   case class Negative()         extends UnaryOpType
+  case class Length()           extends UnaryOpType
 
   val stringToBinOpMap : Map[String, BinOpType] =
     Map(
@@ -62,7 +65,8 @@ object IRShared {
   val stringToUnaryOpMap : Map[String, UnaryOpType] = 
     Map(
       "-" -> Negative(),
-      "!" -> Not()
+      "!" -> Not(),
+      "@" -> Length()
     )
 
   val unaryOpToStringMap : Map[UnaryOpType, String] = stringToUnaryOpMap.map(_.swap)
@@ -100,13 +104,15 @@ object IRShared {
     def operandType() : Option[DType] = op match {
       case _:ArithmeticBinOp => Some(DTInt)
       case _:BooleanBinOp    => Some(DTBool)
-      case _:RelationalBinOp => None
+      case _:RelationalBinOp => Some(DTInt)
+      case _:EqualityBinOp   => None
       }
 
     def returnType() : DType = op match {
       case _:ArithmeticBinOp => DTInt
       case _:BooleanBinOp    => DTBool
       case _:RelationalBinOp => DTBool
+      case _:EqualityBinOp   => DTBool
     }
   }
 
@@ -114,6 +120,7 @@ object IRShared {
     def operandType(): DType = op match {
       case _:Not      => DTInt
       case _:Negative => DTBool
+      case _:Length   => DTInt
     }
 
     def returnType() : DType = operandType()

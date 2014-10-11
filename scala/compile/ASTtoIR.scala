@@ -199,14 +199,8 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   def typeOfExpr(expr: IR.Expr): DType = expr match {
-    case IR.BinOp(l,o,r) => o match {
-      case "+"|"-"|"*"|"/"|"%" => DTInt
-      case "&&"|"||"|"<"|">"|"=="|"!="|"<="|">=" => DTBool
-    }
-    case IR.UnaryOp(o,r) => o match {
-      case "@"|"-" => DTInt
-      case "!" => DTBool
-    }
+    case b:IR.BinOp => b.op.returnType()
+    case u:IR.UnaryOp => u.op.returnType()
     case IR.Ternary(c, l, r) => typeOfExpr(l)
     case IR.LoadField(f,i) => f.dtype
     case l: IR.LoadInt => DTInt
@@ -218,19 +212,25 @@ class IRBuilder(input: AST.ProgramAST) {
 
   def verifyExpr(expr: IR.Expr): Option[IR.Expr] = expr match {
     case IR.BinOp(l,o,r) => o match {
-      case "=="|"!=" =>
+      case _:EqualityBinOp =>
         if (typeOfExpr(l) != typeOfExpr(r)) {
           addError(expr, "Mismatched types for %s".format(o)); None
         } else {
           Some(expr)
         }
-      case "+"|"-"|"*"|"/"|"%"|"<"|">"|"<="|">=" =>
+      case _:ArithmeticBinOp =>
         if (typeOfExpr(l) != DTInt || typeOfExpr(r) != DTInt) {
           addError(expr, "Operator %s requires int operands".format(o)); None
         } else {
           Some(expr)
         }
-      case "&&"|"||" =>
+      case _:RelationalBinOp =>
+        if (typeOfExpr(l) != DTInt || typeOfExpr(r) != DTInt) {
+          addError(expr, "Operator %s requires int operands".format(o)); None
+        } else {
+          Some(expr)
+        }
+      case _:BooleanBinOp =>
         if (typeOfExpr(l) != DTBool || typeOfExpr(r) != DTBool) {
           addError(expr, "Operator %s requires boolean operands".format(o)); None
         } else {
@@ -238,13 +238,13 @@ class IRBuilder(input: AST.ProgramAST) {
         }
     }
     case IR.UnaryOp(o,r) => o match {
-      case "!" =>
+      case Not() =>
         if (typeOfExpr(r) != DTBool) {
           addError(expr, "Operator ! requires a boolean operand"); None
         } else {
           Some(expr)
         }
-      case "@" => r match {
+      case Length()  => r match {
         case IR.LoadField(fs, oi) => fs.size match {
           case Some(x)=> Some(expr)
           case None => addError(expr, "Operator @ requires an array operand"); None
@@ -252,7 +252,7 @@ class IRBuilder(input: AST.ProgramAST) {
         case _ =>
           addError(expr, "Operator @ requires an array operand"); None
       }
-      case "-" => typeOfExpr(r) match {
+      case Negative() => typeOfExpr(r) match {
         case DTInt =>
           Some(expr)
         case _ =>
