@@ -1,6 +1,6 @@
 package compile
 
-object IRToCFG {
+object IRSimplifier {
   import IR._
   import IRShared._
   import SymbolTable._
@@ -45,6 +45,6 @@ object IRToCFG {
   // source - source code
   // Example Usage:
   //   val ast = ASTBuilder.parseProgram(parseTree).ast
-  class CFGBuilder(var program: ProgramIR, filepath: String, code: String) {
+  class IRSimplifier(var program: ProgramIR, filepath: String, code: String) {
   }
 }
