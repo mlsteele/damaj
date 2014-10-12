@@ -29,7 +29,7 @@ object IR {
   ) extends Call
 
   case class If(
-    conditionStmts: List[Statement],
+    preStmts: List[Statement],
     condition: Expr,
     thenb: Block,
     elseb: Option[Block]
