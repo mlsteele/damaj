@@ -50,6 +50,7 @@ object IRSimplifier {
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case load:Load => return (List(), load) // Already simple!
+
       case UnaryOp(op, operand) => operand match {
         case _:Load => return (List(), UnaryOp(op, operand)) // Already simple!
         case e:Expr => {
@@ -61,6 +62,7 @@ object IRSimplifier {
           return (statements, finalExpr)
         }
       }
+
       case BinOp(left, op, right) => (left, right) match {
         case (_:Load, _:Load) => return (List(), BinOp(left, op, right)) // Already simple!
         case _ => {
@@ -74,12 +76,34 @@ object IRSimplifier {
           val rightTempVar = tempGen.newVar(typeOfExpr(right))
 
           // Combine statements for generating left and right sides
-          val statements = leftStatements :+
+          val statements = (leftStatements ++ rightStatements) :+
             Assignment(Store(leftTempVar, None), finalLeftExpr) :+ 
             Assignment(Store(rightTempVar, None), finalRightExpr)
 
           // Final expr is (tempLeft 'op' tempRight)
           val finalExpr = BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None))
+          return (statements, finalExpr)
+        }
+      }
+
+      case Ternary(cond, left, right) => (cond, left, right) match {
+        case (_:Load, _:Load, _:Load) => return (List(), expr) //  Already simple!
+        case _ => {
+          val (condStatements, finalCondExpr) = cond.flatten(tempGen)
+          val condTempVar = tempGen.newVar(typeOfExpr(finalCondExpr))
+
+          val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
+          val leftTempVar = tempGen.newVar(typeOfExpr(finalLeftExpr))
+
+          val (rightStatements, finalRightExpr) = right.flatten(tempGen)
+          val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
+
+          val statements = (condStatements ++ leftStatements ++ rightStatements) :+
+            Assignment(Store(condTempVar, None), finalCondExpr) :+
+            Assignment(Store(leftTempVar, None), finalLeftExpr) :+
+            Assignment(Store(rightTempVar, None), finalRightExpr)
+
+          val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
           return (statements, finalExpr)
         }
       }
