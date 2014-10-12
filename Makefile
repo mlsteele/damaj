@@ -52,8 +52,8 @@ fsc_reset:
 
 # Runs the scala REPL with our files added to the path
 .PHONY:
-repl: scala_classes
-	CLASSPATH=$(CLASSPATH) scala
+repl:
+	CLASSPATH=$(CLASSPATH) scala -deprecation -feature -language:implicitConversio
 
 .PHONY:
 clean:
