@@ -4,7 +4,7 @@ import IR._
 import IR2._
 import IRShared._
 import SymbolTable._
-
+import TempVarGen._
 // Construct an AST from a parse tree
 // ptree - root program node
 // source - source code
@@ -55,13 +55,6 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
     case _ =>
       val b = IR2.Block(List(statement))
       new CFG(b, b, new IR2.edgeMap())
-  }
-
-  def convertExpression(expr: IR.Expr) = {
-    // TODO
-    // What should this return?
-    // Here is when we do and/or short circuiting
-    // but for any other type of expr you don't need to do anything
   }
 
 
