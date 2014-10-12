@@ -39,6 +39,15 @@ object IRSimplifier {
       case l:Load => true
     }
 
+    /**
+      * Takes an expression, and generates a list of statements and
+      * temporary variable assignments that are needed to generate the
+      * expression, if the expression is not simple.  For example,
+      * (z = a + b + c + d) will be translated into the following statements
+      * and final expr:
+      * statements = [t1 = a + b, t2 = t1 + c]
+      * final expr: (t2 + c)
+      */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case UnaryOp(op, operand) => operand match {
         case _:Load => return (List(), UnaryOp(op, operand)) // Already simple!
