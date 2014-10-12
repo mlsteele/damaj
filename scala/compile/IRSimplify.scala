@@ -49,6 +49,7 @@ object IRSimplifier {
       * final expr: (t2 + d)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+      case load:Load => return (List(), load) // Already simple!
       case UnaryOp(op, operand) => operand match {
         case _:Load => return (List(), UnaryOp(op, operand)) // Already simple!
         case e:Expr => {
