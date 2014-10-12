@@ -51,16 +51,13 @@ object IRSimplifier {
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case load:Load => return (List(), load) // Already simple!
 
-      case UnaryOp(op, operand) => operand match {
-        case _:Load => return (List(), UnaryOp(op, operand)) // Already simple!
-        case e:Expr => {
-          // Flatten the operand, and assign it to a temporary var
-          val (operandStatements, operandExpr) = e.flatten(tempGen)
-          val tempVar = tempGen.newVar(op.operandType())
-          val statements = operandStatements :+ Assignment(Store(tempVar, None), operandExpr)
-          val finalExpr = UnaryOp(op, LoadField(tempVar, None))
-          return (statements, finalExpr)
-        }
+      case UnaryOp(op, e) => {
+        // Flatten the operand, and assign it to a temporary var
+        val (operandStatements, operandExpr) = e.flatten(tempGen)
+        val tempVar = tempGen.newVar(op.operandType())
+        val statements = operandStatements :+ Assignment(Store(tempVar, None), operandExpr)
+        val finalExpr = UnaryOp(op, LoadField(tempVar, None))
+        return (statements, finalExpr)
       }
 
       case BinOp(left, op, right) => (left, right) match {
