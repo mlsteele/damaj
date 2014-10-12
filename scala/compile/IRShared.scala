@@ -16,7 +16,13 @@ object IRShared {
   // String literal is not a literal! It's only used in callout args.
   case class StrLiteral(value: String)
 
-  sealed trait BinOpType
+  sealed trait BinOpType {
+    override def toString() : String = binToStringOpMap get this match {
+    case None => assert(false, "Failed to convert bin op to string. This shouldn't happen."); "WTF"
+    case Some(s) => s
+    }
+  }
+
   sealed trait ArithmeticBinOp extends BinOpType
   case class Add()              extends ArithmeticBinOp
   case class Subtract()         extends ArithmeticBinOp
@@ -38,7 +44,13 @@ object IRShared {
   case class And()              extends BooleanBinOp
   case class Or()               extends BooleanBinOp
 
-  sealed trait UnaryOpType
+  sealed trait UnaryOpType {
+    override def toString() : String = unaryOpToStringMap get this match {
+      case None => assert(false, "Failed to convert unary op to string. This shouldn't happen."); "WTF"
+      case Some(s) => s
+    }
+  }
+
   case class Not()              extends UnaryOpType
   case class Negative()         extends UnaryOpType
   case class Length()           extends UnaryOpType
@@ -95,22 +107,10 @@ object IRShared {
     case Some(b) => b
   }
 
-  // Implicit convert bin ops to strings
-  implicit def BinOpToString(b: BinOpType) : String = binToStringOpMap get b match {
-    case None => assert(false, "Failed to convert bin op to string. This shouldn't happen."); "WTF"
-    case Some(s) => s
-  }
-
   // Converts strings to unary ops
   implicit def StringToUnaryOp(s: String) : UnaryOpType = stringToUnaryOpMap get s match {
     case None => assert(false, "Failed to convert string to unary op. This shouldn't happen."); Not()
     case Some(u) => u
-  }
-
-  // Implicitly convert a unary op to a string
-  implicit def UnaryOpToString(u: UnaryOpType) : String = unaryOpToStringMap get u match {
-    case None => assert(false, "Failed to convert unary to string. This shouldn't happen."); "WTF"
-    case Some(s) => s
   }
 
   implicit class EnhancedBinOpType (op: BinOpType) {
