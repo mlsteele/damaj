@@ -41,29 +41,29 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
  
 
   val dummyCFG = new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
-  def convertStatement(statement: IR.Statement): CFG = {
-    val end = IR2.Block(List())
-    statement match {
-    // TODO
-    // Most statements will be just copied verbatim into the new block
-    // If's, while's, and for's are the interesting parts
-    // Don't forget to convert expressions
-    case ifb:IR.If =>
-      val head = IR2.Block(List(ifb.conditionStmts,ifb.condition) ) 
-      val edges:edgeMap = new IdentityMap[IR2.Block,Transition]
-      edges.put(head,Fork(head,ifb.thenb,ifb.elseb))
-      new CFG(head,end,edges)
-    case forb:IR.For =>
-      val head = IR2.Block(forb.startPreStmts)
-      val edges:edgeMap = new IdentityMap[IR2.Block,Transition] 
-      edges.put(head,Edge(forb.iterPreStmts))
-      edges.put(forb.iterPreStmts,Fork(forb.iter,forb.thenb,end))
-      edges.put(forb.thenb,Edge(forb.iterPreStmts))
-      new CFG(head,end,edges)
-    case whileb:IR.While => dummyCFG //TODO
-    case _ =>
-      val b = IR2.Block(List(statement))
-      new CFG(b, b, new IR2.edgeMap())
-        }
-}
+  // def convertStatement(statement: IR.Statement): CFG = {
+  //   val end = IR2.Block(List())
+  //   statement match {
+  //   // TODO
+  //   // Most statements will be just copied verbatim into the new block
+  //   // If's, while's, and for's are the interesting parts
+  //   // Don't forget to convert expressions
+  //     case ifb:IR.If =>
+  //       val head = IR2.Block(ifb.preStmts)
+  //       val edges:edgeMap = new IdentityMap[IR2.Block,Transition]
+  //       edges.put(head,Fork(ifb.condition,ifb.thenb,ifb.elseb))
+  //       new CFG(head,end,edges)
+  //     case forb:IR.For =>
+  //       val head = IR2.Block(forb.startPreStmts)
+  //       val edges:edgeMap = new IdentityMap[IR2.Block,Transition]
+  //       edges.put(head,Edge(forb.iterPreStmts))
+  //       edges.put(forb.iterPreStmts,Fork(forb.iter,forb.thenb,end))
+  //       edges.put(forb.thenb,Edge(forb.iterPreStmts))
+  //       new CFG(head,end,edges)
+  //     case whileb:IR.While => dummyCFG //TODO
+  //     case _ =>
+  //       val b = IR2.Block(List(statement))
+  //       new CFG(b, b, new IR2.edgeMap())
+  //   }
+  // }
 }
