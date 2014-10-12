@@ -3,6 +3,7 @@ package compile
 object TempVarGen {
   import SymbolTable._
   import IRShared._
+  import IR.Expr
 
   /*
    * Takes a symbol table and progressively inserts automatically
