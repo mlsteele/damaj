@@ -216,6 +216,28 @@ object IRSimplifier {
       case Break => true
       case Continue => true
     }
+
+    /* Converts a statement (possibly simple or non-simple) into a list of
+     * equivalent statements that are all simple by generating
+     * temporary variables for complex sub-expressions.
+     */
+    def flatten(tempGen: TempVarGen) : List[Statement] = stmt match {
+      case Assignment(left, right) => {
+        val (stmts, finalExpr) = right.flatten(tempGen)
+        return stmts :+ Assignment(left, finalExpr)
+      }
+      // MethodCall and CalloutCall have weird casts because they
+      // are both Exprs and Statements
+      case m:MethodCall => {
+        val (stmts, finalExpr) = m.asInstanceOf[Expr].flatten(tempGen)
+        return stmts :+ finalExpr.asInstanceOf[MethodCall]
+      }
+      case c:CalloutCall => {
+        val (stmts, finalExpr) = c.asInstanceOf[Expr].flatten(tempGen)
+        return stmts :+ finalExpr.asInstanceOf[CalloutCall]
+      }
+    }
+
   }
 
   // Construct an AST from a parse tree
