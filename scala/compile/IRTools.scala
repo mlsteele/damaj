@@ -42,9 +42,9 @@ object IRPrinter {
     case Assignment(left, right) => "%s = %s".format(printStore(left), printExpr(right))
     case MethodCall(method, args) => "%s(%s)".format(method.id, printArgs(args))
     case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
-    case If(condition, thenb, elseb) => elseb match {
+    case If(conditionStmts, condition, thenb, elseb) => elseb match {
       case Some(block) =>
-        "if (%s) %s %s".format(printExpr(condition), printBlock(thenb), printBlock(block))
+        "%s if (%s) %s %s".format(conditionStmts.map(printStatement(_)), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "if (%s) %s".format(printExpr(condition), printBlock(thenb))
     }
     case For(id, start, iter, thenb) =>

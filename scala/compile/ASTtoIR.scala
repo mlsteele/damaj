@@ -457,7 +457,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case None => None
       case Some(condition) =>
         typeOfExpr(condition) match {
-          case DTBool => Some(IR.If(condition, thenBlock, elseBlock))
+          case DTBool => Some(IR.If(List(), condition, thenBlock, elseBlock))
           case _ =>
             addError(iff.condition, "If condition must be a boolean"); None
         }
