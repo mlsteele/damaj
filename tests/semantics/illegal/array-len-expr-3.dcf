@@ -1,0 +1,4 @@
+void main() {
+    int b;
+    b = @(1 + 2);
+}
