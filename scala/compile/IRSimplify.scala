@@ -260,6 +260,16 @@ object IRSimplifier {
           thenb.flatten()
         ))
       }
+      case While(preStmts, cond, block, max) => {
+        val (condStmts, condExpr) = cond.flatten(tempGen)
+        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++ condStmts
+        return List(While(
+          newPreStmts,
+          condExpr,
+          block.flatten(),
+          max
+        ))
+      }
     }
   }
 
