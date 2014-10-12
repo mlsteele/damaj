@@ -49,6 +49,9 @@ object IRShared {
     */
   def typeOfExpr(expr: IR.Expr): DType = expr match {
     case b:IR.BinOp => b.op.returnType()
+    // op @ always returns an int
+    case IR.UnaryOp(Length(), _) => DTInt
+    // the other unary ops do not change the inner type
     case u:IR.UnaryOp => u.op.returnType()
     case IR.Ternary(c, l, r) => typeOfExpr(l)
     case IR.LoadField(f,i) => f.dtype
@@ -56,7 +59,6 @@ object IRShared {
     case l: IR.LoadBool => DTBool
     case IR.MethodCall(method, args) => method.returns
     case IR.CalloutCall(callout, args) => DTInt
-
   }
 
   val stringToBinOpMap : Map[String, BinOpType] =

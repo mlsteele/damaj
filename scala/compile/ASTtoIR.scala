@@ -154,6 +154,8 @@ class IRBuilder(input: AST.ProgramAST) {
           case (Some(left), Some(right)) => Some(IR.BinOp(left, op, right))
           case _ => None
         }
+      // @ is special because it must hold an load array on the right.
+      case AST.UnaryOp("@", right) => getArrayLength(right, ctx)
       case AST.UnaryOp(op, right) =>
         convertExpr(right, ctx) match {
           case Some(right) => Some(IR.UnaryOp(op, right))
@@ -232,13 +234,9 @@ class IRBuilder(input: AST.ProgramAST) {
         } else {
           Some(expr)
         }
-      case Length()  => r match {
-        case IR.LoadField(fs, oi) => fs.size match {
-          case Some(x)=> Some(expr)
-          case None => addError(expr, "Operator @ requires an array operand"); None
-        }
-        case _ =>
-          addError(expr, "Operator @ requires an array operand"); None
+      case Length() => r match {
+        case IR.LoadField(fs, Some(idx)) => Some(expr)
+        case _ => addError(expr, "Operator @ requires an array operand"); None
       }
       case Negative() => typeOfExpr(r) match {
         case DTInt =>
@@ -275,6 +273,22 @@ class IRBuilder(input: AST.ProgramAST) {
       case _ => Some(expr)
     }
     case _ => Some(expr)
+  }
+
+  // Returns the length of an array if it exists in the context.
+  // Adds errors if it returns None
+  def getArrayLength(ast: AST.Expr, ctx: Context): Option[IR.LoadInt] = ast match {
+    case AST.Location(id, idx) =>
+      val symbol = ctx.symbols.lookupSymbol(id)
+      (idx, symbol) match {
+        case (_, None) =>
+          addError(ast, "Unknown identifier '%s'".format(id)); None
+        case (None, Some(FieldSymbol(dtype, id, Some(length)))) =>
+          Some(IR.LoadInt(length))
+        case (_) =>
+          addError(ast, "Cannot get length of non-array"); None
+      }
+    case _ => addError(ast, "Cannot get length of non-location"); None
   }
 
   def convertMethodDeclArg(ast: AST.MethodDeclArg, ctx:Context): FieldSymbol =
