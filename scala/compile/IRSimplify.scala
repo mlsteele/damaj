@@ -237,7 +237,14 @@ object IRSimplifier {
         return stmts :+ finalExpr.asInstanceOf[CalloutCall]
       }
     }
+  }
 
+  implicit class MaybeSimpleBlock (var block: Block) {
+    def flatten() : Block = {
+      val tempGen = new TempVarGen(block.fields)
+      val newStmts = block.stmts.flatMap(_.flatten(tempGen))
+      return Block(newStmts, block.fields)
+    }
   }
 
   // Construct an AST from a parse tree
