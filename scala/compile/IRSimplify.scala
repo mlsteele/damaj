@@ -247,6 +247,19 @@ object IRSimplifier {
           elseb.map(_.flatten())
         ))
       }
+      case For(id, startPreStmts, start, endPreStmts, end, thenb) => {
+        val (additionalStartStmts, startExpr) = start.flatten(tempGen)
+        val newStartPreStmts = startPreStmts.flatMap(_.flatten(tempGen)) ++ additionalStartStmts
+        val (additionalEndStmts, endExpr) = end.flatten(tempGen)
+        val newEndPreStmts = endPreStmts.flatMap(_.flatten(tempGen)) ++ additionalEndStmts
+        return List(For(id,
+          newStartPreStmts,
+          startExpr,
+          newEndPreStmts,
+          endExpr,
+          thenb.flatten()
+        ))
+      }
     }
   }
 
