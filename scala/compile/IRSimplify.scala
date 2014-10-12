@@ -119,9 +119,9 @@ object IRSimplifier {
         val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
 
         val statements = (condStatements ++ leftStatements ++ rightStatements) :+
-        Assignment(Store(condTempVar, None), finalCondExpr) :+
-        Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-        Assignment(Store(rightTempVar, None), finalRightExpr)
+          Assignment(Store(condTempVar, None), finalCondExpr) :+
+          Assignment(Store(leftTempVar, None), finalLeftExpr) :+
+          Assignment(Store(rightTempVar, None), finalRightExpr)
 
         val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
         return (statements, finalExpr)
