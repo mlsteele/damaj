@@ -44,14 +44,16 @@ object Compiler {
           case None => System.exit(1)
         }
       case CLI.Action.INTER =>
-        val result = inter(CLI.infile)
-        System.exit(result)
+        inter(CLI.infile) match {
+          case Some(_) => System.exit(0)
+          case None    => System.exit(1)
+        }
       case CLI.Action.ASSEMBLY | CLI.Action.DEFAULT =>
         inter(CLI.infile) match {
-          case 0 =>
-            assembly
-          case fail =>
-            System.exit(fail)
+          case Some(ir) =>
+            assembly(ir)
+          case None =>
+            System.exit(1)
         }
     }
   }
@@ -138,11 +140,11 @@ object Compiler {
     }
   }
 
-  def inter(fileName: String): Int = {
+  def inter(fileName: String): Option[IR.ProgramIR] = {
       val parseTree = parse(fileName)
       val code = io.Source.fromFile(fileName).mkString
       parseTree match {
-        case None => return 1
+        case None => return None
         case Some(parseTree) =>
 
           // building an AST can't fail.
@@ -154,20 +156,19 @@ object Compiler {
               Console.err.println(
                 "\nFound %s semantic errors!".format(errors.length))
               errors.map(Console.err.println)
-              return 1
+              return None
             case Right(ir1) =>
               // Semantic checks passed!
               if (CLI.debug) {
                 println("\nIR (pretty):")
                 println(IRPrinter.print(ir1))
               }
+              return Some(ir1)
           }
       }
-
-      return 0
   }
 
-  def assembly = {
+  def assembly(programIR: IR.ProgramIR) = {
     outFile.print(AsmGen.example3)
   }
 
