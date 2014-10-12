@@ -295,12 +295,9 @@ object IRSimplifier {
   //   val ast = ASTBuilder.parseProgram(parseTree).ast
   class IRSimplifier(var program: ProgramIR, filepath: String, code: String) {
     def simplify() : ProgramIR = {
-      val methods = program.symbols.symbols.filter(_.isMethod())
+      var methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+      methods.map(m => m.block = m.block.flatten())
       return program
-    }
-
-    private def simplifyMethod(method: MethodSymbol) : MethodSymbol = {
-      return method
     }
   }
 }
