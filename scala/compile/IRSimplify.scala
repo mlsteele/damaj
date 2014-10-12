@@ -270,6 +270,11 @@ object IRSimplifier {
           max
         ))
       }
+      case Return(None) => List(Return(None))
+      case Return(Some(expr)) => {
+        val (exprStmts, finalExpr) = expr.flatten(tempGen)
+        return exprStmts :+ Return(Some(finalExpr))
+      }
     }
   }
 
