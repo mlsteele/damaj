@@ -126,6 +126,29 @@ object IRSimplifier {
         val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
         return (statements, finalExpr)
       }
+
+      case CalloutCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var tempVars: List[Either[StrLiteral, Expr]] = List()
+        for (eitherArg <- args) {
+          eitherArg match {
+            case Right(arg) => {
+              // flatten all the args, collecting their dependency statements and temporary vars
+              val (argStatements, argExpr) = arg.flatten(tempGen)
+              val argTempVar = tempGen.newVarLike(argExpr)
+              statements = (statements ++ argStatements) :+
+                Assignment(Store(argTempVar, None), argExpr)
+              tempVars = tempVars :+ Right(LoadField(argTempVar, None))
+            }
+            case Left(str) => {
+              tempVars = tempVars :+ Left(str)
+            }
+          }
+        }
+        // Make a new callout call using the temporary vars as the args
+        val finalExpr = CalloutCall(symbol, tempVars)
+        return (statements, finalExpr)
+      }
     }
   }
 
