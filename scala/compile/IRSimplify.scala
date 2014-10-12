@@ -198,8 +198,9 @@ object IRSimplifier {
         preds = preds :+ condition.isSimple()
         return all(preds)
       }
-      case For(preStmts, _, start, iter, thenb) => {
-        val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
+      case For(id, startPreStmts, start, iterPreStmts, iter, thenb) => {
+        val preds: List[Boolean] = startPreStmts.map(_.isSimple()) ++
+          iterPreStmts.map(_.isSimple()) ++
           thenb.stmts.map(_.isSimple()) :+
           start.isSimple() :+
           iter.isSimple()

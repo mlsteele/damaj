@@ -50,8 +50,14 @@ object IRPrinter {
         "%s if (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "if (%s) %s".format(printExpr(condition), printBlock(thenb))
     }
-    case For(preStmts, id, start, iter, thenb) =>
-      "%s for (%s = %s, %s) %s".format(printPreStmts(preStmts), id, printExpr(start), printExpr(iter), printBlock(thenb))
+    case For(id, startPreStmts, start, iterPreStmts, iter, thenb) =>
+      "%s for (%s = %s, {%s} %s) %s".format(
+        printPreStmts(startPreStmts),
+        id,
+        printExpr(start),
+        printPreStmts(iterPreStmts),
+        printExpr(iter),
+        printBlock(thenb))
     case While(preStmts, condition, block, max) => max match {
       case Some(int) =>"while (%s) : %s %s".format(printExpr(condition), int, printBlock(block))
       case None => "%s while (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printPreStmts(preStmts), printBlock(block))
