@@ -38,20 +38,23 @@ object IRPrinter {
     "{\n%s\n%s\n}".format(indent(lines(b.fields.getFields.map(printField))), 
       indent(lines(b.stmts.map(printStatement))))
 
+  def printPreStmts(preStmts: List[Statement]) = 
+    preStmts.map(printStatement(_)).mkString("; ")
+
   def printStatement(s:Statement): String = s match {
     case Assignment(left, right) => "%s = %s".format(printStore(left), printExpr(right))
     case MethodCall(method, args) => "%s(%s)".format(method.id, printArgs(args))
     case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
-    case If(conditionStmts, condition, thenb, elseb) => elseb match {
+    case If(preStmts, condition, thenb, elseb) => elseb match {
       case Some(block) =>
-        "%s if (%s) %s %s".format(conditionStmts.map(printStatement(_)), printExpr(condition), printBlock(thenb), printBlock(block))
+        "%s if (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "if (%s) %s".format(printExpr(condition), printBlock(thenb))
     }
     case For(preStmts, id, start, iter, thenb) =>
-      "%s for (%s = %s, %s) %s".format(preStmts.map(printStatement(_)), id, printExpr(start), printExpr(iter), printBlock(thenb))
+      "%s for (%s = %s, %s) %s".format(printPreStmts(preStmts), id, printExpr(start), printExpr(iter), printBlock(thenb))
     case While(preStmts, condition, block, max) => max match {
       case Some(int) =>"while (%s) : %s %s".format(printExpr(condition), int, printBlock(block))
-      case None => "%s while (%s) %s %s".format(preStmts.map(printStatement(_)), printExpr(condition), preStmts.map(printStatement(_)), printBlock(block))
+      case None => "%s while (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printPreStmts(preStmts), printBlock(block))
     }
     case Return(expr) => expr match {
       case Some(e) => "return %s".format(printExpr(e))
