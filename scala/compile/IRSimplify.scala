@@ -46,7 +46,7 @@ object IRSimplifier {
       * (z = a + b + c + d) will be translated into the following statements
       * and final expr:
       * statements = [t1 = a + b, t2 = t1 + c]
-      * final expr: (t2 + c)
+      * final expr: (t2 + d)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case UnaryOp(op, operand) => operand match {
