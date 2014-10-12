@@ -21,7 +21,7 @@ object IR {
   case class CalloutCall(callout: CalloutSymbol, args: List[Either[StrLiteral, Expr]]) extends Call
   case class If(conditionStmts: List[Statement], condition: Expr, thenb: Block, elseb: Option[Block]) extends Statement
   case class For(preStmts: List[Statement], id: ID, start: Expr, iter: Expr, thenb: Block) extends Statement
-  case class While(condition: Expr, block: Block, max: Option[Long]) extends Statement
+  case class While(preStmts: List[Statement], condition: Expr, block: Block, max: Option[Long]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
   case object Break extends Statement
   case object Continue extends Statement

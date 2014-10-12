@@ -499,7 +499,7 @@ class IRBuilder(input: AST.ProgramAST) {
       case None => None
       case Some(condition) =>
         typeOfExpr(condition) match {
-          case DTBool => Some(IR.While(condition, block, max))
+          case DTBool => Some(IR.While(List(), condition, block, max))
           case _ =>
             addError(whil.condition, "While condition must be a boolean"); None
         }

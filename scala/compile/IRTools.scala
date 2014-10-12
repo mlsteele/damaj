@@ -49,9 +49,9 @@ object IRPrinter {
     }
     case For(preStmts, id, start, iter, thenb) =>
       "%s for (%s = %s, %s) %s".format(preStmts.map(printStatement(_)), id, printExpr(start), printExpr(iter), printBlock(thenb))
-    case While(condition, block, max) => max match {
+    case While(preStmts, condition, block, max) => max match {
       case Some(int) =>"while (%s) : %s %s".format(printExpr(condition), int, printBlock(block))
-      case None => "while (%s) %s".format(printExpr(condition), printBlock(block))
+      case None => "%s while (%s) %s %s".format(preStmts.map(printStatement(_)), printExpr(condition), preStmts.map(printStatement(_)), printBlock(block))
     }
     case Return(expr) => expr match {
       case Some(e) => "return %s".format(printExpr(e))
