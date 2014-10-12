@@ -108,26 +108,23 @@ object IRSimplifier {
         }
       }
 
-      case Ternary(cond, left, right) => (cond, left, right) match {
-        case (_:Load, _:Load, _:Load) => return (List(), expr) //  Already simple!
-        case _ => {
-          val (condStatements, finalCondExpr) = cond.flatten(tempGen)
-          val condTempVar = tempGen.newVar(typeOfExpr(finalCondExpr))
+      case Ternary(cond, left, right) => {
+        val (condStatements, finalCondExpr) = cond.flatten(tempGen)
+        val condTempVar = tempGen.newVar(typeOfExpr(finalCondExpr))
 
-          val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-          val leftTempVar = tempGen.newVar(typeOfExpr(finalLeftExpr))
+        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
+        val leftTempVar = tempGen.newVar(typeOfExpr(finalLeftExpr))
 
-          val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-          val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
+        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
+        val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
 
-          val statements = (condStatements ++ leftStatements ++ rightStatements) :+
-            Assignment(Store(condTempVar, None), finalCondExpr) :+
-            Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-            Assignment(Store(rightTempVar, None), finalRightExpr)
+        val statements = (condStatements ++ leftStatements ++ rightStatements) :+
+        Assignment(Store(condTempVar, None), finalCondExpr) :+
+        Assignment(Store(leftTempVar, None), finalLeftExpr) :+
+        Assignment(Store(rightTempVar, None), finalRightExpr)
 
-          val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
-          return (statements, finalExpr)
-        }
+        val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
+        return (statements, finalExpr)
       }
 
       case MethodCall(symbol, args) => {
