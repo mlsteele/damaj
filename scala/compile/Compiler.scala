@@ -168,7 +168,7 @@ object Compiler {
   }
 
   def assembly = {
-    outFile.print(AsmGen.example2)
+    outFile.print(AsmGen.example3)
   }
 
   def print_tree(tree: ParseTree, level: Int): Unit  = {

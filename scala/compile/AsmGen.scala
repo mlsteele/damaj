@@ -70,6 +70,33 @@ object AsmGen {
     ""
   }
 
+  def example3: String = {
+    val main =
+      call("foo") \
+      "" \
+      comment("exit") \
+      mov(0 $, rbx) ? "syscall: exit, status=rbx"
+      mov(1 $, rax) \
+      int(0x80 $)
+
+    val foo =
+      comment("say hello") \
+      mov("hellostr" $, rdi) \
+      call("printf") \
+      "" \
+      comment("say goodbye") \
+      mov("goodbye" $, rdi) \
+      call("printf")
+
+    val text =
+      method("main", 4, main) \
+      method("foo", 4, foo)
+    val data =
+      datastring("hellostr", "hello world\\n") \
+      datastring("goodbye", "goodbye\\n")
+    file(text, data)
+  }
+
   def example2: String = {
     val main =
       comment("say hello") \
@@ -92,6 +119,7 @@ object AsmGen {
       datastring("goodbye", "goodbye\\n")
     file(text, data)
   }
+
 
   def example: String = """
 .text
