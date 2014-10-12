@@ -47,8 +47,8 @@ object IRPrinter {
         "%s if (%s) %s %s".format(conditionStmts.map(printStatement(_)), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "if (%s) %s".format(printExpr(condition), printBlock(thenb))
     }
-    case For(id, start, iter, thenb) =>
-      "for (%s = %s, %s) %s".format(id, printExpr(start), printExpr(iter), printBlock(thenb))
+    case For(preStmts, id, start, iter, thenb) =>
+      "%s for (%s = %s, %s) %s".format(preStmts.map(printStatement(_)), id, printExpr(start), printExpr(iter), printBlock(thenb))
     case While(condition, block, max) => max match {
       case Some(int) =>"while (%s) : %s %s".format(printExpr(condition), int, printBlock(block))
       case None => "while (%s) %s".format(printExpr(condition), printBlock(block))
