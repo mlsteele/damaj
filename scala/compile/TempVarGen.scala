@@ -31,6 +31,9 @@ object TempVarGen {
       }
     }
 
+    // Generates a variable with the same type as the given expression
+    def newVarLike(expr: Expr) : FieldSymbol = newVar(typeOfExpr(expr))
+
     //  Generates a new int variable
     def newIntVar() : FieldSymbol = newVar(DTInt)
 
