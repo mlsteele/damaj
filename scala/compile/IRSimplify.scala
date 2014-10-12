@@ -236,6 +236,16 @@ object IRSimplifier {
         val (stmts, finalExpr) = c.asInstanceOf[Expr].flatten(tempGen)
         return stmts :+ finalExpr.asInstanceOf[CalloutCall]
       }
+      case If(preStmts, cond, thenb, elseb) => {
+        val (condStmts, condExpr) = cond.flatten(tempGen)
+        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
+          condStmts
+        return List(If(newPreStmts,
+          condExpr,
+          thenb.flatten(),
+          elseb.map(_.flatten())
+        ))
+      }
     }
   }
 
