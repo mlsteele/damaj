@@ -36,12 +36,9 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
     }),
     convertBlock(method.block))
 
-  def convertBlock(block: IR.Block): CFG = {
-    // TODO
-    // For each statement convert it to a CFG, then combine them
-    // with some soon-to-be-defined method on CFGs
-    new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
-  }
+  def convertBlock(block: IR.Block): CFG =
+    block.stmts.map(CFGFactory.fromStatement).reduceLeft((x,y) => x ++ y)
+ 
 
   val dummyCFG = new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
   def convertStatement(statement: IR.Statement): CFG = statement match {
