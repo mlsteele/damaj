@@ -152,6 +152,38 @@ object IRSimplifier {
     }
   }
 
+  implicit class MaybeSimpleStatement(stmt: Statement) {
+    def isSimple() : Boolean = stmt match {
+      case Assignment(left, right) => right.isSimple()
+      case m:MethodCall => {val e:Expr = m; e.isSimple()}
+      case c:CalloutCall => {val e:Expr = c; e.isSimple()}
+      case If(preStmts, condition, thenb, elseb) => {
+        var preds: List[Boolean] = preStmts.map(_.isSimple()) ++
+          thenb.stmts.map(_.isSimple())
+        elseb.map(_.stmts.map(s => preds = preds :+ s.isSimple()))
+        preds = preds :+ condition.isSimple()
+        return all(preds)
+      }
+      case For(preStmts, _, start, iter, thenb) => {
+        val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
+          thenb.stmts.map(_.isSimple()) :+
+          start.isSimple() :+
+          iter.isSimple()
+        return all(preds)
+      }
+      case While(preStmts, condition, block, _) => {
+        val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
+          block.stmts.map(_.isSimple()) :+
+          condition.isSimple()
+        return all(preds)
+      }
+      case Return(None) => true
+      case Return(Some(e)) => e.isSimple()
+      case Break => true
+      case Continue => true
+    }
+  }
+
   // Construct an AST from a parse tree
   // ptree - root program node
   // source - source code
