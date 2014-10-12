@@ -198,18 +198,6 @@ class IRBuilder(input: AST.ProgramAST) {
     unchecked.map(ir => srcmap.alias(ast, ir)).flatMap(verifyExpr)
   }
 
-  def typeOfExpr(expr: IR.Expr): DType = expr match {
-    case b:IR.BinOp => b.op.returnType()
-    case u:IR.UnaryOp => u.op.returnType()
-    case IR.Ternary(c, l, r) => typeOfExpr(l)
-    case IR.LoadField(f,i) => f.dtype
-    case l: IR.LoadInt => DTInt
-    case l: IR.LoadBool => DTBool
-    case IR.MethodCall(method, args) => method.returns
-    case IR.CalloutCall(callout, args) => DTInt
-
-  }
-
   def verifyExpr(expr: IR.Expr): Option[IR.Expr] = expr match {
     case IR.BinOp(l,o,r) => o match {
       case _:EqualityBinOp =>

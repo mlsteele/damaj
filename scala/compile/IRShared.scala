@@ -43,6 +43,22 @@ object IRShared {
   case class Negative()         extends UnaryOpType
   case class Length()           extends UnaryOpType
 
+  /**
+    * The type of an expression.
+    * This method assumes the IR is constructed correctly.
+    */
+  def typeOfExpr(expr: IR.Expr): DType = expr match {
+    case b:IR.BinOp => b.op.returnType()
+    case u:IR.UnaryOp => u.op.returnType()
+    case IR.Ternary(c, l, r) => typeOfExpr(l)
+    case IR.LoadField(f,i) => f.dtype
+    case l: IR.LoadInt => DTInt
+    case l: IR.LoadBool => DTBool
+    case IR.MethodCall(method, args) => method.returns
+    case IR.CalloutCall(callout, args) => DTInt
+
+  }
+
   val stringToBinOpMap : Map[String, BinOpType] =
     Map(
       "+" ->  Add(),
