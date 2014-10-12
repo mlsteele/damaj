@@ -20,5 +20,6 @@ mkdir -p "$root/tmp"
 
 runcompiler "$1" $asm &&\
 echo "$asm" &&\
+cat "$asm" &&\
 compile $asm $binary &&\
 echo "$binary"
