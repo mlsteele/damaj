@@ -74,15 +74,44 @@ object IRSimplifier {
           // Flatten the right and generate a temporary var for the right side of the expression
           val (rightStatements, finalRightExpr) = right.flatten(tempGen)
           val rightTempVar = tempGen.newVar(typeOfExpr(right))
+          
+          // returns (statements, finalExpr)
+          op match {
+            case a:And =>
+              val finalExprValue = tempGen.newVar(DTBool)
+              (List(
+                If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
+                  LoadField(leftTempVar, None),
+                  Block(List(
+                    If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
+                      LoadField(rightTempVar, None),
+                      Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable()),
+                      Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))), new SymbolTable()),
+                  Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))),
+              // finalExpr:
+              LoadField(finalExprValue, None))
+            case o:Or =>
+              val finalExprValue = tempGen.newVar(DTBool)
+              (List(
+                If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
+                  UnaryOp(Not(),LoadField(leftTempVar, None)),
+                  Block(List(
+                    If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
+                      UnaryOp(Not(),LoadField(rightTempVar, None)),
+                      Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable()),
+                      Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))), new SymbolTable()),
+                  Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))),
+              // finalExpr:
+              LoadField(finalExprValue, None))
+            case _ =>
 
-          // Combine statements for generating left and right sides
-          val statements = (leftStatements ++ rightStatements) :+
-            Assignment(Store(leftTempVar, None), finalLeftExpr) :+ 
-            Assignment(Store(rightTempVar, None), finalRightExpr)
-
-          // Final expr is (tempLeft 'op' tempRight)
-          val finalExpr = BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None))
-          return (statements, finalExpr)
+              // Combine statements for generating left and right sides
+              ((leftStatements ++ rightStatements) :+
+                Assignment(Store(leftTempVar, None), finalLeftExpr) :+ 
+                Assignment(Store(rightTempVar, None), finalRightExpr),
+              // finalExpr:
+              BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None)))
+          }
         }
       }
 
