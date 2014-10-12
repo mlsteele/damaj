@@ -507,8 +507,6 @@ class IRBuilder(input: AST.ProgramAST) {
   }
 
   def convertReturn (ret:AST.Return, ctx:Context): Option[IR.Statement] = {
-
-
     ret.expr match {
       case None => ctx.returnType match {
         case DTVoid => Some(IR.Return(None))
