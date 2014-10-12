@@ -182,6 +182,11 @@ object IRSimplifier {
   }
 
   implicit class MaybeSimpleStatement(stmt: Statement) {
+    /**
+      * Determines whether a statement is simple.
+      * This means that any arguments or operands to a statement
+      * are only Loads.
+      */
     def isSimple() : Boolean = stmt match {
       case Assignment(left, right) => right.isSimple()
       case m:MethodCall => {val e:Expr = m; e.isSimple()}
