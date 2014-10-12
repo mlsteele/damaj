@@ -60,55 +60,51 @@ object IRSimplifier {
         return (statements, finalExpr)
       }
 
-      case BinOp(left, op, right) => (left, right) match {
-        case (_:Load, _:Load) => return (List(), BinOp(left, op, right)) // Already simple!
-        case _ => {
-          // Assume both sides are complex. Optimizer will clean this up
-          // Flatten the leftside and generate a temporary var for the left side of the expression
-          val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-          val leftTempVar = tempGen.newVar(typeOfExpr(left))
+      case BinOp(left, op, right) => {
+        // Assume both sides are complex. Optimizer will clean this up
+        // Flatten the leftside and generate a temporary var for the left side of the expression
+        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
+        val leftTempVar = tempGen.newVar(typeOfExpr(left))
 
-          // Flatten the right and generate a temporary var for the right side of the expression
-          val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-          val rightTempVar = tempGen.newVar(typeOfExpr(right))
-          
-          // returns (statements, finalExpr)
-          op match {
-            case a:And =>
-              val finalExprValue = tempGen.newVar(DTBool)
-              (List(
-                If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
-                  LoadField(leftTempVar, None),
-                  Block(List(
-                    If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
-                      LoadField(rightTempVar, None),
-                      Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable()),
-                      Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))), new SymbolTable()),
-                  Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))),
+        // Flatten the right and generate a temporary var for the right side of the expression
+        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
+        val rightTempVar = tempGen.newVar(typeOfExpr(right))
+
+        // returns (statements, finalExpr)
+        op match {
+          case a:And =>
+            val finalExprValue = tempGen.newVar(DTBool)
+            (List(
+              If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
+                LoadField(leftTempVar, None),
+                Block(List(
+                  If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
+                    LoadField(rightTempVar, None),
+                    Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable()),
+                    Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))), new SymbolTable()),
+                Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))),
               // finalExpr:
               LoadField(finalExprValue, None))
-            case o:Or =>
-              val finalExprValue = tempGen.newVar(DTBool)
-              (List(
-                If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
-                  UnaryOp(Not(),LoadField(leftTempVar, None)),
-                  Block(List(
-                    If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
-                      UnaryOp(Not(),LoadField(rightTempVar, None)),
-                      Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable()),
-                      Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))), new SymbolTable()),
-                  Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))),
+          case o:Or =>
+            val finalExprValue = tempGen.newVar(DTBool)
+            (List(
+              If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
+                UnaryOp(Not(),LoadField(leftTempVar, None)),
+                Block(List(
+                  If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
+                    UnaryOp(Not(),LoadField(rightTempVar, None)),
+                    Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable()),
+                    Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))), new SymbolTable()),
+                Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))),
               // finalExpr:
               LoadField(finalExprValue, None))
-            case _ =>
-
-              // Combine statements for generating left and right sides
-              ((leftStatements ++ rightStatements) :+
-                Assignment(Store(leftTempVar, None), finalLeftExpr) :+ 
-                Assignment(Store(rightTempVar, None), finalRightExpr),
+          case _ =>
+            // Combine statements for generating left and right sides
+            ((leftStatements ++ rightStatements) :+
+              Assignment(Store(leftTempVar, None), finalLeftExpr) :+
+              Assignment(Store(rightTempVar, None), finalRightExpr),
               // finalExpr:
               BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None)))
-          }
         }
       }
 
