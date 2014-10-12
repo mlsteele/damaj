@@ -107,6 +107,25 @@ object IRSimplifier {
           return (statements, finalExpr)
         }
       }
+
+      case MethodCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var tempVars: List[Expr] = List()
+        for (eitherArg <- args) {
+          // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
+          eitherArg.map (arg => {
+            // flatten all the args, collecting their dependency statements and temporary vars
+            val (argStatements, argExpr) = arg.flatten(tempGen)
+            val argTempVar = tempGen.newVarLike(argExpr)
+            statements = (statements ++ argStatements) :+
+              Assignment(Store(argTempVar, None), argExpr)
+            tempVars = tempVars :+ LoadField(argTempVar, None)
+          })
+        }
+        // Make a new method call using the temporary vars as the args
+        val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
+        return (statements, finalExpr)
+      }
     }
   }
 
