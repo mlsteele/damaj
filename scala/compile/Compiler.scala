@@ -48,13 +48,10 @@ object Compiler {
           case Some(_) => System.exit(0)
           case None    => System.exit(1)
         }
-      case CLI.Action.ASSEMBLY | CLI.Action.DEFAULT =>
-        inter(CLI.infile) match {
-          case Some(ir) =>
-            assembly(ir)
-          case None =>
-            System.exit(1)
-        }
+      case CLI.Action.ASSEMBLY | CLI.Action.DEFAULT => {
+        assembly(CLI.infile)
+        System.exit(0)
+      }
     }
   }
 
@@ -168,7 +165,16 @@ object Compiler {
       }
   }
 
-  def assembly(programIR: IR.ProgramIR) = {
+  def assembly(fileName: String) = {
+    inter(fileName) match {
+      case None =>
+      case Some(ir) => {
+        val simp = new IRSimplifier.IRSimplifier(ir)
+        val newIR = simp.simplify()
+        println("\nFlatened IR (pretty):")
+        println(IRPrinter.print(newIR))
+      }
+    }
     outFile.print(AsmGen.example3)
   }
 
