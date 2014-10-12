@@ -214,8 +214,8 @@ object IRSimplifier {
       }
       case Return(None) => true
       case Return(Some(e)) => e.isSimple()
-      case Break => true
-      case Continue => true
+      case Break() => true
+      case Continue() => true
     }
 
     /* Converts a statement (possibly simple or non-simple) into a list of
@@ -275,6 +275,8 @@ object IRSimplifier {
         val (exprStmts, finalExpr) = expr.flatten(tempGen)
         return exprStmts :+ Return(Some(finalExpr))
       }
+      case Break() => List(Break())
+      case Continue() => List(Continue())
     }
   }
 

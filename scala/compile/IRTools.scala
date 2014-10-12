@@ -66,8 +66,8 @@ object IRPrinter {
       case Some(e) => "return %s".format(printExpr(e))
       case None => "return"
     }
-    case Break => "break"
-    case Continue => "continue"
+    case Break() => "break"
+    case Continue() => "continue"
   }
 
   def printExpr(expr:Expr): String = expr match {

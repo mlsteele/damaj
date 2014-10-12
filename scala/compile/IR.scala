@@ -53,9 +53,9 @@ object IR {
 
   case class Return(expr: Option[Expr]) extends Statement
 
-  case object Break extends Statement
+  case class Break() extends Statement
 
-  case object Continue extends Statement
+  case class Continue() extends Statement
 
   sealed trait Expr
   case class BinOp(left: Expr, op: BinOpType, right: Expr) extends Expr
