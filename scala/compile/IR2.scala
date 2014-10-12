@@ -42,3 +42,11 @@ class CFG(val start:IR2.Block, val end:IR2.Block, val edges:IR2.edgeMap) {
 
 }
 
+object CFGFactory {
+  def fromStatement(stmt:IR2.Statement):CFG = {
+    val block = IR2.Block(List(stmt))
+    new CFG(block, block, new IR2.edgeMap())
+  }
+
+  val dummy = new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, Transition]())
+}
