@@ -20,7 +20,7 @@ object SymbolTable {
     var block: Block
     ) extends Symbol
 
-  class EnhancedSymbol(s: Symbol) {
+  implicit class EnhancedSymbol(s: Symbol) {
     def isField(): Boolean = s match {
       case f:FieldSymbol => true
       case _ => false
