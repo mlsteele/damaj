@@ -46,13 +46,19 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
     // Most statements will be just copied verbatim into the new block
     // If's, while's, and for's are the interesting parts
     // Don't forget to convert expressions
-    case ifb:IR.If => dummyCFG //TODO
-    case forb:IR.For => dummyCFG //TODO
+    val end = IR2.Block(List())
+    case ifb:IR.If =>
+      val head = IR2.Block(List(ifb.conditionStmts,condition) ) 
+      val edges:edgeMap = new IdentityMap[IR2.Block,Transition]
+      edges.put(head,Fork(head,ifb.thenb,elseb))
+      CFG(head,end,edges)
+    case forb:IR.For =>
+      val head = IR2.Block
+      val egdges:edgeMap = new IdentityMap[IR2.Block,Transition] 
+      edges.put(head,Fork( ,iter,end
     case whileb:IR.While => dummyCFG //TODO
     case _ =>
       val b = IR2.Block(List(statement))
       new CFG(b, b, new IR2.edgeMap())
-  }
-
-
+        }
 }
