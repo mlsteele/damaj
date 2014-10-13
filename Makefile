@@ -1,7 +1,17 @@
 all: fsc_reset scala_classes
 
 CLASSPATH = build:vendor/antlr.jar
-SCALAC_FLAGS = -cp $(CLASSPATH) -deprecation -feature -language:implicitConversions -Xlint
+SCALAC_FLAGS = -cp $(CLASSPATH) -deprecation -feature -language:implicitConversions -Xlint $(WARNINGS)
+WARNINGS = \
+	-Ywarn-dead-code \
+	-Ywarn-inaccessible \
+	-Ywarn-infer-any \
+	-Ywarn-nullary-override \
+	-Ywarn-nullary-unit \
+	-Ywarn-numeric-widen \
+	-Ywarn-unused \
+	-Ywarn-unused-import \
+	-Ywarn-value-discard
 
 ANTLR_SOURCES := grammars/DecafScanner.g grammars/DecafParser.g
 #Gathers up .java files found under the java/ directory
