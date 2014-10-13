@@ -51,7 +51,9 @@ java_classes: $(JAVA_CLASSES)
 .PHONY:
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
-	fsc $(SCALAC_FLAGS) -d build $(SCALA_SOURCES)
+	@echo "===============SCALA COMPILATION==============="
+	@fsc $(SCALAC_FLAGS) -d build $(SCALA_SOURCES)
+	@echo "===========SCALA COMPILATION COMPLETE=========="
 
 .PHONY:
 antlr_classes: $(ANTLR_CLASSES)
