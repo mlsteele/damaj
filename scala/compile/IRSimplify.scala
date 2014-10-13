@@ -276,6 +276,8 @@ object IRSimplifier {
       val newStmts = block.stmts.flatMap(_.flatten(tempGen))
       return Block(newStmts, block.fields)
     }
+
+    def isSimple() : Boolean = all(block.stmts.map(_.isSimple()))
   }
 
   // Construct an AST from a parse tree
@@ -287,6 +289,10 @@ object IRSimplifier {
     def simplify() : ProgramIR = {
       var methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
       methods.map(m => m.block = m.block.flatten())
+      for (m <- methods) {
+        assert(m.block.isSimple(),
+          "Method %s was not correctly simplified!".format(m.id))
+      }
       return program
     }
   }
