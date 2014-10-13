@@ -230,9 +230,27 @@ object IRSimplifier {
           elseb.map(_.flatten())
         ))
       }
-      case For(id, start, end, thenb) => {
-        // TODO: Convert to a while loop
-        return List()
+      case For(id, start, iter, thenb) => tempGen.table.lookupSymbol(id) match {
+        // Convert thr for loop into a while loop
+        case None => assert(false, "Could not find ID in symbol table."); List()
+        case Some(loopVar) => {
+          // Generate statements needed to generate start value of loop variable
+          val (startStmts, startExpr) = start.flatten(tempGen)
+          val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
+          // Generates statements needed to re-calculate ending expression each loop
+          val (iterStmts, iterExpr) = iter.flatten(tempGen)
+          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), NotEquals(), iterExpr)
+          // Generate statement to increment the loop var
+          val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
+          val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
+          // The original statements of the while loop, plus incVarStmt
+          val loopStmts = thenb.stmts :+ incVarStmt
+          val whileLoop = While(iterStmts,
+            condExpr,
+            Block(loopStmts, thenb.fields),
+            None)
+          return preStmts :+ whileLoop
+        }
       }
       case While(preStmts, cond, block, max) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)
