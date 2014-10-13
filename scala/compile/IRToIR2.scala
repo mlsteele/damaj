@@ -40,10 +40,6 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
     block.stmts.map(CFGFactory.fromStatement).reduceLeft((x,y) => x ++ y)
  
   def convertStatement(statement: IR.Statement): CFG = statement match {
-    // TODO
-    // Most statements will be just copied verbatim into the new block
-    // If's, while's, and for's are the interesting parts
-    // Don't forget to convert expressions
       case IR.If(pre, condition, thenb, elseb) =>
         val startCFG = pre.map(convertStatement).reduceLeft((x,y) => x ++ y)
         val thenCFG = convertBlock(thenb)
