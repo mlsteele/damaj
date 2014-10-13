@@ -37,9 +37,7 @@ object IR {
 
   case class For(
     id: ID,
-    startPreStmts: List[Statement],
     start: Expr,
-    iterPreStmts: List[Statement],
     iter: Expr,
     thenb: Block
   ) extends Statement

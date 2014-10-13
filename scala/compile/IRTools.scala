@@ -50,12 +50,10 @@ object IRPrinter {
         "%s\nif (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "%s\nif (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb))
     }
-    case For(id, startPreStmts, start, iterPreStmts, iter, thenb) =>
-      "%s\nfor (%s = %s, {%s} %s) %s".format(
-        printPreStmts(startPreStmts),
+    case For(id, start, iter, thenb) =>
+      "%for (%s = %s, %s) %s".format(
         id,
         printExpr(start),
-        printPreStmts(iterPreStmts),
         printExpr(iter),
         printBlock(thenb))
     case While(preStmts, condition, block, max) => max match {

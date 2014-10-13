@@ -188,14 +188,7 @@ object IRSimplifier {
         preds = preds :+ condition.isSimple()
         return all(preds)
       }
-      case For(id, startPreStmts, start, iterPreStmts, iter, thenb) => {
-        val preds: List[Boolean] = startPreStmts.map(_.isSimple()) ++
-          iterPreStmts.map(_.isSimple()) ++
-          thenb.stmts.map(_.isSimple()) :+
-          start.isSimple() :+
-          iter.isSimple()
-        return all(preds)
-      }
+      case _:For => false // For loops should be converted to while loops
       case While(preStmts, condition, block, _) => {
         val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
           block.stmts.map(_.isSimple()) :+
@@ -237,18 +230,9 @@ object IRSimplifier {
           elseb.map(_.flatten())
         ))
       }
-      case For(id, startPreStmts, start, endPreStmts, end, thenb) => {
-        val (additionalStartStmts, startExpr) = start.flatten(tempGen)
-        val newStartPreStmts = startPreStmts.flatMap(_.flatten(tempGen)) ++ additionalStartStmts
-        val (additionalEndStmts, endExpr) = end.flatten(tempGen)
-        val newEndPreStmts = endPreStmts.flatMap(_.flatten(tempGen)) ++ additionalEndStmts
-        return List(For(id,
-          newStartPreStmts,
-          startExpr,
-          newEndPreStmts,
-          endExpr,
-          thenb.flatten()
-        ))
+      case For(id, start, end, thenb) => {
+        // TODO: Convert to a while loop
+        return List()
       }
       case While(preStmts, cond, block, max) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)

@@ -481,7 +481,7 @@ class IRBuilder(input: AST.ProgramAST) {
           case (_, Some(end), _) if typeOfExpr(end) != DTInt =>
             addError(fo, "For loop end must be an int expression"); None
           case (Some(start), Some(end), true) =>
-            Some(IR.For(fo.id, List(), start, List(), end, block))
+            Some(IR.For(fo.id, start, end, block))
         }
       }
       case _ => addError(fo, "Loop variable must be a field"); None
