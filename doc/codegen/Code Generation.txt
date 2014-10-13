@@ -1,0 +1,78 @@
+* Building & Running
+  Steps to build and run our DAMAJ Decaf Compiler.
+  
+  These instructions assume you are running on Athena.
+  
+  Clone the repository or otherwise obtain a copy of the code.
+
+  Run ~add -f scala~. use ~scala -version~ to make sure that scala is using version 2.11.2.
+  We use ~fsc~ to compile scala a little faster. If you happen to have any trouble because of weird
+  fsc version conflicts, please try killing your fsc server (find it with ~ps aux | grep fsc~).
+  Don't set any env variables like ~SCALA_HOME~ as this could force you to use the wrong version
+  of scala.
+  
+  Once you have the right version of scala run ~make~ or ~build.sh~ to compile the project.
+  If you have trouble with this or later steps, try `make clean` to reset the build files.
+  
+  Now you should be able to run the compiler using run.sh.
+  For example:
+  ~./run.sh -t assembly --debug tests/codegen/input/01-callout.dcf~
+  ~./run.sh -t assembly --debug tests/codegen/input/04-math2.dcf -o 04-math2.asm~
+  
+* IR Preprocessing
+  Relevant files: ~scala/compile/IRSimplify.scala
+  In part 2, we generated an IR for the decaf progam (see ~docs/semantic_checker/Lab2.pdf~).
+  In part 3, we start by applying a series of transformations on the IR. We want to do operations at
+  the highest level we can, so that it's easier to debug and simpler to convert to a low-level IR.
+  We also modified the IR slightly, so that any statement which has a condition (if, while, for) now
+  also takes a list of statements that must be executed before the condition is evaluated.
+
+** Turn And/Ors into If/Else
+  To implement short-circuiting, we turn And/Or expressions into an If/Else block and a temp
+  var that stores the result. Inside the If/Else block, the variable set according to the result
+  of the sub-expressions.
+  
+** Flatten Expressions
+  Expressions (~IR.Expr~) have become non-recursive. The arguments of expressions are always loads
+  (either ~LoadLiteral~ or ~LoadField~). So a statement such as ~a = b + c + d~ turns into two lines;
+  ~_t0 = b + c; a = _t0 + d~.
+  
+** Simplify Whiles
+  Any while which had a max number of iterations now has that encoded in it's condition expression.
+
+** Turn Fors into Whiles
+  For loops were converted to while loops. So for example ~for (i=0; 10) {...}~ is now ~i=0; while
+  (i<10) {...; i = i + 1}~
+
+* New low-level IR
+  Relevant files: ~scala/compile/IR2.scala~
+  The low-level IR is named ~IR2~. A program is comprised of:
+  - A list of fields
+  - A list of methods
+  The callouts were discarded, since we don't need to declare them in assembly.
+  
+** Fields
+  A ~Field~ is simply a string ID and a size. In assembly, a portion of memory is allocated for the
+  field and given the ID as a label, so we can reference fields by their ID.
+  
+** Methods
+  A ~Method~ has an ID, a list of parameters (~Field~s), and a ~CFG~. Like fields, methods are labelled
+  by their ID in assembly so that they can be called by name.
+  
+** CFG
+  The Control Flow Graph, or CFG, is the central data structure in ~IR2~. It has:
+  - A start ~Block~. This is the entry point to the CFG.
+  - An end ~Block~. This is the unified exit point. It exists so that CFGs can be easily chained.
+  - A map from ~Block~s to ~Transition~s. Every block except the end block must have a transition from it.
+
+*** CFG Blocks
+  A ~Block~ in the CFG is different than an ~IR.Block~. ~Block~s in the CFG are a sequence of simple
+  (non-branching) statements.
+
+*** CFG Transitions
+  There are two types of transitions, ~Edge~ and ~Fork~.
+  - ~Edge~ is when one CFG block will always go to a next CFG block. It is represented as ~Edge(destination)~, where the source block is the key in the map. So an edge from block ~a~ to ~b~ would be an entry in the map like ~a -> Edge(b)~.
+  - ~Fork~ is when the execution flow could jump to 2 different places, depending on a condition. A ~Fork~ has a ~condition~, a ~Block~ to jump to if the condition is true, and a ~Block~ for if it's false.
+
+* Code Generation
+  TODO
