@@ -48,5 +48,6 @@ object CFGFactory {
     new CFG(block, block, new IR2.edgeMap())
   }
 
-  val dummy = new CFG(IR2.Block(List()), IR2.Block(List()), new IdentityMap[IR2.Block, IR2.Transition]())
+  val nopBlock = IR2.Block(List())
+  val dummy = new CFG(nopBlock, nopBlock, new IdentityMap[IR2.Block, IR2.Transition]())
 }
