@@ -152,8 +152,8 @@ class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
           head)
         case 2 => srcmap.add(Return(None), head)
       }
-      case "break" => srcmap.add(Break, head)
-      case "continue" => srcmap.add(Continue, head)
+      case "break" => srcmap.add(Break(), head)
+      case "continue" => srcmap.add(Continue(), head)
       case x => throw new ASTConstructionException("unrecognized expression type" + x)
     }
   }
@@ -411,8 +411,8 @@ class ASTPrinter(ast: AST.ProgramAST) {
       case Some(expr) => "return " + printASTNode(expr)
       case None => "return"
     }
-    case Break => "break"
-    case Continue => "continue"
+    case _:Break => "break"
+    case _:Continue => "continue"
   }
 
   def printExpr(ast: Expr): String = ast match {

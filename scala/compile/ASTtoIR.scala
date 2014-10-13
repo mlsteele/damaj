@@ -301,10 +301,10 @@ class IRBuilder(input: AST.ProgramAST) {
     case a: AST.For => convertFor(a, ctx)
     case a: AST.While => convertWhile(a, ctx)
     case a: AST.Return => convertReturn(a, ctx)
-    case AST.Break if ctx.inLoop => Some(IR.Break())
-    case AST.Break => addError(ast, "break must be in a loop"); None
-    case AST.Continue if ctx.inLoop => Some(IR.Continue())
-    case AST.Continue => addError(ast, "continue must be in a loop"); None
+    case a: AST.Break if ctx.inLoop => Some(IR.Break())
+    case a: AST.Break => addError(ast, "break must be in a loop"); None
+    case a: AST.Continue if ctx.inLoop => Some(IR.Continue())
+    case a: AST.Continue => addError(ast, "continue must be in a loop"); None
   }
 
   def convertMethodCall(ast: AST.MethodCall, ctx:Context): Option[IR.Call] = {

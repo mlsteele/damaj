@@ -39,8 +39,8 @@ object AST {
   case class For(id: ID, start: Expr, iter: Expr, thenb: Block) extends Statement
   case class While(condition: Expr, block: Block, max: Option[IntLiteral]) extends Statement
   case class Return(expr: Option[Expr]) extends Statement
-  case object Break extends Statement
-  case object Continue extends Statement
+  case class Break() extends Statement
+  case class Continue() extends Statement
 
   sealed trait Expr extends ASTNode
   case class Location(id: ID, index: Option[Expr]) extends Expr
