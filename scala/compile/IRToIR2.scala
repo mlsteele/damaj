@@ -39,17 +39,16 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
   def convertBlock(block: IR.Block): CFG =
     block.stmts.map(CFGFactory.fromStatement).reduceLeft((x,y) => x ++ y)
  
-
   def convertStatement(statement: IR.Statement): CFG = statement match {
     // TODO
     // Most statements will be just copied verbatim into the new block
     // If's, while's, and for's are the interesting parts
     // Don't forget to convert expressions
       case IR.If(pre, condition, thenb, elseb) =>
-        val startCFG = pre.map(CFGFactory.fromStatement).reduceLeft((x,y) => x ++ y)
+        val startCFG = pre.map(convertStatement).reduceLeft((x,y) => x ++ y)
         val thenCFG = convertBlock(thenb)
         val endBlock = CFGFactory.nopBlock
-        val edges:edgeMap = startCFG.edges ++ thenCFG.edges
+        val edges = startCFG.edges ++ thenCFG.edges
         edges.put(thenCFG.end, Edge(endBlock))
 
         elseb match {
@@ -66,7 +65,16 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
       case forb:IR.For => 
         assert(false, "For was not preprocessed away!")
         CFGFactory.dummy
-      case whileb:IR.While => CFGFactory.dummy //TODO
+      case IR.While(pre, condition, block, max) =>
+        assert(max == None, "While didn't preprocess out max!")
+        val startCFG = pre.map(convertStatement).reduceLeft((x,y) => x ++ y)
+        val blockCFG = convertBlock(block)
+        val endBlock = CFGFactory.nopBlock
+        val edges = startCFG.edges ++ blockCFG.edges
+        edges.put(startCFG.end, Fork(condition, blockCFG.start, endBlock))
+        edges.put(blockCFG.end, startCFG.start)
+
+        new CFG(startCFG.start, endBlock, edges)
       case _ => CFGFactory.fromStatement(statement)
   }
 }
