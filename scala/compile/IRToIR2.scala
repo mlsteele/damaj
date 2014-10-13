@@ -68,7 +68,7 @@ class IR2Builder(program: ProgramIR, filepath: String, code: String) {
         val endBlock = CFGFactory.nopBlock
         val edges = startCFG.edges ++ blockCFG.edges
         edges.put(startCFG.end, Fork(condition, blockCFG.start, endBlock))
-        edges.put(blockCFG.end, startCFG.start)
+        edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)
       case _ => CFGFactory.fromStatement(statement)
