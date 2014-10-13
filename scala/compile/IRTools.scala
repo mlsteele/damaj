@@ -51,7 +51,7 @@ object IRPrinter {
       case None => "%s\nif (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb))
     }
     case For(id, start, iter, thenb) =>
-      "%for (%s = %s, %s) %s".format(
+      "for (%s = %s, %s) %s".format(
         id,
         printExpr(start),
         printExpr(iter),

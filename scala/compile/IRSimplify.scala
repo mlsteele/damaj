@@ -239,13 +239,17 @@ object IRSimplifier {
           val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
           // Generates statements needed to re-calculate ending expression each loop
           val (iterStmts, iterExpr) = iter.flatten(tempGen)
-          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), NotEquals(), iterExpr)
+          // Temp var for the right side of the condition
+          val condVar = tempGen.newBoolVar()
+          val condAssign = Assignment(Store(condVar, None), iterExpr)
+          // While (loopVar != condVar)
+          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), NotEquals(), LoadField(condVar, None))
           // Generate statement to increment the loop var
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
           val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
           // The original statements of the while loop, plus incVarStmt
-          val loopStmts = thenb.stmts :+ incVarStmt
-          val whileLoop = While(iterStmts,
+          val loopStmts = thenb.flatten().stmts :+ incVarStmt
+          val whileLoop = While(iterStmts :+ condAssign,
             condExpr,
             Block(loopStmts, thenb.fields),
             None)
@@ -288,12 +292,14 @@ object IRSimplifier {
   // Example Usage:
   //   val ast = ASTBuilder.parseProgram(parseTree).ast
   class IRSimplifier(var program: ProgramIR) {
+    import IRPrinter._
+
     def simplify() : ProgramIR = {
       var methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
       methods.map(m => m.block = m.block.flatten())
       for (m <- methods) {
         assert(m.block.isSimple(),
-          "Method %s was not correctly simplified!".format(m.id))
+          "Method %s was not correctly simplified!\n%s".format(m.id, printMethod(m)))
       }
       return program
     }
