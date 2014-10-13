@@ -2,9 +2,7 @@ package compile
 
 import IR._
 import IR2._
-import IRShared._
 import SymbolTable._
-import TempVarGen._
 // Construct an AST from a parse tree
 // ptree - root program node
 // source - source code

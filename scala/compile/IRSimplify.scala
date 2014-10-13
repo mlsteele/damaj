@@ -294,8 +294,9 @@ object IRSimplifier {
   class IRSimplifier(var program: ProgramIR) {
     import IRPrinter._
 
+    // WARNING,  This mutates the input program's methods
     def simplify() : ProgramIR = {
-      var methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+      val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
       methods.map(m => m.block = m.block.flatten())
       for (m <- methods) {
         assert(m.block.isSimple(),

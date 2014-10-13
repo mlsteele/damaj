@@ -31,11 +31,15 @@ class IRBuilder(input: AST.ProgramAST) {
 
   case class Context(symbols:SymbolTable, inLoop:Boolean, returnType:DType)
 
-  def addError(msg: String): Unit =
+  def addError(msg: String): Unit = {
     errors += "%s\n".format(msg)
+    ()
+  }
 
-  def addError(node: srcmap.Key, msg: String): Unit =
+  def addError(node: srcmap.Key, msg: String): Unit = {
     errors += srcmap.report(node, msg)
+    ()
+  }
 
   def convertProgram(ast: AST.ProgramAST): Either[List[SemanticError], IR.ProgramIR] = {
     val symbols = new SymbolTable()
@@ -77,7 +81,7 @@ class IRBuilder(input: AST.ProgramAST) {
           symbols.addSymbol(fs)
         case None => None
       }
-    }.flatten.map{
+    }.flatten.foreach{
       conflict => addError(conflict.second,
         "Duplicate field declaration for '%s'".format(conflict.second.id))
     }

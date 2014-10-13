@@ -83,7 +83,7 @@ class IdentityMap[K,V] {
 
   def apply(k: K): Option[V] = get(k)
 
-  def put(k: K, v: V): Unit = store.put(k, v)
+  def put(k: K, v: V): Unit = {store.put(k, v); ()}
 
   def putAll(m: IdentityMap[K,V]): Unit = store.putAll(m.store)
 

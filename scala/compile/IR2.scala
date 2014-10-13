@@ -2,8 +2,6 @@ package compile
 
 
 object IR2 {
-  import SymbolTable._
-  import IR._
   import IRShared._
   
   // Earlier version constrain all fields to come before methods.
