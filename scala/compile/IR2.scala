@@ -6,7 +6,7 @@ object IR2 {
   
   // Earlier version constrain all fields to come before methods.
   // The callouts are discarded.
-  case class Program(fields: List[Field], methods: List[Method])
+  case class Program(fields: List[Field], main: Method, methods: List[Method])
 
   case class Field(id: ID, size: Option[Long])
   case class Method(id: ID, params: List[Field], cfg: CFG)

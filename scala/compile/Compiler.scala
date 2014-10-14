@@ -176,13 +176,13 @@ object Compiler {
     // Returns true or false based on whether all stages work.
     ir1.map{ ir1 =>
       val simplified = IRSimplifier.simplify(ir1)
-      println("\nFlatened IR (pretty):")
-      println(IRPrinter.print(simplified))
+      Console.err.println("\nFlatened IR (pretty):")
+      Console.err.println(IRPrinter.print(simplified))
       simplified
     }.map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
-      println("\nIR2 (CFG):")
-      println(ir2)
+      Console.err.println("\nIR2 (CFG):")
+      Console.err.println(ir2)
       ir2
     }.map{ ir2 =>
       outFile.print(AsmGen.example3)

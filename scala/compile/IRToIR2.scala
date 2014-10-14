@@ -8,7 +8,11 @@ import SymbolTable._
 // Example Usage:
 //   val ir2 = new IR2Builder(ir1).ir2
 class IR2Builder(program: ProgramIR) {
+
   val ir2 = convertProgram(program)
+
+  // Programming error.
+  class IR2ConstructionException(msg: String) extends RuntimeException(msg)
 
   def convertProgram(ir: IR.ProgramIR): IR2.Program = {
     val fields = ir.symbols.symbols.flatMap(_ match {
@@ -16,12 +20,18 @@ class IR2Builder(program: ProgramIR) {
       case _ => None
     })
 
+    val mainMethod = ir.symbols.symbols
+      .filter(_.id == "main") match {
+        case List(main: MethodSymbol) => convertMethod(main)
+        case _ => throw new IR2ConstructionException("Program must have one main method.")
+      }
+
     val methods = ir.symbols.symbols.flatMap(_ match {
       case m:MethodSymbol => Some(convertMethod(m))
       case _ => None
     })
 
-    IR2.Program(fields, methods)
+    IR2.Program(fields, mainMethod, methods)
   }
 
   def convertField(field: FieldSymbol): IR2.Field = Field(field.id, field.size)
