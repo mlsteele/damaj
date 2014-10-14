@@ -194,7 +194,8 @@ object IRSimplifier {
         return all(preds)
       }
       case _:For => false // For loops should be converted to while loops
-      case While(preStmts, condition, block, _) => {
+      case While(_, _, _, Some(_)) => false // while loops with a limit should be converted to unlimited while loops
+      case While(preStmts, condition, block, None) => {
         val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
           block.stmts.map(_.isSimple()) :+
           condition.isSimple()
@@ -261,15 +262,38 @@ object IRSimplifier {
           return preStmts :+ whileLoop
         }
       }
-      case While(preStmts, cond, block, max) => {
+      // While loops with no limit are straight forward to convert
+      case While(preStmts, cond, block, None) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)
         val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++ condStmts
         return List(While(
           newPreStmts,
           condExpr,
           block.flatten(),
-          max
+          None
         ))
+      }
+      // Convert a while loop with a limit to one without a limit, by adding a temporary counter variable
+      case While(preStmts, cond, block, Some(limit)) => {
+        val counterVar = tempGen.newIntVar()
+        val counterInit = Assignment(Store(counterVar, None), LoadInt(0))
+        val counterInc = Assignment(
+          Store(counterVar, None),
+          BinOp(LoadField(counterVar, None),
+            Add(),
+            LoadInt(1))
+        )
+        val counterCondition = BinOp(
+          LoadField(counterVar, None),
+          Equals(),
+          LoadInt(limit)
+        )
+        val newBlockStmts = block.stmts :+ counterInc
+        return While(
+          counterInit :: preStmts,
+          BinOp(counterCondition, And(), cond),
+          Block(newBlockStmts, block.fields),
+          None).flatten(tempGen)
       }
       case Return(None) => List(Return(None))
       case Return(Some(expr)) => {
