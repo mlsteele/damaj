@@ -3,7 +3,7 @@ package compile
 
 object IR2 {
   import IRShared._
-  
+
   // Earlier version constrain all fields to come before methods.
   // The callouts are discarded.
   case class Program(fields: List[Field], main: Method, methods: List[Method])
@@ -13,7 +13,12 @@ object IR2 {
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
-  case class Block(stmts: List[Statement])
+  case class Block(stmts: List[Statement]) {
+    override def equals(that:Any):Boolean = that match {
+      case that: Block => this eq that
+      case _ => false
+    }
+  }
   type Statement = IR.Statement
 
   sealed trait Transition
@@ -41,21 +46,21 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
-  validate
+  validate()
 
   // Requires that there are no blocks in both CFGs
-  // WARNING: destroys both input CFGs because edges is mutated.
-  def ++(cfg:CFG): CFG = {
-    val newEdges = edges ++ cfg.edges
-    newEdges.put(end, Edge(cfg.start))
-    new CFG(start, cfg.end, newEdges)
+  // WARNING: destroys one of the input CFGs because edges is mutated.
+  def ++(rhs: CFG): CFG = {
+    val newEdges = edges ++ rhs.edges
+    newEdges.put(end, Edge(rhs.start))
+    new CFG(start, rhs.end, newEdges)
   }
 
   def traverse(from: Block): Set[Block] = {
     val rest: Set[Block] = edges(from) match {
       case None => Set()
       case Some(Edge(next)) => traverse(next)
-      case Some(Fork(_, left, right)) => traverse(left) ++ traverse(right)
+      case Some(Fork(_, left, right)) => traverse(left) union traverse(right)
     }
     Set(from) union rest
   }
@@ -65,14 +70,15 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   }
 
   private def validate() = {
-    edges.keys.foreach(mustContain)
+    mustReach(end)
+    edges.keys.foreach(mustReach)
     edges.values.foreach{ _ match {
-      case Edge(next) => mustContain(next)
-      case Fork(_, left, right) => mustContain(left); mustContain(right)
+      case Edge(next) => mustReach(next)
+      case Fork(_, left, right) => mustReach(left); mustReach(right)
     }}
   }
 
-  private def mustContain(block: Block): Unit = {
+  private def mustReach(block: Block): Unit = {
     // TODO maybe traversing all the time is slow.
     traverse(start).contains(block) match {
       case true =>
@@ -90,6 +96,8 @@ object CFGFactory {
   }
 
   def nopBlock: Block = IR2.Block(List())
-  def dummy: CFG =
-    new CFG(nopBlock, nopBlock, new EdgeMap())
+  def dummy: CFG = {
+    val b = nopBlock
+    new CFG(b, b, new EdgeMap())
+  }
 }

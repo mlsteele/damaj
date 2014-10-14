@@ -21,10 +21,6 @@ object AsmGen {
     convertCFGBlock(cfg.start, cfg)
 
   def convertCFGBlock(b: Block, cfg: CFG): String = {
-    Console.err.println("@@@")
-    Console.err.println(b eq cfg.start)
-    Console.err.println(cfg.edges(b))
-    Console.err.println(cfg.edges.contains(b))
     val next = cfg.edges(b) match {
       case None => ""
       case Some(Edge(next)) => convertCFGBlock(next, cfg)

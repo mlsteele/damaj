@@ -47,7 +47,9 @@ class IR2Builder(program: ProgramIR) {
     convertBlock(method.block))
 
   def convertBlock(block: IR.Block): CFG = {
-    block.stmts.map(CFGFactory.fromStatement).fold(CFGFactory.dummy)(_ ++ _)
+    block.stmts
+      .map(CFGFactory.fromStatement)
+      .fold(CFGFactory.dummy)(_ ++ _)
   }
  
   def convertStatement(statement: IR.Statement): CFG = statement match {
