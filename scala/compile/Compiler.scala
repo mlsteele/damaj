@@ -179,7 +179,11 @@ object Compiler {
       println("\nFlatened IR (pretty):")
       println(IRPrinter.print(simplified))
       simplified
-    }.map{ ir1 => new IR2Builder(ir1).ir2
+    }.map{ ir1 =>
+      val ir2 = new IR2Builder(ir1).ir2
+      println("\nIR2 (CFG):")
+      println(ir2)
+      ir2
     }.map{ ir2 =>
       outFile.print(AsmGen.example3)
     }.isDefined
