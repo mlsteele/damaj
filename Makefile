@@ -63,6 +63,13 @@ antlr_classes: $(ANTLR_CLASSES)
 fsc_reset:
 	fsc -reset
 
+# Generate documentation from .txt files using emacs' org-mode
+doc/%.pdf: doc/%.txt
+	emacs -q -file $< --batch -f org-mode -f org-export-as-pdf
+
+.PHONY:
+docs: doc/semantic_checker/Lab2.pdf	
+
 # Runs the scala REPL with our files added to the path
 .PHONY:
 repl:
@@ -72,6 +79,7 @@ repl:
 clean:
 	fsc -reset
 	rm -rf build/*
+	rm -rf doc/*/*.pdf
 
 # Magically print any Makefile variable from the command line
 print-%:
