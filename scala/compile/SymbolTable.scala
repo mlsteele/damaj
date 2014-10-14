@@ -73,9 +73,21 @@ object SymbolTable {
     /**
       * Returns the symbol table representing the global scope.
       */
-    def globalScope() : SymbolTable = parent match {
+    def globalTable() : SymbolTable = parent match {
       case None    => this
-      case Some(p) => p.globalScope();
+      case Some(p) => p.globalTable();
+    }
+
+    /**
+      * Returns the symbol table containing the args of the current method.
+      * This method fails if this table is in fact the global table.
+      */
+    def methodTable() : Option[SymbolTable] = parent match {
+      case None    => None // This is the global table!
+      case Some(pa) => pa.parent match {
+        case None => Some(this) // If I have a pa, but no grandpa, then I'm a method param table
+        case Some(grandpa) => pa.methodTable()
+      }
     }
 
     /**
