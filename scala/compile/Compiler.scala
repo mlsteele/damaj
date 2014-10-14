@@ -179,9 +179,7 @@ object Compiler {
       println("\nFlatened IR (pretty):")
       println(IRPrinter.print(simplified))
       simplified
-    }.map{ ir1 =>
-      // TDOO
-      ir1
+    }.map{ ir1 => new IR2Builder(ir1).ir2
     }.map{ ir2 =>
       outFile.print(AsmGen.example3)
     }.isDefined

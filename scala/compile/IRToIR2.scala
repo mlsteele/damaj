@@ -6,7 +6,7 @@ import SymbolTable._
 
 // Construct an IR2 from an IR
 // Example Usage:
-//   val ir2 = IR2Builder.convert(ir).ir2
+//   val ir2 = new IR2Builder(ir1).ir2
 class IR2Builder(program: ProgramIR) {
   val ir2 = convertProgram(program)
 

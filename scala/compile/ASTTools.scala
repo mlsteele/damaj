@@ -5,7 +5,7 @@ import org.antlr.runtime.tree.ParseTree
 // ptree - root program node
 // source - source code
 // Example Usage:
-//   val ast = ASTBuilder.parseProgram(parseTree).ast
+//   val ast = new ASTBuilder(tree, fileName, code).ast
 class ASTBuilder(ptree: ParseTree, filepath: String, code: String) {
   import IRShared._
   import AST._
