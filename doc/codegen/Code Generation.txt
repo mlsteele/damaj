@@ -75,4 +75,13 @@
   - ~Fork~ is when the execution flow could jump to 2 different places, depending on a condition. A ~Fork~ has a ~condition~, a ~Block~ to jump to if the condition is true, and a ~Block~ for if it's false.
 
 * Code Generation
+
+** Calling Conventions
+  We will use the System V AMD64 ABI calling convention as described by http://en.wikipedia.org/wiki/X86_calling_conventions#x86-64_calling_conventions
+  Arguments:
+    - First 6 args passed in registers RDI, RSI, RDX, RCX, R8, R9.
+    - Additional args passed on the stack with the first arg at the latest of the stack.
+    - Callee saves RBP, RBX, R12-R15. All other regs must be assumed munged.
+    - Return value returned in RAX
+
   TODO
