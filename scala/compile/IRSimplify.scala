@@ -291,11 +291,6 @@ object IRSimplifier {
     def isSimple() : Boolean = all(block.stmts.map(_.isSimple()))
   }
 
-  // Construct an AST from a parse tree
-  // ptree - root program node
-  // source - source code
-  // Example Usage:
-  //   val ast = ASTBuilder.parseProgram(parseTree).ast
   class IRSimplifierInternal(var program: ProgramIR) {
     import IRPrinter._
 
