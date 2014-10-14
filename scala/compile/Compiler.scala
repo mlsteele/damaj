@@ -185,7 +185,8 @@ object Compiler {
       Console.err.println(new IR2Printer(ir2).print)
       ir2
     }.map{ ir2 =>
-      outFile.print(AsmGen.convertProgram(ir2))
+      val asm = new AsmGen(ir2).asm
+      outFile.print(asm)
     }.isDefined
   }
 

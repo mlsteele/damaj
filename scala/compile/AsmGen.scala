@@ -1,9 +1,19 @@
 package compile;
 
-object AsmGen {
+// Example Usage:
+//   val asm = new AsmGen(ir2).asm
+class AsmGen(ir2: IR2.Program) {
   import AsmDSL._
   import scala.language.postfixOps
+  import IRShared._
   import IR2._
+
+  val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
+  val argregc = argregs.length
+
+  var strings = new StringStore()
+
+  val asm = convertProgram(ir2)
 
   // Programming error.
   class AsmNotImplemented() extends RuntimeException()
@@ -13,7 +23,7 @@ object AsmGen {
       ir2.main.params.length,
       convertCFG(ir2.main.cfg))
     val text = main
-    val data = ""
+    val data = strings.toData
     file(text, data)
   }
 
@@ -34,9 +44,24 @@ object AsmGen {
     b.stmts.map(convertStatement).mkString("\n")
 
   def convertStatement(stmt: Statement): String = stmt match {
-    case IR.CalloutCall(cs, args) =>
-      call(cs.id)
+    case ir: IR.CalloutCall => convertCallout(ir)
     case _ => throw new AsmNotImplemented()
+  }
+
+  def convertCallout(ir: IR.CalloutCall): String = {
+    ir.args.zipWithIndex.map(Function.tupled(convertCalloutArg)).mkString("\n") \
+    call(ir.callout.id)
+  }
+
+  def convertCalloutArg(arg: Either[StrLiteral, IR.Expr], idx: Int): String = {
+     arg match {
+      // TODO escaping is probably broken
+      case Left(StrLiteral(value)) if idx < argregc =>
+        mov(strings.put(value) $, argregs(idx))
+      case Left(StrLiteral(value)) =>
+        throw new AsmNotImplemented()
+      case Right(_: IR.Expr) => throw new AsmNotImplemented()
+    }
   }
 
   def example3: String = {
@@ -123,6 +148,34 @@ main:
 hellostr: .string "hello world.\n"
 goodbye: .string "goodbye.\n"
 """.drop(1)
+}
+
+// Mutable map for storing strings in the data segment of an assembly file.
+class StringStore {
+  import scala.collection.immutable.ListMap
+
+  // map from strings to their labels
+  private var store: ListMap[String, String] = ListMap()
+
+  private def nextKey(): String =
+    "str%s".format(store.size)
+
+  // takes a string, returns it's label.
+  // dose escaping.
+  def put(s: String): String =
+    putEscaped(Escape.escape(s))
+
+  private def putEscaped(s: String): String = store.get(s) match {
+    case Some(label) => label
+    case None =>
+      val key = nextKey()
+      store += (s -> key)
+      key
+  }
+
+  def toData: String = store.map{ case (payload, key) =>
+    """%s: .string "%s"""".format(key, payload)
+  }.mkString("\n")
 }
 
 object AsmDSL {
