@@ -20,7 +20,7 @@ object IR2 {
   case class Edge(to: Block) extends Transition
   case class Fork(condition: IR.Expr, ifTrue: Block, ifFalse: Block) extends Transition
 
-  type edgeMap = IdentityMap[IR2.Block, IR2.Transition]
+  type EdgeMap = IdentityMap[IR2.Block, IR2.Transition]
 }
 
 class IR2Printer(ir2: IR2.Program) {
@@ -37,14 +37,14 @@ class IR2Printer(ir2: IR2.Program) {
 // So a control flow of a -> b -> c may look like (pseudocode)
 //   CFG(a, c, {a -> Edge(b), b -> Edge(c)})
 // We hold on to the end so that CFGs can be easily chained/combined
-class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.edgeMap) {
+class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
   validate
 
   // Requires that there are no blocks in both CFGs
-  // WARNING: destroys both input CFGs because edgeMap is mutated.
+  // WARNING: destroys both input CFGs because edges is mutated.
   def ++(cfg:CFG): CFG = {
     val newEdges = edges ++ cfg.edges
     newEdges.put(end, Edge(cfg.start))
@@ -82,11 +82,14 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.edgeMap) {
 }
 
 object CFGFactory {
+  import IR2._
+
   def fromStatement(stmt:IR2.Statement):CFG = {
-    val block = IR2.Block(List(stmt))
-    new CFG(block, block, new IR2.edgeMap())
+    val block = Block(List(stmt))
+    new CFG(block, block, new EdgeMap())
   }
 
-  def nopBlock = IR2.Block(List())
-  def dummy = new CFG(nopBlock, nopBlock, new IdentityMap[IR2.Block, IR2.Transition]())
+  def nopBlock: Block = IR2.Block(List())
+  def dummy: CFG =
+    new CFG(nopBlock, nopBlock, new EdgeMap())
 }
