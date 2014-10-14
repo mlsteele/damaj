@@ -3,14 +3,14 @@ package compile
 import IR._
 import IR2._
 import SymbolTable._
-// Construct an AST from a parse tree
-// ptree - root program node
-// source - source code
+
+// Construct an IR2 from an IR
 // Example Usage:
-//   val ast = ASTBuilder.parseProgram(parseTree).ast
-class IR2Builder(program: ProgramIR, filepath: String, code: String) {
+//   val ir2 = IR2Builder.convert(ir).ir2
+class IR2Builder(program: ProgramIR) {
+  val ir2 = convertProgram(program)
+
   def convertProgram(ir: IR.ProgramIR): IR2.Program = {
-    
     val fields = ir.symbols.symbols.flatMap(_ match {
       case f:FieldSymbol => Some(convertField(f))
       case _ => None

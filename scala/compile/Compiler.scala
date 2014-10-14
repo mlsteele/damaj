@@ -49,8 +49,11 @@ object Compiler {
           case None    => System.exit(1)
         }
       case CLI.Action.ASSEMBLY | CLI.Action.DEFAULT => {
-        assembly(CLI.infile)
-        System.exit(0)
+        val worked = assembly(CLI.infile)
+        worked match {
+          case true => System.exit(0)
+          case false => System.exit(-1)
+        }
       }
     }
   }
@@ -165,17 +168,23 @@ object Compiler {
       }
   }
 
-  def assembly(fileName: String) = {
-    inter(fileName) match {
-      case None =>
-      case Some(ir) => {
-        val simp = new IRSimplifier.IRSimplifier(ir)
-        val newIR = simp.simplify()
-        println("\nFlatened IR (pretty):")
-        println(IRPrinter.print(newIR))
-      }
-    }
-    outFile.print(AsmGen.example3)
+  // Returns whether it worked.
+  def assembly(fileName: String): Boolean = {
+    // TODO appropriate output with/without debug
+    val ir1 = inter(fileName)
+    // Use map to go through stages.
+    // Returns true or false based on whether all stages work.
+    ir1.map{ ir1 =>
+      val simplified = IRSimplifier.simplify(ir1)
+      println("\nFlatened IR (pretty):")
+      println(IRPrinter.print(simplified))
+      simplified
+    }.map{ ir1 =>
+      // TDOO
+      ir1
+    }.map{ ir2 =>
+      outFile.print(AsmGen.example3)
+    }.isDefined
   }
 
   def print_tree(tree: ParseTree, level: Int): Unit  = {

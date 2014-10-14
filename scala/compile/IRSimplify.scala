@@ -7,6 +7,11 @@ object IRSimplifier {
   import TempVarGen._
   import FunctionalUtils._
 
+  // Alias to simply do some funny stuff with internal classes.
+  // WARNING,  This mutates the input program's methods
+  def simplify(ir: ProgramIR): ProgramIR =
+    new IRSimplifierInternal(ir).simplify()
+
   implicit class EnhancedLoad(load: Load) {
     // Gets the type of a load
     def dtype(): DType = load match {
@@ -291,7 +296,7 @@ object IRSimplifier {
   // source - source code
   // Example Usage:
   //   val ast = ASTBuilder.parseProgram(parseTree).ast
-  class IRSimplifier(var program: ProgramIR) {
+  class IRSimplifierInternal(var program: ProgramIR) {
     import IRPrinter._
 
     // WARNING,  This mutates the input program's methods
