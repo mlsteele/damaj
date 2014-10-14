@@ -76,6 +76,7 @@ class SourceMap(filepath: String, code: String) {
 
 class IdentityMap[K,V] {
   import java.util.IdentityHashMap
+  import collection.JavaConversions._
 
   private val store = new IdentityHashMap[K,V]
 
@@ -89,10 +90,16 @@ class IdentityMap[K,V] {
 
   def contains(k: K): Boolean = store.containsKey(k)
 
+  def keys: Set[K] = store.keySet().toSet
+
+  def values: Set[V] = store.values().toSet
+
   def ++(other: IdentityMap[K,V]): IdentityMap[K,V] = {
     val newMap = new IdentityMap[K,V]()
     newMap.putAll(this)
     newMap.putAll(other)
     newMap
   }
+
+  override def toString = store.toString
 }

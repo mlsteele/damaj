@@ -26,7 +26,9 @@ class IR2Builder(program: ProgramIR) {
         case _ => throw new IR2ConstructionException("Program must have one main method.")
       }
 
-    val methods = ir.symbols.symbols.flatMap(_ match {
+    val methods = ir.symbols.symbols
+      .filter(_.id != "main")
+      .flatMap(_ match {
       case m:MethodSymbol => Some(convertMethod(m))
       case _ => None
     })
@@ -44,8 +46,9 @@ class IR2Builder(program: ProgramIR) {
     }),
     convertBlock(method.block))
 
-  def convertBlock(block: IR.Block): CFG =
+  def convertBlock(block: IR.Block): CFG = {
     block.stmts.map(CFGFactory.fromStatement).fold(CFGFactory.dummy)(_ ++ _)
+  }
  
   def convertStatement(statement: IR.Statement): CFG = statement match {
       case IR.If(pre, condition, thenb, elseb) =>

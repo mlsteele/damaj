@@ -5,9 +5,43 @@ object AsmGen {
   import scala.language.postfixOps
   import IR2._
 
-  // convertProgram(program: IR2.Program): String = {
-    // val main: Method = program.methods.filter(_.id == "main")
-  // }
+  // Programming error.
+  class AsmNotImplemented() extends RuntimeException()
+
+  def convertProgram(ir2: IR2.Program): String = {
+    val main = method("main",
+      ir2.main.params.length,
+      convertCFG(ir2.main.cfg))
+    val text = main
+    val data = ""
+    file(text, data)
+  }
+
+  def convertCFG(cfg: CFG): String =
+    convertCFGBlock(cfg.start, cfg)
+
+  def convertCFGBlock(b: Block, cfg: CFG): String = {
+    Console.err.println("@@@")
+    Console.err.println(b eq cfg.start)
+    Console.err.println(cfg.edges(b))
+    Console.err.println(cfg.edges.contains(b))
+    val next = cfg.edges(b) match {
+      case None => ""
+      case Some(Edge(next)) => convertCFGBlock(next, cfg)
+      case Some(_:Fork) => throw new AsmNotImplemented()
+    }
+    convertBlock(b) \
+    next
+  }
+
+  def convertBlock(b: Block): String =
+    b.stmts.map(convertStatement).mkString("\n")
+
+  def convertStatement(stmt: Statement): String = stmt match {
+    case IR.CalloutCall(cs, args) =>
+      call(cs.id)
+    case _ => throw new AsmNotImplemented()
+  }
 
   def example3: String = {
     val main =

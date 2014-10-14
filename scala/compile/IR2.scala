@@ -21,7 +21,15 @@ object IR2 {
   case class Fork(condition: IR.Expr, ifTrue: Block, ifFalse: Block) extends Transition
 
   type edgeMap = IdentityMap[IR2.Block, IR2.Transition]
+}
 
+class IR2Printer(ir2: IR2.Program) {
+  import IR2._
+
+  val print: String = printIR2(ir2)
+
+  private def printIR2(ir2: Program): String =
+    "IR2.Program(xx- %s -xx)".format(ir2.main)
 }
 
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
@@ -29,15 +37,48 @@ object IR2 {
 // So a control flow of a -> b -> c may look like (pseudocode)
 //   CFG(a, c, {a -> Edge(b), b -> Edge(c)})
 // We hold on to the end so that CFGs can be easily chained/combined
-class CFG(val start:IR2.Block, val end:IR2.Block, val edges:IR2.edgeMap) {
+class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.edgeMap) {
+  import IR2._
+
+  class CFGIntegrityError(msg: String) extends RuntimeException(msg)
+  validate
 
   // Requires that there are no blocks in both CFGs
+  // WARNING: destroys both input CFGs because edgeMap is mutated.
   def ++(cfg:CFG): CFG = {
     val newEdges = edges ++ cfg.edges
-    newEdges.put(end, IR2.Edge(cfg.start))
+    newEdges.put(end, Edge(cfg.start))
     new CFG(start, cfg.end, newEdges)
   }
 
+  def traverse(from: Block): Set[Block] = {
+    val rest: Set[Block] = edges(from) match {
+      case None => Set()
+      case Some(Edge(next)) => traverse(next)
+      case Some(Fork(_, left, right)) => traverse(left) ++ traverse(right)
+    }
+    Set(from) union rest
+  }
+
+  override def toString: String = {
+    "CFG(%s)".format(traverse(start))
+  }
+
+  private def validate() = {
+    edges.keys.foreach(mustContain)
+    edges.values.foreach{ _ match {
+      case Edge(next) => mustContain(next)
+      case Fork(_, left, right) => mustContain(left); mustContain(right)
+    }}
+  }
+
+  private def mustContain(block: Block): Unit = {
+    // TODO maybe traversing all the time is slow.
+    traverse(start).contains(block) match {
+      case true =>
+      case false => throw new CFGIntegrityError(s"block not reachable $block")
+    }
+  }
 }
 
 object CFGFactory {
@@ -46,6 +87,6 @@ object CFGFactory {
     new CFG(block, block, new IR2.edgeMap())
   }
 
-  def  nopBlock = IR2.Block(List())
-  val dummy = new CFG(nopBlock, nopBlock, new IdentityMap[IR2.Block, IR2.Transition]())
+  def nopBlock = IR2.Block(List())
+  def dummy = new CFG(nopBlock, nopBlock, new IdentityMap[IR2.Block, IR2.Transition]())
 }

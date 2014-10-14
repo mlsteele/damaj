@@ -182,10 +182,10 @@ object Compiler {
     }.map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       Console.err.println("\nIR2 (CFG):")
-      Console.err.println(ir2)
+      Console.err.println(new IR2Printer(ir2).print)
       ir2
     }.map{ ir2 =>
-      outFile.print(AsmGen.example3)
+      outFile.print(AsmGen.convertProgram(ir2))
     }.isDefined
   }
 
