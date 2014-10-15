@@ -150,8 +150,7 @@ object SymbolTable {
     }
 
     /**
-     * Looks up the first field in the current scope that matches the given predicate.
-     * For example: table.lookupSymbolLocal(byID("x") and isMethod) tries to find a variable named "x" that is a method.
+     * Looks up the first field in the current scope with the given name
      */
     def lookupSymbolLocal(id: ID) : Option[Symbol] = {
       for (s <- symbols) {
@@ -163,14 +162,19 @@ object SymbolTable {
     }
 
     /**
-     * Similar to lookupSymbolLocal, but it also tries looking through the parent scopes.
-     */
-    def lookupSymbol(id: ID) : Option[Symbol] = {
+      * Looks up a symbol, and also returns the symbol table it was found in
+      */
+    def lookupSymbolExtra(id: ID) : Option[(Symbol, SymbolTable)] = {
       lookupSymbolLocal(id) match {
-        case Some(s) => Some(s)
-        case None    =>  parent.flatMap(_.lookupSymbol(id))
+        case Some(s) => Some((s, this))
+        case None    => parent.flatMap(_.lookupSymbolExtra(id))
       }
     }
+
+    /**
+     * Similar to lookupSymbolLocal, but it also tries looking through the parent scopes.
+     */
+    def lookupSymbol(id: ID) : Option[Symbol] = lookupSymbolExtra(id).map(_._1)
 
     def varOffset(id: ID) : Offset = lookupSymbol(id) match {
       case Some(field:FieldSymbol) => {
