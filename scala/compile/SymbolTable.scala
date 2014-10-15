@@ -71,11 +71,30 @@ object SymbolTable {
     def this(p: SymbolTable) = this(Some(p))
 
     /**
+      * Am I the top-level symbol table?
+      */
+    def isGlobalTable() : Boolean = parent match {
+      case None   => true
+      case Some(p) => false
+    }
+
+    /**
       * Returns the symbol table representing the global scope.
       */
     def globalTable() : SymbolTable = parent match {
       case None    => this
       case Some(p) => p.globalTable();
+    }
+
+    /**
+      * Am I a method parameter symbol table?
+      */
+    def isMethodTable() : Boolean = parent match {
+      case None => false // nope, I'm global
+      case Some(pa) => pa.parent match {
+        case None => true // I've got no grandparent, but I have a parent, so I'm a method table
+        case Some(grandpa) => false // I'm too deep in the heirarchy to be a method table
+      }
     }
 
     /**
