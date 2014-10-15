@@ -63,8 +63,18 @@ object SymbolTable {
 
   case class Conflict(first: Symbol, second: Symbol)
 
-  class SymbolTable (var parent: Option[SymbolTable]) {
+  sealed abstract trait Offset {
+    def index : Int
+  }
 
+  // Represents an offset from the base pointer
+  case class LocalOffset(index: Int) extends Offset
+  // Represents an offset from the stack pointer
+  case class ArgOffset(index: Int) extends Offset
+  // Represents an offset into the global vars
+  case class GlobalOffset(index: Int) extends Offset
+
+  class SymbolTable (var parent: Option[SymbolTable]) {
     var symbols:List[Symbol] = List();
 
     def this() = this(None)
@@ -160,6 +170,14 @@ object SymbolTable {
         case Some(s) => Some(s)
         case None    =>  parent.flatMap(_.lookupSymbol(id))
       }
+    }
+
+    def varOffset(id: ID) : Offset = lookupSymbol(id) match {
+      case Some(field:FieldSymbol) => {
+        return LocalOffset(0)
+      }
+      case Some(_) => assert(false, "Tried to calculate the offset of a callout or a method. This makes no sense."); LocalOffset(0)
+      case None => assert(false, "Tried to calculate offset of variable that doesn't exist"); LocalOffset(0)
     }
 
     /**
