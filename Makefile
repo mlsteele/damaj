@@ -73,7 +73,7 @@ docs: doc/semantic_checker/Lab2.pdf
 # Runs the scala REPL with our files added to the path
 .PHONY:
 repl:
-	CLASSPATH=$(CLASSPATH) scala -deprecation -feature -language:implicitConversio
+	CLASSPATH=$(CLASSPATH) scala -deprecation -feature -language:implicitConversions
 
 .PHONY:
 clean:
