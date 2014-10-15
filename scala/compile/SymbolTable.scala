@@ -3,6 +3,7 @@ package compile;
 object SymbolTable {
   import IR._
   import IRShared._
+  import scala.util.control.Breaks._
 
   /**
    * Represents something that can be looked up in a symbol table.
@@ -200,7 +201,22 @@ object SymbolTable {
 
     def varOffset(id: ID) : Offset = lookupSymbolExtra(id) match {
       case Some((field:FieldSymbol, table)) => {
-        return LocalOffset(0)
+        var offset: Int = 0;
+        breakable {for (s <- table.symbols) s match {
+          case f:FieldSymbol => {
+            if (f == field) break
+            offset += f.size.getOrElse(1).asInstanceOf[Int]
+          }
+          case _ =>
+        }}
+        if (table.isGlobalTable()) {
+          return GlobalOffset(offset);
+        }
+        else if (table.isMethodTable()) {
+          return ArgOffset(offset);
+        }
+        table.parentLocalScopes.foreach(t => offset += t.size())
+        return LocalOffset(offset)
       }
       case Some((_, _)) => assert(false, "Tried to calculate the offset of a callout or a method. This makes no sense."); LocalOffset(0)
       case None => assert(false, "Tried to calculate offset of variable that doesn't exist"); LocalOffset(0)
