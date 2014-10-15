@@ -119,6 +119,8 @@ object SymbolTable {
       }
     }
 
+    def isLocalTable() : Boolean = !isMethodTable && !isGlobalTable
+
     /**
      * Adds a symbol to the table
      * Return value is None if the insert succeeded, and returns a Conflict if the symbol was duplicate.
@@ -176,12 +178,42 @@ object SymbolTable {
      */
     def lookupSymbol(id: ID) : Option[Symbol] = lookupSymbolExtra(id).map(_._1)
 
-    def varOffset(id: ID) : Offset = lookupSymbol(id) match {
-      case Some(field:FieldSymbol) => {
+    /**
+      * Returns the hierarchy of parent scopes to the current scope which are also local scopes.
+      * The first item in the list is the most recent ancestor.
+      */
+    def parentLocalScopes() : List[SymbolTable] = {
+      if (!isLocalTable()) {
+        return List()
+      }
+      parent match {
+        case None => List()
+        case Some(p) => {
+          if (p.isLocalTable()) {
+            return p :: p.parentLocalScopes()
+          } else {
+            return List()
+          }
+        }
+      }
+    }
+
+    def varOffset(id: ID) : Offset = lookupSymbolExtra(id) match {
+      case Some((field:FieldSymbol, table)) => {
         return LocalOffset(0)
       }
-      case Some(_) => assert(false, "Tried to calculate the offset of a callout or a method. This makes no sense."); LocalOffset(0)
+      case Some((_, _)) => assert(false, "Tried to calculate the offset of a callout or a method. This makes no sense."); LocalOffset(0)
       case None => assert(false, "Tried to calculate offset of variable that doesn't exist"); LocalOffset(0)
+    }
+
+    // The total number of words occupied by the fields in this scope
+    def size() : Int = {
+      var s: Int = 0;
+      for (f <- symbols) f match {
+        case FieldSymbol(_, _, size) => s += size.getOrElse(1).asInstanceOf[Int]
+        case _ => // skip non-fields
+      }
+      return s
     }
 
     /**
