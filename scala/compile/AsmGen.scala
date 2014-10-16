@@ -57,7 +57,7 @@ class AsmGen(ir2: IR2.Program) {
      arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) if idx < argregc =>
-        mov(strings.put(value) $, argregs(idx))
+        mov(strings.put(value) $, argregs(idx)) ? s"prepare callout arg #$idx"
       case Left(StrLiteral(value)) =>
         throw new AsmNotImplemented()
       case Right(_: IR.Expr) => throw new AsmNotImplemented()
@@ -186,7 +186,7 @@ object AsmDSL {
     def $(): String = "$%s".format(s);
     def %(): String = s"%$s";
     // Comments
-    def ?(a: String): String = s"$s # $a\n"
+    def ?(a: String): String = s"$s // $a"
     // Yeah.. the backslash is acts as both an op and
     // a line continuation, at least as far as I can tell.
     def \(a: String): String = s"$s\n$a"
@@ -230,10 +230,10 @@ object AsmDSL {
     val stackbytes = stackvars * 8
     labl(label) \
     - push(rbp) \
-    - mov(rsp, rbp) \
-    - sub(stackbytes $, rsp) \
+    - mov(rsp, rbp) ? "set bp" \
+    - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
     - body \
-    - add(stackbytes $, rsp) \
+    - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
     - ret
   }
