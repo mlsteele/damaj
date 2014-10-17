@@ -18,6 +18,7 @@ class AsmGen(ir2: IR2.Program) {
 
   // TODO these should all be gone eventually.
   class AsmNotImplemented(message: String=null) extends RuntimeException(message)
+  class AsmPreconditionViolated(message: String=null) extends RuntimeException(message)
 
   def convertProgram(ir2: IR2.Program): String = {
     val main = method("main",
@@ -54,28 +55,20 @@ class AsmGen(ir2: IR2.Program) {
   // TODO(miles): There's some ignoring of what type the ir access indices are.
   //              I think they're runtime enforced but I'm not really sure.
   def convertAssignment(ir: IR.Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
-    case (IR.Store(to, _), IR.LoadInt(v)) =>
-      symbols.varOffset(to.id) match {
-        case LocalOffset(idx: Int) =>
-          val off = -8 * (idx + 1)
-          mov(v $, rbp offset off) ? s"local[$idx] <- $v"
-        case ArgOffset(idx: Int) => throw new AsmNotImplemented()
-        case GlobalOffset(idx: Int) => throw new AsmNotImplemented()
-      }
-    case (IR.Store(to, _), IR.LoadField(from, _)) =>
-      val offStore = symbols.varOffset(to.id)
-      val offLoad = symbols.varOffset(from.id)
-      (offStore, offLoad) match {
-        case (LocalOffset(iS), LocalOffset(iL)) =>
-          val offStore = -8 * (iS + 1)
-          val offLoad = -8 * (iL + 1)
-          "" ? s"local[$iS] <- local[$iL]" \
-          push(r8) \
-          mov(rbp offset offLoad, r8) \
-          mov(r8, rbp offset offStore) \
-          pop(r8)
-        case _ => throw new AsmNotImplemented()
-      }
+    case (store: IR.Store, IR.LoadInt(v)) =>
+      val wherestore = whereVar(store, symbols)
+      wherestore.setup \
+      mov(v $, wherestore.asmloc) ? "%s <- %s".format(store.to.id, v)
+    case (store: IR.Store, load: IR.LoadField) =>
+      val wherestore = whereVar(store, symbols)
+      val whereload = whereVar(load, symbols)
+      comment("%s <- %s".format(store.to.id, load.from.id)) \
+      push(r8) \
+      whereload.setup \
+      mov(whereload.asmloc, r8) \
+      wherestore.setup \
+      mov(r8, wherestore.asmloc) \
+      pop(r8)
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
@@ -90,23 +83,76 @@ class AsmGen(ir2: IR2.Program) {
   def convertCalloutArg(arg: Either[StrLiteral, IR.Expr], argi: Int, symbols: SymbolTable): String = {
     arg match {
       // TODO escaping is probably broken
-      case Left(StrLiteral(value)) if argi < argregc =>
-        mov(strings.put(value) $, argregs(argi)) ? s"prepare callout arg #$argi"
       case Left(StrLiteral(value)) =>
-        throw new AsmNotImplemented(s"callouts with more than $argregc args")
+        mov(strings.put(value) $, whereArg(argi)) ? s"prepare callout arg #$argi"
       case Right(IR.LoadInt(v)) =>
-        // TODO(miles): untested
-        mov(v $, argregs(argi)) ? s"prepare callout arg #$argi"
-      case Right(IR.LoadField(from, _)) =>
-        symbols.varOffset(from.id) match {
-          case LocalOffset(idx: Int) =>
-            val off = -8 * (idx + 1)
-            mov(rbp offset off, argregs(argi)) ? s"callout arg #$argi<- local[$idx]"
-          case ArgOffset(idx: Int) => throw new AsmNotImplemented()
-          case GlobalOffset(idx: Int) => throw new AsmNotImplemented()
-        }
+        throw new AsmNotImplemented()
+        // mov(v $, argregs(argi)) ? s"stage callout arg #$argi"
+      case Right(load: IR.LoadField) =>
+        val whereload = whereVar(load, symbols)
+        val whereargi = whereArg(argi)
+        whereload.setup \
+        mov(whereload.asmloc, whereargi) ? s"stage callout arg #$argi"
       case Right(e: IR.Expr) => throw new AsmNotImplemented(e.toString)
     }
+  }
+
+  // Get the location to stage an argument.
+  def whereArg(argi: Int): String = argi < argregc match {
+    case true => argregs(argi)
+    case false => throw new AsmNotImplemented("high args")
+  }
+
+  // Represents how to access a variable location in assembly.
+  // Setup must be executed after which asmloc is a valid argument.
+  case class WhereVar(setup: String, asmloc: String)
+
+  // Get the location of a symbol
+  // Could clobber r9!
+  // for example: "-32(%rbp)", "$coolglobal+8"
+  def whereVar(id: ID, arrIdx: Option[IR.LoadField], symbols: SymbolTable): WhereVar = {
+    // Optionally put the array index into r9.
+    val setup = arrIdx match {
+      case Some(IR.LoadField(from, None)) =>
+        val w = whereVar(from.id, None, symbols)
+        mov(w.asmloc, r9)
+      case None => "nop"
+      case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
+    }
+
+    val offset = symbols.varOffset(id)
+    val isArray = arrIdx.isDefined
+    val asmLocation: String = (isArray, offset) match {
+      case (false, LocalOffset(offIdx)) =>
+        val off = -8 * (offIdx + 1)
+        (rbp offset off)
+      case (false, ArgOffset(offIdx)) if offIdx < argregc =>
+        argregs(offIdx)
+      case (false, ArgOffset(offIdx)) =>
+        // TODO(miles): not tested.
+        val off = 8 * (offIdx - argregc)
+        (rbp offset off)
+      case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented()
+      case (true, _) => throw new AsmNotImplemented("arrays, hahahahha")
+    }
+
+    WhereVar(setup, asmLocation)
+  }
+
+  def whereVar(load: IR.LoadField, symbols: SymbolTable): WhereVar = load.index match {
+    case Some(index: IR.LoadField) =>
+      whereVar(load.from.id, Some(index), symbols)
+    case None =>
+      whereVar(load.from.id, None, symbols)
+    case _ => throw new AsmPreconditionViolated("Array index must be field")
+  }
+
+  def whereVar(store: IR.Store, symbols: SymbolTable): WhereVar = store.index match {
+    case Some(index: IR.LoadField) =>
+      whereVar(store.to.id, Some(index), symbols)
+    case None =>
+      whereVar(store.to.id, None, symbols)
+    case _ => throw new AsmPreconditionViolated("Array index must be field")
   }
 
   def example3: String = {
