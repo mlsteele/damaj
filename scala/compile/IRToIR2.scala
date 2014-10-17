@@ -48,13 +48,13 @@ class IR2Builder(program: ProgramIR) {
 
   def convertBlock(block: IR.Block): CFG = {
     block.stmts
-      .map(CFGFactory.fromStatement)
+      .map(stmt => CFGFactory.fromStatement(stmt, block.fields))
       .fold(CFGFactory.dummy)(_ ++ _)
   }
  
-  def convertStatement(statement: IR.Statement): CFG = statement match {
+  def convertStatement(statement: IR.Statement, symbols: SymbolTable): CFG = statement match {
       case IR.If(pre, condition, thenb, elseb) =>
-        val startCFG = pre.map(convertStatement).reduceLeft((x,y) => x ++ y)
+        val startCFG = pre.map(x => convertStatement(x, symbols)).reduceLeft((x,y) => x ++ y)
         val thenCFG = convertBlock(thenb)
         val endBlock = CFGFactory.nopBlock
         val edges = startCFG.edges ++ thenCFG.edges
@@ -76,7 +76,7 @@ class IR2Builder(program: ProgramIR) {
         CFGFactory.dummy
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
-        val startCFG = pre.map(convertStatement).reduceLeft((x,y) => x ++ y)
+        val startCFG = pre.map(x => convertStatement(x, symbols)).reduceLeft((x,y) => x ++ y)
         val blockCFG = convertBlock(block)
         val endBlock = CFGFactory.nopBlock
         val edges = startCFG.edges ++ blockCFG.edges
@@ -84,6 +84,6 @@ class IR2Builder(program: ProgramIR) {
         edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)
-      case _ => CFGFactory.fromStatement(statement)
+      case _ => CFGFactory.fromStatement(statement, symbols)
   }
 }

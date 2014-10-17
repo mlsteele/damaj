@@ -3,6 +3,7 @@ package compile
 
 object IR2 {
   import IRShared._
+  import SymbolTable._
 
   // Earlier version constrain all fields to come before methods.
   // The callouts are discarded.
@@ -13,7 +14,7 @@ object IR2 {
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
-  case class Block(stmts: List[Statement]) {
+  case class Block(stmts: List[Statement], fields: SymbolTable) {
     override def equals(that:Any):Boolean = that match {
       case that: Block => this eq that
       case _ => false
@@ -89,13 +90,14 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
 object CFGFactory {
   import IR2._
+  import SymbolTable._
 
-  def fromStatement(stmt:IR2.Statement):CFG = {
-    val block = Block(List(stmt))
+  def fromStatement(stmt: IR2.Statement, fields: SymbolTable): CFG = {
+    val block = Block(List(stmt), fields)
     new CFG(block, block, new EdgeMap())
   }
 
-  def nopBlock: Block = IR2.Block(List())
+  def nopBlock: Block = IR2.Block(List(), new SymbolTable())
   def dummy: CFG = {
     val b = nopBlock
     new CFG(b, b, new EdgeMap())

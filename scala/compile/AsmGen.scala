@@ -6,6 +6,7 @@ class AsmGen(ir2: IR2.Program) {
   import AsmDSL._
   import scala.language.postfixOps
   import IRShared._
+  import SymbolTable._
   import IR2._
 
   val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
@@ -15,8 +16,8 @@ class AsmGen(ir2: IR2.Program) {
 
   val asm = convertProgram(ir2)
 
-  // Programming error.
-  class AsmNotImplemented() extends RuntimeException()
+  // TODO these should all be gone eventually.
+  class AsmNotImplemented(message: String=null) extends RuntimeException(message)
 
   def convertProgram(ir2: IR2.Program): String = {
     val main = method("main",
@@ -41,26 +42,69 @@ class AsmGen(ir2: IR2.Program) {
   }
 
   def convertBlock(b: Block): String =
-    b.stmts.map(convertStatement).mkString("\n")
+    b.stmts.map(stmt => convertStatement(stmt, b.fields)).mkString("\n")
 
-  def convertStatement(stmt: Statement): String = stmt match {
-    case ir: IR.CalloutCall => convertCallout(ir)
-    case _ => throw new AsmNotImplemented()
+  def convertStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
+    case ir: IR.CalloutCall => convertCallout(ir, symbols)
+    case ir: IR.Assignment => convertAssignment(ir, symbols)
+    case ir => throw new AsmNotImplemented(ir.toString)
   }
 
-  def convertCallout(ir: IR.CalloutCall): String = {
-    ir.args.zipWithIndex.map(Function.tupled(convertCalloutArg)).mkString("\n") \
+  // TODO(miles): There's some ignoring of what type the ir access indices are.
+  //              I think they're runtime enforced but I'm not really sure.
+  def convertAssignment(ir: IR.Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
+    case (IR.Store(to, _), IR.LoadInt(v)) =>
+      symbols.varOffset(to.id) match {
+        case LocalOffset(idx: Int) =>
+          val off = -8 * (idx + 1)
+          mov(v $, rbp offset off) ? s"local[$idx] <- $v"
+        case ArgOffset(idx: Int) => throw new AsmNotImplemented()
+        case GlobalOffset(idx: Int) => throw new AsmNotImplemented()
+      }
+    case (IR.Store(to, _), IR.LoadField(from, _)) =>
+      val offStore = symbols.varOffset(to.id)
+      val offLoad = symbols.varOffset(from.id)
+      (offStore, offLoad) match {
+        case (LocalOffset(iS), LocalOffset(iL)) =>
+          val offStore = -8 * (iS + 1)
+          val offLoad = -8 * (iL + 1)
+          s"// local[$iS] <- local[$iL]" \
+          push(r8) \
+          mov(rbp offset offLoad, r8) \
+          mov(r8, rbp offset offStore) \
+          pop(r8)
+        case _ => throw new AsmNotImplemented()
+      }
+    case _ => throw new AsmNotImplemented(ir.toString)
+  }
+
+  def convertCallout(ir: IR.CalloutCall, symbols: SymbolTable): String = {
+    ir.args
+      .zipWithIndex
+      .map(Function.tupled(convertCalloutArg(_,_,symbols)))
+      .mkString("\n") \
     call(ir.callout.id)
   }
 
-  def convertCalloutArg(arg: Either[StrLiteral, IR.Expr], idx: Int): String = {
-     arg match {
+  def convertCalloutArg(arg: Either[StrLiteral, IR.Expr], argi: Int, symbols: SymbolTable): String = {
+    arg match {
       // TODO escaping is probably broken
-      case Left(StrLiteral(value)) if idx < argregc =>
-        mov(strings.put(value) $, argregs(idx)) ? s"prepare callout arg #$idx"
+      case Left(StrLiteral(value)) if argi < argregc =>
+        mov(strings.put(value) $, argregs(argi)) ? s"prepare callout arg #$argi"
       case Left(StrLiteral(value)) =>
-        throw new AsmNotImplemented()
-      case Right(_: IR.Expr) => throw new AsmNotImplemented()
+        throw new AsmNotImplemented(s"callouts with more than $argregc args")
+      case Right(IR.LoadInt(v)) =>
+        // TODO(miles): untested
+        mov(v $, argregs(argi)) ? s"prepare callout arg #$argi"
+      case Right(IR.LoadField(from, _)) =>
+        symbols.varOffset(from.id) match {
+          case LocalOffset(idx: Int) =>
+            val off = -8 * (idx + 1)
+            mov(rbp offset off, argregs(argi)) ? s"callout arg #$argi<- local[$idx]"
+          case ArgOffset(idx: Int) => throw new AsmNotImplemented()
+          case GlobalOffset(idx: Int) => throw new AsmNotImplemented()
+        }
+      case Right(e: IR.Expr) => throw new AsmNotImplemented(e.toString)
     }
   }
 
@@ -132,7 +176,7 @@ main:
 
     pushq $0
     popq %rbx
-    
+
     pushq $0
     addq $8, %rsp
 
@@ -185,6 +229,7 @@ object AsmDSL {
     // These are postfix because prefix was frustrating.
     def $(): String = "$%s".format(s);
     def %(): String = s"%$s";
+    def offset(offset: Int): String = s"$offset($s)";
     // Comments
     def ?(a: String): String = s"$s // $a"
     // Yeah.. the backslash is acts as both an op and
@@ -196,6 +241,10 @@ object AsmDSL {
     override def toString = s.toString
     private def lines(strs: List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
     private def indent(str: String): String = lines(str.split("\n").map("  " + _).toList)
+  }
+
+  implicit class DSLLong(s: Long) {
+    def $(): String = "$%s".format(s);
   }
 
   implicit class DSLInt(s: Int) {
@@ -233,6 +282,7 @@ object AsmDSL {
     - mov(rsp, rbp) ? "set bp" \
     - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
     - body \
+    "" \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
     - ret

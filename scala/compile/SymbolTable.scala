@@ -199,6 +199,8 @@ object SymbolTable {
       }
     }
 
+    class OffsetCalcInvalid(message: String=null) extends RuntimeException(message)
+
     def varOffset(id: ID) : Offset = lookupSymbolExtra(id) match {
       case Some((field:FieldSymbol, table)) => {
         var offset: Int = 0;
@@ -218,8 +220,8 @@ object SymbolTable {
         table.parentLocalScopes.foreach(t => offset += t.size())
         return LocalOffset(offset)
       }
-      case Some((_, _)) => assert(false, "Tried to calculate the offset of a callout or a method. This makes no sense."); LocalOffset(0)
-      case None => assert(false, "Tried to calculate offset of variable that doesn't exist"); LocalOffset(0)
+      case Some((_, _)) => throw new OffsetCalcInvalid("Tried to calculate the offset of a callout or a method. This makes no sense.")
+      case None => throw new OffsetCalcInvalid("Tried to calculate offset of variable that doesn't exist")
     }
 
     // The total number of words occupied by the fields in this scope
