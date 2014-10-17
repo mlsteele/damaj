@@ -9,8 +9,14 @@ class AsmGen(ir2: IR2.Program) {
   import SymbolTable._
   import IR2._
 
+  // Registers used for passing arguments to functions.
   val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
   val argregc = argregs.length
+
+  // Register to store index into array.
+  val reg_arridx = r10
+  // Register for intermediate value in assignment.
+  val reg_transfer = r11
 
   var strings = new StringStore()
 
@@ -63,12 +69,27 @@ class AsmGen(ir2: IR2.Program) {
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(load, symbols)
       comment("%s <- %s".format(store.to.id, load.from.id)) \
-      push(r8) \
+      push(reg_transfer) \
       whereload.setup \
-      mov(whereload.asmloc, r8) \
+      mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
-      mov(r8, wherestore.asmloc) \
-      pop(r8)
+      mov(reg_transfer, wherestore.asmloc) \
+      pop(reg_transfer)
+    case (store: IR.Store, IR.UnaryOp(op, right: IR.LoadField)) =>
+      val wherestore = whereVar(store, symbols)
+      val whereload = whereVar(right, symbols)
+      val opinstr = op match {
+        case _:Negative =>
+          neg(reg_transfer) ? "negate"
+        case _:Not => throw new AsmNotImplemented("Op not op should not make it to asmgen")
+        case _:Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
+      }
+      comment("%s <- (%s %s)".format(store.to.id, op, right.from.id)) \
+      whereload.setup \
+      mov(whereload.asmloc, reg_transfer) \
+      opinstr \
+      wherestore.setup \
+      mov(reg_transfer, wherestore.asmloc)
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
@@ -108,14 +129,14 @@ class AsmGen(ir2: IR2.Program) {
   case class WhereVar(setup: String, asmloc: String)
 
   // Get the location of a symbol
-  // Could clobber r9!
+  // Could clobber reg_arridx!
   // for example: "-32(%rbp)", "$coolglobal+8"
   def whereVar(id: ID, arrIdx: Option[IR.LoadField], symbols: SymbolTable): WhereVar = {
-    // Optionally put the array index into r9.
+    // Optionally put the array index into reg_arridx.
     val setup = arrIdx match {
       case Some(IR.LoadField(from, None)) =>
         val w = whereVar(from.id, None, symbols)
-        mov(w.asmloc, r9)
+        mov(w.asmloc, reg_arridx)
       case None => "nop"
       case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
@@ -313,6 +334,7 @@ object AsmDSL {
   def int(a: String): String = s"int $a"
   def sub(a: String, b: String): String = s"subq $a, $b"
   def add(a: String, b: String): String = s"addq $a, $b"
+  def neg(a: String): String = s"negq $a"
 
   // other assembly tools
   def labl(a: String): String = s"$a:"
