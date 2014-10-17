@@ -21,7 +21,7 @@ class AsmGen(ir2: IR2.Program) {
 
   def convertProgram(ir2: IR2.Program): String = {
     val main = method("main",
-      ir2.main.params.length,
+      10, // TODO(miles): this needs to be a real number.
       convertCFG(ir2.main.cfg))
     val text = main
     val data = strings.toData
@@ -38,6 +38,7 @@ class AsmGen(ir2: IR2.Program) {
       case Some(_:Fork) => throw new AsmNotImplemented()
     }
     convertBlock(b) \
+    "" \
     next
   }
 
@@ -276,6 +277,7 @@ object AsmDSL {
 
   // stackvars is the number of vars in the method's stack frame
   def method(label: String, stackvars: Int, body: String): String = {
+    // TODO(miles): push and pop all regs.
     val stackbytes = stackvars * 8
     labl(label) \
     - push(rbp) \
