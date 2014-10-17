@@ -102,7 +102,7 @@ class AsmGen(ir2: IR2.Program) {
           imul(reg_transfer, reg_opresult)
         case _:Divide =>
           mov(reg_opresult, reg_divquo) \
-          mov(reg_opresult, reg_divrem) \
+          mov(0 $, reg_divrem) \
           idiv(reg_transfer) \
           mov(reg_divquo, reg_opresult)
         case _:Mod => throw new AsmNotImplemented()
