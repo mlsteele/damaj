@@ -14,7 +14,7 @@ if [[ -z "$1" ]]; then
 fi
 
 root=$(git rev-parse --show-toplevel)
-asm="$root/tmp/out.S"
+asm="$root/tmp/out.s"
 binary="$root/tmp/out"
 mkdir -p "$root/tmp"
 
@@ -22,4 +22,5 @@ runcompiler "$1" $asm &&\
 echo "$asm" &&\
 cat "$asm" &&\
 compile $asm $binary &&\
-echo "$binary"
+echo "$binary" &&\
+tmp/out
