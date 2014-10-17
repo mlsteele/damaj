@@ -79,7 +79,6 @@ repl:
 clean:
 	fsc -reset
 	rm -rf build/*
-	rm -rf doc/*/*.pdf
 
 # Magically print any Makefile variable from the command line
 print-%:
