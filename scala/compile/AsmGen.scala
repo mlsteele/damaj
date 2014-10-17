@@ -17,6 +17,8 @@ class AsmGen(ir2: IR2.Program) {
   val reg_arridx = r10
   // Register for intermediate value in assignment.
   val reg_transfer = r11
+  // Register for result of operations.
+  val reg_opresult = r12
 
   var strings = new StringStore()
 
@@ -69,12 +71,10 @@ class AsmGen(ir2: IR2.Program) {
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(load, symbols)
       comment("%s <- %s".format(store.to.id, load.from.id)) \
-      push(reg_transfer) \
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
-      mov(reg_transfer, wherestore.asmloc) \
-      pop(reg_transfer)
+      mov(reg_transfer, wherestore.asmloc)
     case (store: IR.Store, IR.UnaryOp(op, right: IR.LoadField)) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(right, symbols)
@@ -90,6 +90,39 @@ class AsmGen(ir2: IR2.Program) {
       opinstr \
       wherestore.setup \
       mov(reg_transfer, wherestore.asmloc)
+    case (store: IR.Store, IR.BinOp(left: IR.LoadField, op, right: IR.LoadField)) =>
+      val wherestore = whereVar(store, symbols)
+      val whereleft = whereVar(left, symbols)
+      val whereright = whereVar(right, symbols)
+      val opinstr: String = op match {
+        case _:Add =>
+          add(reg_transfer, reg_opresult)
+        case _:Subtract =>
+          sub(reg_transfer, reg_opresult)
+        case _:Multiply =>
+          mul(reg_transfer, reg_opresult)
+        case _:Divide =>
+          idiv(reg_transfer, reg_opresult)
+        case _:Mod => throw new AsmNotImplemented()
+        case _:LessThan => throw new AsmNotImplemented()
+        case _:GreaterThan => throw new AsmNotImplemented()
+        case _:LessThanEqual => throw new AsmNotImplemented()
+        case _:GreaterThanEqual => throw new AsmNotImplemented()
+        case _:Equals => throw new AsmNotImplemented()
+        case _:NotEquals => throw new AsmNotImplemented()
+        case _:And =>
+          and(reg_transfer, reg_opresult)
+        case _:Or =>
+          or(reg_transfer, reg_opresult)
+      }
+      comment("%s <- (%s %s %s)".format(store.to.id, left.from.id, op, right.from.id)) \
+      whereleft.setup \
+      mov(whereleft.asmloc, reg_opresult) \
+      whereright.setup \
+      mov(whereright.asmloc, reg_transfer) \
+      opinstr \
+      wherestore.setup \
+      mov(reg_opresult, wherestore.asmloc)
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
@@ -105,7 +138,7 @@ class AsmGen(ir2: IR2.Program) {
     arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) =>
-        mov(strings.put(value) $, whereArg(argi)) ? s"prepare callout arg #$argi"
+        mov(strings.put(value) $, whereArg(argi)) ? s"stage callout arg #$argi"
       case Right(IR.LoadInt(v)) =>
         throw new AsmNotImplemented()
         // mov(v $, argregs(argi)) ? s"stage callout arg #$argi"
@@ -332,9 +365,14 @@ object AsmDSL {
   def push(a: String): String = s"push $a"
   def pop(a: String): String = s"pop $a"
   def int(a: String): String = s"int $a"
-  def sub(a: String, b: String): String = s"subq $a, $b"
   def add(a: String, b: String): String = s"addq $a, $b"
+  def sub(a: String, b: String): String = s"subq $a, $b"
+  def mul(a: String, b: String): String = s"mulq $a, $b"
+  def idiv(a: String, b: String): String = s"idivq $a, $b"
   def neg(a: String): String = s"negq $a"
+  def and(a: String, b: String): String = s"andq $a, $b"
+  def or(a: String, b: String): String = s"orq $a, $b"
+  def xor(a: String, b: String): String = s"xorq $a, $b"
 
   // other assembly tools
   def labl(a: String): String = s"$a:"

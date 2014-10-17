@@ -104,6 +104,9 @@ object IRSimplifier {
               // finalExpr:
               LoadField(finalExprValue, None))
           case _ =>
+            println("flattening other binop")
+            println(leftTempVar)
+            println(rightTempVar)
             // Combine statements for generating left and right sides
             ((leftStatements ++ rightStatements) :+
               Assignment(Store(leftTempVar, None), finalLeftExpr) :+
