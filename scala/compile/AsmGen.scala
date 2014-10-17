@@ -69,7 +69,7 @@ class AsmGen(ir2: IR2.Program) {
         case (LocalOffset(iS), LocalOffset(iL)) =>
           val offStore = -8 * (iS + 1)
           val offLoad = -8 * (iL + 1)
-          s"// local[$iS] <- local[$iL]" \
+          "" ? s"local[$iS] <- local[$iL]" \
           push(r8) \
           mov(rbp offset offLoad, r8) \
           mov(r8, rbp offset offStore) \
@@ -232,7 +232,7 @@ object AsmDSL {
     def %(): String = s"%$s";
     def offset(offset: Int): String = s"$offset($s)";
     // Comments
-    def ?(a: String): String = s"$s // $a"
+    def ?(a: String): String = s"$s # $a"
     // Yeah.. the backslash is acts as both an op and
     // a line continuation, at least as far as I can tell.
     def \(a: String): String = s"$s\n$a"
