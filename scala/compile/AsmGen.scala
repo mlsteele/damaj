@@ -13,12 +13,11 @@ class AsmGen(ir2: IR2.Program) {
   val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
   val argregc = argregs.length
 
-  // Register to store index into array.
-  val reg_arridx = r10
-  // Register for intermediate value in assignment.
-  val reg_transfer = r11
-  // Register for result of operations.
-  val reg_opresult = r12
+  val reg_arridx = r10 // Register to store index into array.
+  val reg_transfer = r11 // Register for intermediate value in assignment.
+  val reg_opresult = r12 // Register for result of operations.
+  val reg_divquo = rax // Division input and quotient
+  val reg_divrem = rdx // Division input and remainder
 
   var strings = new StringStore()
 
@@ -100,9 +99,12 @@ class AsmGen(ir2: IR2.Program) {
         case _:Subtract =>
           sub(reg_transfer, reg_opresult)
         case _:Multiply =>
-          mul(reg_transfer, reg_opresult)
+          imul(reg_transfer, reg_opresult)
         case _:Divide =>
-          idiv(reg_transfer, reg_opresult)
+          mov(reg_opresult, reg_divquo) \
+          mov(reg_opresult, reg_divrem) \
+          idiv(reg_transfer) \
+          mov(reg_divquo, reg_opresult)
         case _:Mod => throw new AsmNotImplemented()
         case _:LessThan => throw new AsmNotImplemented()
         case _:GreaterThan => throw new AsmNotImplemented()
@@ -367,8 +369,8 @@ object AsmDSL {
   def int(a: String): String = s"int $a"
   def add(a: String, b: String): String = s"addq $a, $b"
   def sub(a: String, b: String): String = s"subq $a, $b"
-  def mul(a: String, b: String): String = s"mulq $a, $b"
-  def idiv(a: String, b: String): String = s"idivq $a, $b"
+  def imul(a: String, b: String): String = s"imulq $a, $b"
+  def idiv(a: String): String = s"idivq $a"
   def neg(a: String): String = s"negq $a"
   def and(a: String, b: String): String = s"andq $a, $b"
   def or(a: String, b: String): String = s"orq $a, $b"
