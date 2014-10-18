@@ -175,7 +175,12 @@ object Compiler {
     // Use map to go through stages.
     // Returns true or false based on whether all stages work.
     ir1.map{ ir1 => {
-      val desugared = Desugar.desugar(ir1)
+      val elaborated = Elaborate.elaborate(ir1)
+      if (CLI.debug) {
+        Console.err.println("\nElaborated IR (pretty):")
+        Console.err.println(IRPrinter.print(elaborated))
+      }
+      val desugared = Desugar.desugar(elaborated)
       if (CLI.debug) {
         Console.err.println("\nDesugared IR (pretty):")
         Console.err.println(IRPrinter.print(desugared))
