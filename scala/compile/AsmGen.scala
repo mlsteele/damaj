@@ -104,11 +104,17 @@ class AsmGen(ir2: IR2.Program) {
         case _:Divide =>
           // Uses auxillary reg_divquo and reg_divrem
           mov(reg_opresult, reg_divquo) \
-          mov(0 $, reg_divrem) \
+          cqto \ // sign extend rax into rdx:rax
           idiv(reg_transfer) \
           mov(reg_divquo, reg_opresult)
-        case _:Mod => throw new AsmNotImplemented()
+        case _:Mod =>
+          // Uses auxillary reg_divquo and reg_divrem
+          mov(reg_opresult, reg_divquo) \
+          cqto \ // sign extend rax into rdx:rax
+          idiv(reg_transfer) \
+          mov(reg_divrem, reg_opresult)
         case _:LessThan =>
+          // All comparisons use reg_flagtarget
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setl(reg_flagtarget)
@@ -324,6 +330,7 @@ object AsmDSL {
   def setle(a: String): String = s"setle $a" // <=
   def sete(a: String): String = s"sete $a" // ==
   def setne(a: String): String = s"setne $a" // !=
+  def cqto(): String = "cqto" // convert quad to oct
 
   // other assembly tools
   def labl(a: String): String = s"$a:"
