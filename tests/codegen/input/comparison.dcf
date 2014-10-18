@@ -15,4 +15,14 @@ void main() {
     printf("1: %d\n", 0 >= 0);
     printf("1: %d\n", 1 >= 0);
     printf("0: %d\n", -1 >= 0);
+
+    printf("1: %d\n", 0 >= 0);
+    printf("1: %d\n", 1 >= 0);
+    printf("0: %d\n", -1 >= 0);
+
+    printf("1: %d\n", -313 == -313);
+    printf("0: %d\n", -313 == 312);
+
+    printf("0: %d\n", -313 != -313);
+    printf("1: %d\n", -313 != 312);
 }
