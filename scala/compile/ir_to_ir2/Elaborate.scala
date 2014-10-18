@@ -5,245 +5,84 @@ object Elaborate {
   import IRShared._
   import SymbolTable._
   import TempVarGen._
-  import FunctionalUtils._
-  import IRPrinter._
 
   /*
    * De-sugars some DECAF constructs into other, simpler DECAF constructs.
+   * And/Or              -> nested conditionals
+   * Limited while loops -> normal while loops
+   * For loops           -> normal while loops
    * This method mutates the input program, in addition to returning a new one.
    */
   def elaborate(program: ProgramIR): ProgramIR = {
     val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-    methods.map(m => m.block = m.block.flatten())
-    for (m <- methods) {
-      assert(m.block.isSimple(),
-        "Method %s was not correctly simplified!\n%s".format(m.id, printMethod(m)))
-      }
+    methods.map(m => m.block = m.block.elaborate())
     return program
   }
 
-  implicit class EnhancedLoad(load: Load) {
-    // Gets the type of a load
-    def dtype(): DType = load match {
-      case LoadField(from, _) => from.dtype
-      case LoadInt(_)         => DTInt
-      case LoadBool(_)        => DTBool
-    }
-  }
-
-  implicit class MaybeSimpleExpr (expr: Expr) {
-    def isLoad() : Boolean = expr match {
-      case l:Load => true
-      case _      => false
-    }
-
-    // Determines whether an expression is "simple"
-    // 
-    def isSimple() : Boolean = expr match {
-      case BinOp(left, _, right) => left.isLoad() && right.isLoad()
-      case UnaryOp(_, right)     => right.isLoad()
-      case Ternary(cond, left, right) => cond.isLoad() && left.isLoad() && right.isLoad()
-      case c:CalloutCall => all(c.args.map {
-        case Left(_) => true
-        case Right(e) => e.isSimple()
-      })
-      case m:MethodCall => all(m.args.map {
-        case Left(_) => true
-        case Right(e) => e.isSimple()
-      })
-      case l:Load => true
-    }
-
-    /**
-      * Takes an expression, and generates a list of statements and
-      * temporary variable assignments that are needed to generate the
-      * expression, if the expression is not simple.  For example,
-      * (z = a + b + c + d) will be translated into the following statements
-      * and final expr:
-      * statements = [t1 = a + b, t2 = t1 + c]
-      * final expr: (t2 + d)
-      */
-    def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
-      case load:Load => return (List(), load) // Already simple!
-
-      case UnaryOp(op, e) => {
-        // Flatten the operand, and assign it to a temporary var
-        val (operandStatements, operandExpr) = e.flatten(tempGen)
-        val tempVar = tempGen.newVar(op.operandType())
-        val statements = operandStatements :+ Assignment(Store(tempVar, None), operandExpr)
-        val finalExpr = UnaryOp(op, LoadField(tempVar, None))
-        return (statements, finalExpr)
-      }
-
+  implicit class ElaboratedExpr (expr: Expr) {
+    def elaborate(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case BinOp(left, op, right) => {
-        // Assume both sides are complex. Optimizer will clean this up
-        // Flatten the leftside and generate a temporary var for the left side of the expression
-        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-        val leftTempVar = tempGen.newVar(typeOfExpr(left))
-
-        // Flatten the right and generate a temporary var for the right side of the expression
-        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-        val rightTempVar = tempGen.newVar(typeOfExpr(right))
-
         // returns (statements, finalExpr)
         op match {
-          case a:And =>
-            val finalExprValue = tempGen.newVar(DTBool)
-            (List(
-              If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
-                LoadField(leftTempVar, None),
-                Block(List(
-                  If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
-                    LoadField(rightTempVar, None),
-                    Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable()),
-                    Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))), new SymbolTable()),
-                Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable())))),
-              // finalExpr:
-              LoadField(finalExprValue, None))
-          case o:Or =>
-            val finalExprValue = tempGen.newVar(DTBool)
-            (List(
-              If(leftStatements :+ Assignment(Store(leftTempVar, None), finalLeftExpr),
-                UnaryOp(Not(),LoadField(leftTempVar, None)),
-                Block(List(
-                  If(rightStatements :+ Assignment(Store(rightTempVar, None), finalRightExpr),
-                    UnaryOp(Not(),LoadField(rightTempVar, None)),
-                    Block(List(Assignment(Store(finalExprValue, None), LoadBool(false))), new SymbolTable()),
-                    Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))), new SymbolTable()),
-                Some(Block(List(Assignment(Store(finalExprValue, None), LoadBool(true))), new SymbolTable())))),
-              // finalExpr:
-              LoadField(finalExprValue, None))
-          case _ =>
-            // Combine statements for generating left and right sides
-            ((leftStatements ++ rightStatements) :+
-              Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-              Assignment(Store(rightTempVar, None), finalRightExpr),
-              // finalExpr:
-              BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None)))
-        }
-      }
-
-      case Ternary(cond, left, right) => {
-        val (condStatements, finalCondExpr) = cond.flatten(tempGen)
-        val condTempVar = tempGen.newVar(typeOfExpr(finalCondExpr))
-
-        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-        val leftTempVar = tempGen.newVar(typeOfExpr(finalLeftExpr))
-
-        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-        val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
-
-        val statements = (condStatements ++ leftStatements ++ rightStatements) :+
-          Assignment(Store(condTempVar, None), finalCondExpr) :+
-          Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-          Assignment(Store(rightTempVar, None), finalRightExpr)
-
-        val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
-        return (statements, finalExpr)
-      }
-
-      case MethodCall(symbol, args) => {
-        var statements: List[Statement] = List()
-        var tempVars: List[Expr] = List()
-        for (eitherArg <- args) {
-          // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
-          eitherArg.map (arg => {
-            // flatten all the args, collecting their dependency statements and temporary vars
-            val (argStatements, argExpr) = arg.flatten(tempGen)
-            val argTempVar = tempGen.newVarLike(argExpr)
-            statements = (statements ++ argStatements) :+
-              Assignment(Store(argTempVar, None), argExpr)
-            tempVars = tempVars :+ LoadField(argTempVar, None)
-          })
-        }
-        // Make a new method call using the temporary vars as the args
-        val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
-        return (statements, finalExpr)
-      }
-
-      case CalloutCall(symbol, args) => {
-        var statements: List[Statement] = List()
-        var tempVars: List[Either[StrLiteral, Expr]] = List()
-        for (eitherArg <- args) {
-          eitherArg match {
-            case Right(arg) => {
-              // flatten all the args, collecting their dependency statements and temporary vars
-              val (argStatements, argExpr) = arg.flatten(tempGen)
-              val argTempVar = tempGen.newVarLike(argExpr)
-              statements = (statements ++ argStatements) :+
-                Assignment(Store(argTempVar, None), argExpr)
-              tempVars = tempVars :+ Right(LoadField(argTempVar, None))
-            }
-            case Left(str) => {
-              tempVars = tempVars :+ Left(str)
-            }
+          case a:And => {
+            /*
+             * a && b gets desugared to:
+             * bool temp;
+             * if (!a) {
+             *   temp = false;
+             * }
+             * else {
+             *   temp = b;
+             * }
+             */
+            val tempVar = tempGen.newBoolVar()
+            val thenStmt = Assignment(Store(tempVar, None), LoadBool(false))
+            val elseStmt = Assignment(Store(tempVar, None), right)
+            val ifStmt = If(
+              List(),
+              UnaryOp(Not(), LoadField(tempVar, None)),
+              newBlock(List(thenStmt)),
+              Some(newBlock(List(elseStmt)))
+            )
+            return (List(ifStmt), LoadField(tempVar, None))
           }
+          case _ =>
+            (List(), BinOp(left, op, right))
         }
-        // Make a new callout call using the temporary vars as the args
-        val finalExpr = CalloutCall(symbol, tempVars)
-        return (statements, finalExpr)
       }
+      case _ =>
+        return (List(), expr)
     }
   }
 
-  implicit class MaybeSimpleStatement(stmt: Statement) {
-    /**
-      * Determines whether a statement is simple.
-      * This means that any arguments or operands to a statement
-      * are only Loads.
-      */
-    def isSimple() : Boolean = stmt match {
-      case Assignment(left, right) => right.isSimple()
-      case m:MethodCall => {val e:Expr = m; e.isSimple()}
-      case c:CalloutCall => {val e:Expr = c; e.isSimple()}
-      case If(preStmts, condition, thenb, elseb) => {
-        var preds: List[Boolean] = preStmts.map(_.isSimple()) ++
-          thenb.stmts.map(_.isSimple())
-        elseb.map(_.stmts.map(s => preds = preds :+ s.isSimple()))
-        preds = preds :+ condition.isSimple()
-        return all(preds)
-      }
-      case _:For => false // For loops should be converted to while loops
-      case While(_, _, _, Some(_)) => false // while loops with a limit should be converted to unlimited while loops
-      case While(preStmts, condition, block, None) => {
-        val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
-          block.stmts.map(_.isSimple()) :+
-          condition.isSimple()
-        return all(preds)
-      }
-      case Return(None) => true
-      case Return(Some(e)) => e.isSimple()
-      case Break() => true
-      case Continue() => true
-    }
-
+  implicit class ElaboratedStatement(stmt: Statement) {
     /* Converts a statement (possibly simple or non-simple) into a list of
      * equivalent statements that are all simple by generating
      * temporary variables for complex sub-expressions.
      */
-    def flatten(tempGen: TempVarGen) : List[Statement] = stmt match {
+    def elaborate(tempGen: TempVarGen) : List[Statement] = stmt match {
       case Assignment(left, right) => {
-        val (stmts, finalExpr) = right.flatten(tempGen)
+        val (stmts, finalExpr) = right.elaborate(tempGen)
         return stmts :+ Assignment(left, finalExpr)
       }
       // MethodCall and CalloutCall have weird casts because they
       // are both Exprs and Statements
       case m:MethodCall => {
-        val (stmts, finalExpr) = m.asInstanceOf[Expr].flatten(tempGen)
+        val (stmts, finalExpr) = m.asInstanceOf[Expr].elaborate(tempGen)
         return stmts :+ finalExpr.asInstanceOf[MethodCall]
       }
       case c:CalloutCall => {
-        val (stmts, finalExpr) = c.asInstanceOf[Expr].flatten(tempGen)
+        val (stmts, finalExpr) = c.asInstanceOf[Expr].elaborate(tempGen)
         return stmts :+ finalExpr.asInstanceOf[CalloutCall]
       }
       case If(preStmts, cond, thenb, elseb) => {
-        val (condStmts, condExpr) = cond.flatten(tempGen)
-        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
+        val (condStmts, condExpr) = cond.elaborate(tempGen)
+        val newPreStmts = preStmts.flatMap(_.elaborate(tempGen)) ++
           condStmts
         return List(If(newPreStmts,
           condExpr,
-          thenb.flatten(),
-          elseb.map(_.flatten())
+          thenb.elaborate(),
+          elseb.map(_.elaborate())
         ))
       }
       case For(id, start, iter, thenb) => tempGen.table.lookupSymbol(id) match {
@@ -251,10 +90,10 @@ object Elaborate {
         case None => assert(false, "Could not find ID in symbol table."); List()
         case Some(loopVar) => {
           // Generate statements needed to generate start value of loop variable
-          val (startStmts, startExpr) = start.flatten(tempGen)
+          val (startStmts, startExpr) = start.elaborate(tempGen)
           val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
           // Generates statements needed to re-calculate ending expression each loop
-          val (iterStmts, iterExpr) = iter.flatten(tempGen)
+          val (iterStmts, iterExpr) = iter.elaborate(tempGen)
           // Temp var for the right side of the condition
           val condVar = tempGen.newBoolVar()
           val condAssign = Assignment(Store(condVar, None), iterExpr)
@@ -264,7 +103,7 @@ object Elaborate {
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
           val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
           // The original statements of the while loop, plus incVarStmt
-          val loopStmts = thenb.flatten().stmts :+ incVarStmt
+          val loopStmts = thenb.elaborate().stmts :+ incVarStmt
           val whileLoop = While(iterStmts :+ condAssign,
             condExpr,
             Block(loopStmts, thenb.fields),
@@ -274,12 +113,12 @@ object Elaborate {
       }
       // While loops with no limit are straight forward to convert
       case While(preStmts, cond, block, None) => {
-        val (condStmts, condExpr) = cond.flatten(tempGen)
-        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++ condStmts
+        val (condStmts, condExpr) = cond.elaborate(tempGen)
+        val newPreStmts = preStmts.flatMap(_.elaborate(tempGen)) ++ condStmts
         return List(While(
           newPreStmts,
           condExpr,
-          block.flatten(),
+          block.elaborate(),
           None
         ))
       }
@@ -303,11 +142,11 @@ object Elaborate {
           counterInit :: preStmts,
           BinOp(counterCondition, And(), cond),
           Block(newBlockStmts, block.fields),
-          None).flatten(tempGen)
+          None).elaborate(tempGen)
       }
       case Return(None) => List(Return(None))
       case Return(Some(expr)) => {
-        val (exprStmts, finalExpr) = expr.flatten(tempGen)
+        val (exprStmts, finalExpr) = expr.elaborate(tempGen)
         return exprStmts :+ Return(Some(finalExpr))
       }
       case Break() => List(Break())
@@ -316,12 +155,10 @@ object Elaborate {
   }
 
   implicit class MaybeSimpleBlock (var block: Block) {
-    def flatten() : Block = {
+    def elaborate() : Block = {
       val tempGen = new TempVarGen(block.fields)
-      val newStmts = block.stmts.flatMap(_.flatten(tempGen))
+      val newStmts = block.stmts.flatMap(_.elaborate(tempGen))
       return Block(newStmts, block.fields)
     }
-
-    def isSimple() : Boolean = all(block.stmts.map(_.isSimple()))
   }
 }

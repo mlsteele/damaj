@@ -10,7 +10,7 @@ object IR {
   // Root node
   case class ProgramIR(symbols: SymbolTable)
 
-  case class Block(stmts: List[Statement], fields: SymbolTable)
+  case class Block(stmts: List[Statement], fields:SymbolTable)
 
   sealed trait Statement
 
@@ -66,4 +66,7 @@ object IR {
   case class LoadBool(value: Boolean) extends Load
 
   case class Store(to: FieldSymbol, index: Option[Expr])
+
+  def newBlock(stmts: List[Statement]) = Block(stmts, new SymbolTable())
+
 }
