@@ -15,7 +15,8 @@ class AsmGen(ir2: IR2.Program) {
 
   val reg_arridx = r10 // Register to store index into array.
   val reg_transfer = r11 // Register for intermediate value in assignment.
-  val reg_opresult = r12 // Register for result of operations.
+  val reg_opresult = rax // Register for result of operations.
+  val reg_flagtarget = "%al" // Target byte reg for set ops. Bottom of %rax.
   val reg_divquo = rax // Division input and quotient
   val reg_divrem = rdx // Division input and remainder
 
@@ -92,6 +93,7 @@ class AsmGen(ir2: IR2.Program) {
       val wherestore = whereVar(store, symbols)
       val whereleft = whereVar(left, symbols)
       val whereright = whereVar(right, symbols)
+      // Do (reg_opresult op reg_transfer) and store answer in reg_opresult
       val opinstr: String = op match {
         case _:Add =>
           add(reg_transfer, reg_opresult)
@@ -100,15 +102,28 @@ class AsmGen(ir2: IR2.Program) {
         case _:Multiply =>
           imul(reg_transfer, reg_opresult)
         case _:Divide =>
+          // Uses auxillary reg_divquo and reg_divrem
           mov(reg_opresult, reg_divquo) \
           mov(0 $, reg_divrem) \
           idiv(reg_transfer) \
           mov(reg_divquo, reg_opresult)
         case _:Mod => throw new AsmNotImplemented()
-        case _:LessThan => throw new AsmNotImplemented()
-        case _:GreaterThan => throw new AsmNotImplemented()
-        case _:LessThanEqual => throw new AsmNotImplemented()
-        case _:GreaterThanEqual => throw new AsmNotImplemented()
+        case _:LessThan =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          setl(reg_flagtarget)
+        case _:GreaterThan =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          setg(reg_flagtarget)
+        case _:LessThanEqual =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          setle(reg_flagtarget)
+        case _:GreaterThanEqual =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          setge(reg_flagtarget)
         case _:Equals => throw new AsmNotImplemented()
         case _:NotEquals => throw new AsmNotImplemented()
         case _:And =>
@@ -116,6 +131,10 @@ class AsmGen(ir2: IR2.Program) {
         case _:Or =>
           or(reg_transfer, reg_opresult)
       }
+      // Load left into reg_opresult
+      // Load right into reg_transfer
+      // Operations mostly use reg_opresult and reg_transfer internally.
+      // Some operations like idiv use additional registers.
       comment("%s <- (%s %s %s)".format(store.to.id, left.from.id, op, right.from.id)) \
       whereleft.setup \
       mov(whereleft.asmloc, reg_opresult) \
@@ -287,10 +306,16 @@ object AsmDSL {
   def sub(a: String, b: String): String = s"subq $a, $b"
   def imul(a: String, b: String): String = s"imulq $a, $b"
   def idiv(a: String): String = s"idivq $a"
+  // Two's complement negation
   def neg(a: String): String = s"negq $a"
   def and(a: String, b: String): String = s"andq $a, $b"
   def or(a: String, b: String): String = s"orq $a, $b"
   def xor(a: String, b: String): String = s"xorq $a, $b"
+  def cmp(a: String, b: String): String = s"cmpq $a, $b"
+  def setg(a: String): String  = s"setg $a"
+  def setge(a: String): String = s"setge $a"
+  def setl(a: String): String  = s"setl $a"
+  def setle(a: String): String = s"setle $a"
 
   // other assembly tools
   def labl(a: String): String = s"$a:"

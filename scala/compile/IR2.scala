@@ -24,6 +24,7 @@ object IR2 {
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
   case class Assignment(left: Store, right: Expr) extends Statement
+  // TODO call should Load
   case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr
 
   sealed trait Expr
