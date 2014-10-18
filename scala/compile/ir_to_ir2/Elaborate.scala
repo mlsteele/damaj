@@ -5,10 +5,12 @@ object Elaborate {
   import IRShared._
   import SymbolTable._
   import TempVarGen._
+  import FunctionalUtils._
 
   /*
    * De-sugars some DECAF constructs into other, simpler DECAF constructs.
-   * And/Or              -> nested conditionals
+   * And/Or              -> if/else
+   * Ternary conditional -> if/else
    * Limited while loops -> normal while loops
    * For loops           -> normal while loops
    * This method mutates the input program, in addition to returning a new one.
@@ -21,6 +23,7 @@ object Elaborate {
 
   implicit class ElaboratedExpr (expr: Expr) {
     def elaborate(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+      case _:Load => (List(), expr)
       case BinOp(left, And(), right) => {
         /*
          * a && b gets desugared to:
@@ -41,7 +44,7 @@ object Elaborate {
           newBlock(List(thenStmt)),
           Some(newBlock(List(elseStmt)))
         );
-        return (List(ifStmt), LoadField(tempVar, None))
+        return (ifStmt.elaborate(tempGen), LoadField(tempVar, None))
       }
       case BinOp(left, Or(), right) => {
         /*
@@ -63,18 +66,91 @@ object Elaborate {
           newBlock(List(thenStmt)),
           Some(newBlock(List(elseStmt)))
         );
-        return (List(ifStmt), LoadField(tempVar, None))
+        return (ifStmt.elaborate(tempGen), LoadField(tempVar, None))
       }
-      case _ =>
-        return (List(), expr)
+      case BinOp(left, op, right) => {
+        val (leftStmts, finalLeftExpr) = left.elaborate(tempGen)
+        val (rightStmts, finalRightExpr) = right.elaborate(tempGen)
+        return (
+          leftStmts ++ rightStmts,
+          BinOp(finalLeftExpr, op, finalRightExpr)
+        )
+      }
+      case UnaryOp(op, operand) => {
+        val (stmts, finalOperandExpr) = operand.elaborate(tempGen)
+        return (
+          stmts,
+          UnaryOp(op, finalOperandExpr)
+        )
+      }
+      case Ternary(cond, left, right) => {
+        /*
+         * c ? a : b gets desugared to:
+         * if (c) {
+         *   temp = a;
+         * }
+         * else {
+         *   temp = b;
+         * }
+         */
+        val tempVar = tempGen.newVarLike(left)
+        val thenStmt = Assignment(Store(tempVar, None), left)
+        val elseStmt = Assignment(Store(tempVar, None), right)
+        val ifStmt = If(
+          List(),
+          cond,
+          newBlock(List(thenStmt)),
+          Some(newBlock(List(elseStmt)))
+        );
+        return (
+          ifStmt.elaborate(tempGen),
+          LoadField(tempVar, None)
+        )
+      }
+      case MethodCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var tempVars: List[Expr] = List()
+        for (eitherArg <- args) {
+          // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
+          eitherArg.map (arg => {
+            // elaborate all the args, collecting their dependency statements and temporary vars
+            val (argStatements, argExpr) = arg.elaborate(tempGen)
+            val argTempVar = tempGen.newVarLike(argExpr)
+            statements = (statements ++ argStatements) :+
+              Assignment(Store(argTempVar, None), argExpr)
+              tempVars = tempVars :+ LoadField(argTempVar, None)
+          })
+        }
+        // Make a new method call using the temporary vars as the args
+        val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
+        return (statements, finalExpr)
+      }
+      case CalloutCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var tempVars: List[Either[StrLiteral, Expr]] = List()
+        for (eitherArg <- args) {
+          eitherArg match {
+            case Right(arg) => {
+              // elaborate all the args, collecting their dependency statements and temporary vars
+              val (argStatements, argExpr) = arg.elaborate(tempGen)
+              val argTempVar = tempGen.newVarLike(argExpr)
+              statements = (statements ++ argStatements) :+
+                Assignment(Store(argTempVar, None), argExpr)
+              tempVars = tempVars :+ Right(LoadField(argTempVar, None))
+            }
+            case Left(str) => {
+              tempVars = tempVars :+ Left(str)
+            }
+          }
+        }
+        // Make a new callout call using the temporary vars as the args
+        val finalExpr = CalloutCall(symbol, tempVars)
+        return (statements, finalExpr)
+      }
     }
   }
 
   implicit class ElaboratedStatement(stmt: Statement) {
-    /* Converts a statement (possibly simple or non-simple) into a list of
-     * equivalent statements that are all simple by generating
-     * temporary variables for complex sub-expressions.
-     */
     def elaborate(tempGen: TempVarGen) : List[Statement] = stmt match {
       case Assignment(left, right) => {
         val (stmts, finalExpr) = right.elaborate(tempGen)
@@ -169,7 +245,7 @@ object Elaborate {
     }
   }
 
-  implicit class MaybeSimpleBlock (var block: Block) {
+  implicit class ElaboratedBlock (var block: Block) {
     def elaborate() : Block = {
       val tempGen = new TempVarGen(block.fields)
       val newStmts = block.stmts.flatMap(_.elaborate(tempGen))

@@ -54,7 +54,6 @@ object IR {
   case class Break() extends Statement
 
   case class Continue() extends Statement
-
   sealed trait Expr
   case class BinOp(left: Expr, op: BinOpType, right: Expr) extends Expr
   case class UnaryOp(op: UnaryOpType, right: Expr) extends Expr
