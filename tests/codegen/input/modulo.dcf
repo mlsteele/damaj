@@ -1,0 +1,11 @@
+callout printf;
+void main() {
+    printf("0: %d\n", 0 % 1);
+    printf("0: %d\n", 0 % 3);
+    printf("0: %d\n", 0 % -3);
+    printf("0: %d\n", 10 % 1);
+    printf("23: %d\n", 123 % 100);
+    printf("-23: %d\n", -123 % 100);
+    printf("23: %d\n", 123 % -100);
+    printf("-23 %d\n", -123 % -100);
+}
