@@ -1,6 +1,6 @@
 package compile
 
-object Elaborate {
+object Desugar {
   import IR._
   import IRShared._
   import SymbolTable._
@@ -15,14 +15,14 @@ object Elaborate {
    * For loops           -> normal while loops
    * This method mutates the input program, in addition to returning a new one.
    */
-  def elaborate(program: ProgramIR): ProgramIR = {
+  def desugar(program: ProgramIR): ProgramIR = {
     val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-    methods.map(m => m.block = m.block.elaborate())
+    methods.map(m => m.block = m.block.desugar())
     return program
   }
 
-  implicit class ElaboratedExpr (expr: Expr) {
-    def elaborate(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+  implicit class DesugaredExpr (expr: Expr) {
+    def desugar(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case _:Load => (List(), expr)
       case BinOp(left, And(), right) => {
         /*
@@ -44,7 +44,7 @@ object Elaborate {
           newBlock(List(thenStmt)),
           Some(newBlock(List(elseStmt)))
         );
-        return (ifStmt.elaborate(tempGen), LoadField(tempVar, None))
+        return (ifStmt.desugar(tempGen), LoadField(tempVar, None))
       }
       case BinOp(left, Or(), right) => {
         /*
@@ -66,18 +66,18 @@ object Elaborate {
           newBlock(List(thenStmt)),
           Some(newBlock(List(elseStmt)))
         );
-        return (ifStmt.elaborate(tempGen), LoadField(tempVar, None))
+        return (ifStmt.desugar(tempGen), LoadField(tempVar, None))
       }
       case BinOp(left, op, right) => {
-        val (leftStmts, finalLeftExpr) = left.elaborate(tempGen)
-        val (rightStmts, finalRightExpr) = right.elaborate(tempGen)
+        val (leftStmts, finalLeftExpr) = left.desugar(tempGen)
+        val (rightStmts, finalRightExpr) = right.desugar(tempGen)
         return (
           leftStmts ++ rightStmts,
           BinOp(finalLeftExpr, op, finalRightExpr)
         )
       }
       case UnaryOp(op, operand) => {
-        val (stmts, finalOperandExpr) = operand.elaborate(tempGen)
+        val (stmts, finalOperandExpr) = operand.desugar(tempGen)
         return (
           stmts,
           UnaryOp(op, finalOperandExpr)
@@ -103,7 +103,7 @@ object Elaborate {
           Some(newBlock(List(elseStmt)))
         );
         return (
-          ifStmt.elaborate(tempGen),
+          ifStmt.desugar(tempGen),
           LoadField(tempVar, None)
         )
       }
@@ -113,8 +113,8 @@ object Elaborate {
         for (eitherArg <- args) {
           // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
           eitherArg.map (arg => {
-            // elaborate all the args, collecting their dependency statements and temporary vars
-            val (argStatements, argExpr) = arg.elaborate(tempGen)
+            // desugar all the args, collecting their dependency statements and temporary vars
+            val (argStatements, argExpr) = arg.desugar(tempGen)
             val argTempVar = tempGen.newVarLike(argExpr)
             statements = (statements ++ argStatements) :+
               Assignment(Store(argTempVar, None), argExpr)
@@ -131,8 +131,8 @@ object Elaborate {
         for (eitherArg <- args) {
           eitherArg match {
             case Right(arg) => {
-              // elaborate all the args, collecting their dependency statements and temporary vars
-              val (argStatements, argExpr) = arg.elaborate(tempGen)
+              // desugar all the args, collecting their dependency statements and temporary vars
+              val (argStatements, argExpr) = arg.desugar(tempGen)
               val argTempVar = tempGen.newVarLike(argExpr)
               statements = (statements ++ argStatements) :+
                 Assignment(Store(argTempVar, None), argExpr)
@@ -150,30 +150,30 @@ object Elaborate {
     }
   }
 
-  implicit class ElaboratedStatement(stmt: Statement) {
-    def elaborate(tempGen: TempVarGen) : List[Statement] = stmt match {
+  implicit class DesugaredStatement(stmt: Statement) {
+    def desugar(tempGen: TempVarGen) : List[Statement] = stmt match {
       case Assignment(left, right) => {
-        val (stmts, finalExpr) = right.elaborate(tempGen)
+        val (stmts, finalExpr) = right.desugar(tempGen)
         return stmts :+ Assignment(left, finalExpr)
       }
       // MethodCall and CalloutCall have weird casts because they
       // are both Exprs and Statements
       case m:MethodCall => {
-        val (stmts, finalExpr) = m.asInstanceOf[Expr].elaborate(tempGen)
+        val (stmts, finalExpr) = m.asInstanceOf[Expr].desugar(tempGen)
         return stmts :+ finalExpr.asInstanceOf[MethodCall]
       }
       case c:CalloutCall => {
-        val (stmts, finalExpr) = c.asInstanceOf[Expr].elaborate(tempGen)
+        val (stmts, finalExpr) = c.asInstanceOf[Expr].desugar(tempGen)
         return stmts :+ finalExpr.asInstanceOf[CalloutCall]
       }
       case If(preStmts, cond, thenb, elseb) => {
-        val (condStmts, condExpr) = cond.elaborate(tempGen)
-        val newPreStmts = preStmts.flatMap(_.elaborate(tempGen)) ++
+        val (condStmts, condExpr) = cond.desugar(tempGen)
+        val newPreStmts = preStmts.flatMap(_.desugar(tempGen)) ++
           condStmts
         return List(If(newPreStmts,
           condExpr,
-          thenb.elaborate(),
-          elseb.map(_.elaborate())
+          thenb.desugar(),
+          elseb.map(_.desugar())
         ))
       }
       case For(id, start, iter, thenb) => tempGen.table.lookupSymbol(id) match {
@@ -181,10 +181,10 @@ object Elaborate {
         case None => assert(false, "Could not find ID in symbol table."); List()
         case Some(loopVar) => {
           // Generate statements needed to generate start value of loop variable
-          val (startStmts, startExpr) = start.elaborate(tempGen)
+          val (startStmts, startExpr) = start.desugar(tempGen)
           val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
           // Generates statements needed to re-calculate ending expression each loop
-          val (iterStmts, iterExpr) = iter.elaborate(tempGen)
+          val (iterStmts, iterExpr) = iter.desugar(tempGen)
           // Temp var for the right side of the condition
           val condVar = tempGen.newBoolVar()
           val condAssign = Assignment(Store(condVar, None), iterExpr)
@@ -194,7 +194,7 @@ object Elaborate {
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
           val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
           // The original statements of the while loop, plus incVarStmt
-          val loopStmts = thenb.elaborate().stmts :+ incVarStmt
+          val loopStmts = thenb.desugar().stmts :+ incVarStmt
           val whileLoop = While(iterStmts :+ condAssign,
             condExpr,
             Block(loopStmts, thenb.fields),
@@ -204,12 +204,12 @@ object Elaborate {
       }
       // While loops with no limit are straight forward to convert
       case While(preStmts, cond, block, None) => {
-        val (condStmts, condExpr) = cond.elaborate(tempGen)
-        val newPreStmts = preStmts.flatMap(_.elaborate(tempGen)) ++ condStmts
+        val (condStmts, condExpr) = cond.desugar(tempGen)
+        val newPreStmts = preStmts.flatMap(_.desugar(tempGen)) ++ condStmts
         return List(While(
           newPreStmts,
           condExpr,
-          block.elaborate(),
+          block.desugar(),
           None
         ))
       }
@@ -233,11 +233,11 @@ object Elaborate {
           counterInit :: preStmts,
           BinOp(counterCondition, And(), cond),
           Block(newBlockStmts, block.fields),
-          None).elaborate(tempGen)
+          None).desugar(tempGen)
       }
       case Return(None) => List(Return(None))
       case Return(Some(expr)) => {
-        val (exprStmts, finalExpr) = expr.elaborate(tempGen)
+        val (exprStmts, finalExpr) = expr.desugar(tempGen)
         return exprStmts :+ Return(Some(finalExpr))
       }
       case Break() => List(Break())
@@ -245,10 +245,10 @@ object Elaborate {
     }
   }
 
-  implicit class ElaboratedBlock (var block: Block) {
-    def elaborate() : Block = {
+  implicit class DesugaredBlock (var block: Block) {
+    def desugar() : Block = {
       val tempGen = new TempVarGen(block.fields)
-      val newStmts = block.stmts.flatMap(_.elaborate(tempGen))
+      val newStmts = block.stmts.flatMap(_.desugar(tempGen))
       return Block(newStmts, block.fields)
     }
   }
