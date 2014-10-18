@@ -124,8 +124,14 @@ class AsmGen(ir2: IR2.Program) {
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setge(reg_flagtarget)
-        case _:Equals => throw new AsmNotImplemented()
-        case _:NotEquals => throw new AsmNotImplemented()
+        case _:Equals =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          sete(reg_flagtarget)
+        case _:NotEquals =>
+          cmp(reg_transfer, reg_opresult) \
+          mov(0 $, reg_opresult) \
+          setne(reg_flagtarget)
         case _:And =>
           and(reg_transfer, reg_opresult)
         case _:Or =>
@@ -312,10 +318,12 @@ object AsmDSL {
   def or(a: String, b: String): String = s"orq $a, $b"
   def xor(a: String, b: String): String = s"xorq $a, $b"
   def cmp(a: String, b: String): String = s"cmpq $a, $b"
-  def setg(a: String): String  = s"setg $a"
-  def setge(a: String): String = s"setge $a"
-  def setl(a: String): String  = s"setl $a"
-  def setle(a: String): String = s"setle $a"
+  def setg(a: String): String  = s"setg $a" // >
+  def setge(a: String): String = s"setge $a" // >=
+  def setl(a: String): String  = s"setl $a" // <
+  def setle(a: String): String = s"setle $a" // <=
+  def sete(a: String): String = s"sete $a" // ==
+  def setne(a: String): String = s"setne $a" // !=
 
   // other assembly tools
   def labl(a: String): String = s"$a:"
