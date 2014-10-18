@@ -21,34 +21,49 @@ object Elaborate {
 
   implicit class ElaboratedExpr (expr: Expr) {
     def elaborate(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
-      case BinOp(left, op, right) => {
-        // returns (statements, finalExpr)
-        op match {
-          case a:And => {
-            /*
-             * a && b gets desugared to:
-             * bool temp;
-             * if (!a) {
-             *   temp = false;
-             * }
-             * else {
-             *   temp = b;
-             * }
-             */
-            val tempVar = tempGen.newBoolVar()
-            val thenStmt = Assignment(Store(tempVar, None), LoadBool(false))
-            val elseStmt = Assignment(Store(tempVar, None), right)
-            val ifStmt = If(
-              List(),
-              UnaryOp(Not(), LoadField(tempVar, None)),
-              newBlock(List(thenStmt)),
-              Some(newBlock(List(elseStmt)))
-            )
-            return (List(ifStmt), LoadField(tempVar, None))
-          }
-          case _ =>
-            (List(), BinOp(left, op, right))
-        }
+      case BinOp(left, And(), right) => {
+        /*
+         * a && b gets desugared to:
+         * bool temp;
+         * if (!a) {
+         *   temp = false;
+         * }
+         * else {
+         *   temp = b;
+         * }
+         */
+        val tempVar = tempGen.newBoolVar()
+        val thenStmt = Assignment(Store(tempVar, None), LoadBool(false))
+        val elseStmt = Assignment(Store(tempVar, None), right)
+        val ifStmt = If(
+          List(),
+          UnaryOp(Not(), left),
+          newBlock(List(thenStmt)),
+          Some(newBlock(List(elseStmt)))
+        );
+        return (List(ifStmt), LoadField(tempVar, None))
+      }
+      case BinOp(left, Or(), right) => {
+        /*
+         * a || b gets desugared to:
+         * bool temp;
+         * if (a) {
+         *   temp = true;
+         * }
+         * else {
+         *   temp = b;
+         * }
+         */
+        val tempVar = tempGen.newBoolVar()
+        val thenStmt = Assignment(Store(tempVar, None), LoadBool(true))
+        val elseStmt = Assignment(Store(tempVar, None), right)
+        val ifStmt = If(
+          List(),
+          left,
+          newBlock(List(thenStmt)),
+          Some(newBlock(List(elseStmt)))
+        );
+        return (List(ifStmt), LoadField(tempVar, None))
       }
       case _ =>
         return (List(), expr)
