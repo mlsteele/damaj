@@ -3,6 +3,7 @@ package compile
 import IR._
 import IR2._
 import SymbolTable._
+import IRShared._
 
 // Construct an IR2 from an IR
 // Example Usage:
@@ -48,7 +49,7 @@ class IR2Builder(program: ProgramIR) {
 
   def convertBlock(block: IR.Block): CFG = {
     block.stmts
-      .map(stmt => CFGFactory.fromStatement(stmt, block.fields))
+      .map(stmt => convertStatement(stmt, block.fields))
       .fold(CFGFactory.dummy)(_ ++ _)
   }
  
@@ -84,6 +85,50 @@ class IR2Builder(program: ProgramIR) {
         edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)
-      case _ => CFGFactory.fromStatement(statement, symbols)
+      case IR.MethodCall(s, args) =>
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), symbols)
+      case IR.CalloutCall(s, args)=> 
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), symbols)
+      case IR.Assignment(left, right) =>
+        CFGFactory.fromStatement(
+          IR2.Assignment(convertStore(left), convertExpr(right)), symbols)
+      case _:IR.Break => throw new RuntimeException("Not yet implemented") // TODO
+      case _:IR.Continue => throw new RuntimeException("Not yet implemented") // TODO
+      case _:IR.Return => throw new RuntimeException("Not yet implemented") // TODO
+  }
+
+  def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Expr] = arg match {
+    case Left(s) => Left(s)
+    case Right(s) => Right(convertExpr(s))
+  }
+
+  def convertStore(store: IR.Store): IR2.Store = 
+    IR2.Store(store.to, convertOptionExpr(store.index))
+
+  def convertOptionExpr(oexpr: Option[IR.Expr]) = oexpr match {
+    case Some(e) => Some(convertExpr(e))
+    case None => None
+  }
+
+  def convertExpr(expr: IR.Expr):IR2.Expr = expr match {
+    case IR.BinOp(l, op, r) => IR2.BinOp(exprToLoad(l), op, exprToLoad(r))
+    case IR.UnaryOp(op, r) => IR2.UnaryOp(op, exprToLoad(r))
+    case IR.Ternary(condition, l, r) =>
+      IR2.Ternary(convertExpr(condition), exprToLoad(l), exprToLoad(r))
+    case l:IR.LoadField => exprToLoad(expr)
+    case l:IR.LoadInt => exprToLoad(expr)
+    case l:IR.LoadBool => exprToLoad(expr)
+    case m:IR.MethodCall => IR2.Call(m.method.id, m.args.map(convertArg))
+    case c:IR.CalloutCall => IR2.Call(c.callout.id, c.args.map(convertArg))
+  }
+
+  def exprToLoad(expr: IR.Expr): IR2.Load = expr match {
+    case IR.LoadField(from, index) => IR2.LoadField(from, convertOptionExpr(index))
+    case IR.LoadInt(value) => IR2.LoadLiteral(value)
+    case IR.LoadBool(value) => value match {
+      case true => IR2.LoadLiteral(1)
+      case false => IR2.LoadLiteral(0)
+    }
+    case _ => throw new IR2ConstructionException("That expr should be a load!")
   }
 }

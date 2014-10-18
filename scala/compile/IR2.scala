@@ -20,7 +20,22 @@ object IR2 {
       case _ => false
     }
   }
-  type Statement = IR.Statement
+
+  // in IR2, Statements can not contain control flow.
+  sealed trait Statement
+  case class Assignment(left:Store, right:Expr) extends Statement
+  case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr
+
+  sealed trait Expr
+  case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr
+  case class UnaryOp(op: UnaryOpType, right: Load) extends Expr
+  case class Ternary(condition: Expr, left: Load, right: Load) extends Expr
+
+  sealed trait Load extends Expr
+  case class LoadField(from:FieldSymbol, index:Option[Expr]) extends Load // hmm, should this have something other than a FieldSymbol?
+  case class LoadLiteral(value: Long) extends Load
+
+  case class Store(to:FieldSymbol, index:Option[Expr])
 
   sealed trait Transition
   case class Edge(to: Block) extends Transition
