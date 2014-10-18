@@ -54,19 +54,18 @@ class AsmGen(ir2: IR2.Program) {
     b.stmts.map(stmt => convertStatement(stmt, b.fields)).mkString("\n")
 
   def convertStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
-    case ir: IR.CalloutCall => convertCallout(ir, symbols)
-    case ir: IR.Assignment => convertAssignment(ir, symbols)
-    case ir => throw new AsmNotImplemented(ir.toString)
+    case ir: Call => convertCall(ir, symbols)
+    case ir: Assignment => convertAssignment(ir, symbols)
   }
 
   // TODO(miles): There's some ignoring of what type the ir access indices are.
   //              I think they're runtime enforced but I'm not really sure.
-  def convertAssignment(ir: IR.Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
-    case (store: IR.Store, IR.LoadInt(v)) =>
+  def convertAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
+    case (store, LoadLiteral(v)) =>
       val wherestore = whereVar(store, symbols)
       wherestore.setup \
       mov(v $, wherestore.asmloc) ? "%s <- %s".format(store.to.id, v)
-    case (store: IR.Store, load: IR.LoadField) =>
+    case (store, load: LoadField) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(load, symbols)
       comment("%s <- %s".format(store.to.id, load.from.id)) \
@@ -74,7 +73,7 @@ class AsmGen(ir2: IR2.Program) {
       mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
       mov(reg_transfer, wherestore.asmloc)
-    case (store: IR.Store, IR.UnaryOp(op, right: IR.LoadField)) =>
+    case (store, UnaryOp(op, right: LoadField)) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(right, symbols)
       val opinstr = op match {
@@ -89,7 +88,7 @@ class AsmGen(ir2: IR2.Program) {
       opinstr \
       wherestore.setup \
       mov(reg_transfer, wherestore.asmloc)
-    case (store: IR.Store, IR.BinOp(left: IR.LoadField, op, right: IR.LoadField)) =>
+    case (store, BinOp(left: LoadField, op, right: LoadField)) =>
       val wherestore = whereVar(store, symbols)
       val whereleft = whereVar(left, symbols)
       val whereright = whereVar(right, symbols)
@@ -128,28 +127,28 @@ class AsmGen(ir2: IR2.Program) {
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
-  def convertCallout(ir: IR.CalloutCall, symbols: SymbolTable): String = {
+  def convertCall(ir: Call, symbols: SymbolTable): String = {
     ir.args
       .zipWithIndex
-      .map(Function.tupled(convertCalloutArg(_,_,symbols)))
+      .map(Function.tupled(convertCallArg(_,_,symbols)))
       .mkString("\n") \
-    call(ir.callout.id)
+    call(ir.id)
   }
 
-  def convertCalloutArg(arg: Either[StrLiteral, IR.Expr], argi: Int, symbols: SymbolTable): String = {
+  def convertCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: SymbolTable): String = {
     arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) =>
         mov(strings.put(value) $, whereArg(argi)) ? s"stage callout arg #$argi"
-      case Right(IR.LoadInt(v)) =>
+      case Right(LoadLiteral(v)) =>
         throw new AsmNotImplemented()
         // mov(v $, argregs(argi)) ? s"stage callout arg #$argi"
-      case Right(load: IR.LoadField) =>
+      case Right(load: LoadField) =>
         val whereload = whereVar(load, symbols)
         val whereargi = whereArg(argi)
         whereload.setup \
         mov(whereload.asmloc, whereargi) ? s"stage callout arg #$argi"
-      case Right(e: IR.Expr) => throw new AsmNotImplemented(e.toString)
+      case Right(e: Expr) => throw new AsmNotImplemented(e.toString)
     }
   }
 
@@ -195,15 +194,16 @@ class AsmGen(ir2: IR2.Program) {
     WhereVar(setup, asmLocation)
   }
 
-  def whereVar(load: IR.LoadField, symbols: SymbolTable): WhereVar = load.index match {
+  def whereVar(load: LoadField, symbols: SymbolTable): WhereVar = load.index match {
     case Some(index: IR.LoadField) =>
       whereVar(load.from.id, Some(index), symbols)
     case None =>
       whereVar(load.from.id, None, symbols)
+    // TODO remove _ case
     case _ => throw new AsmPreconditionViolated("Array index must be field")
   }
 
-  def whereVar(store: IR.Store, symbols: SymbolTable): WhereVar = store.index match {
+  def whereVar(store: Store, symbols: SymbolTable): WhereVar = store.index match {
     case Some(index: IR.LoadField) =>
       whereVar(store.to.id, Some(index), symbols)
     case None =>

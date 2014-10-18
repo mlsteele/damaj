@@ -32,10 +32,11 @@ object IR2 {
   case class Ternary(condition: Expr, left: Load, right: Load) extends Expr
 
   sealed trait Load extends Expr
-  case class LoadField(from:FieldSymbol, index:Option[Expr]) extends Load // hmm, should this have something other than a FieldSymbol?
+  // TODO this should not be an Expr in the index, it should be a Load
+  case class LoadField(from: FieldSymbol, index: Option[Expr]) extends Load // hmm, should this have something other than a FieldSymbol?
   case class LoadLiteral(value: Long) extends Load
 
-  case class Store(to:FieldSymbol, index:Option[Expr])
+  case class Store(to: FieldSymbol, index: Option[Expr])
 
   sealed trait Transition
   case class Edge(to: Block) extends Transition
