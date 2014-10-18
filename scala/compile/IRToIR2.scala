@@ -6,6 +6,7 @@ import SymbolTable._
 import IRShared._
 
 // Construct an IR2 from an IR
+// Turns control flow directives into CFG structures.
 // Example Usage:
 //   val ir2 = new IR2Builder(ir1).ir2
 class IR2Builder(program: ProgramIR) {
@@ -103,7 +104,7 @@ class IR2Builder(program: ProgramIR) {
   }
 
   def convertStore(store: IR.Store): IR2.Store = 
-    IR2.Store(store.to, convertOptionExpr(store.index))
+    IR2.Store(store.to, store.index.map(exprToLoad))
 
   def convertOptionExpr(oexpr: Option[IR.Expr]) = oexpr match {
     case Some(e) => Some(convertExpr(e))
@@ -122,8 +123,10 @@ class IR2Builder(program: ProgramIR) {
     case c:IR.CalloutCall => IR2.Call(c.callout.id, c.args.map(convertArg))
   }
 
+  // IR preprocessing guarantees that some Exprs are only Loads.
+  // This asserts and casts an Expr to a Load.
   def exprToLoad(expr: IR.Expr): IR2.Load = expr match {
-    case IR.LoadField(from, index) => IR2.LoadField(from, convertOptionExpr(index))
+    case IR.LoadField(from, index) => IR2.LoadField(from, index.map(exprToLoad))
     case IR.LoadInt(value) => IR2.LoadLiteral(value)
     case IR.LoadBool(value) => value match {
       case true => IR2.LoadLiteral(1)
