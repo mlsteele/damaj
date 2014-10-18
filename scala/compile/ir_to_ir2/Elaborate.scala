@@ -1,16 +1,26 @@
 package compile
 
-object IRSimplifier {
+object Elaborate {
   import IR._
   import IRShared._
   import SymbolTable._
   import TempVarGen._
   import FunctionalUtils._
+  import IRPrinter._
 
-  // Alias to simply do some funny stuff with internal classes.
-  // WARNING,  This mutates the input program's methods
-  def simplify(ir: ProgramIR): ProgramIR =
-    new IRSimplifierInternal(ir).simplify()
+  /*
+   * De-sugars some DECAF constructs into other, simpler DECAF constructs.
+   * This method mutates the input program, in addition to returning a new one.
+   */
+  def elaborate(program: ProgramIR): ProgramIR = {
+    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    methods.map(m => m.block = m.block.flatten())
+    for (m <- methods) {
+      assert(m.block.isSimple(),
+        "Method %s was not correctly simplified!\n%s".format(m.id, printMethod(m)))
+      }
+    return program
+  }
 
   implicit class EnhancedLoad(load: Load) {
     // Gets the type of a load
@@ -313,20 +323,5 @@ object IRSimplifier {
     }
 
     def isSimple() : Boolean = all(block.stmts.map(_.isSimple()))
-  }
-
-  class IRSimplifierInternal(var program: ProgramIR) {
-    import IRPrinter._
-
-    // WARNING,  This mutates the input program's methods
-    def simplify() : ProgramIR = {
-      val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-      methods.map(m => m.block = m.block.flatten())
-      for (m <- methods) {
-        assert(m.block.isSimple(),
-          "Method %s was not correctly simplified!\n%s".format(m.id, printMethod(m)))
-      }
-      return program
-    }
   }
 }

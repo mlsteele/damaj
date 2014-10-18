@@ -174,13 +174,19 @@ object Compiler {
     val ir1 = inter(fileName)
     // Use map to go through stages.
     // Returns true or false based on whether all stages work.
-    ir1.map{ ir1 =>
-      val simplified = IRSimplifier.simplify(ir1)
+    ir1.map{ ir1 => {
+      val elaborated = Elaborate.elaborate(ir1)
+      if (CLI.debug) {
+        Console.err.println("\nElaborated IR (pretty):")
+        Console.err.println(IRPrinter.print(elaborated))
+      }
+      val flattened = Flatten.flatten(elaborated)
       if (CLI.debug) {
         Console.err.println("\nFlattened IR (pretty):")
-        Console.err.println(IRPrinter.print(simplified))
+        Console.err.println(IRPrinter.print(flattened))
       }
-      simplified
+      flattened
+    }
     }.map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
