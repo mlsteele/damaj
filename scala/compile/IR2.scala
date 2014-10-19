@@ -63,8 +63,11 @@ class IR2Printer(ir2: IR2.Program) {
 class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
+  val traversed = scala.collection.mutable.Set[Block]()
+  
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
-  validate()
+  // TODO(miles): when should we validate?
+  //validate()
 
   // Requires that there are no blocks in both CFGs
   // WARNING: destroys one of the input CFGs because edges is mutated.
@@ -73,8 +76,16 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     newEdges.put(end, Edge(rhs.start))
     new CFG(start, rhs.end, newEdges)
   }
-
+  
   def traverse(from: Block): Set[Block] = {
+    assert(traversed != null, "yug")
+    traversed.clear()
+    _traverse(from)
+  }
+
+  def _traverse(from: Block): Set[Block] = {
+    if (traversed contains from) return Set()
+
     val rest: Set[Block] = edges(from) match {
       case None => Set()
       case Some(Edge(next)) => traverse(next)
@@ -88,12 +99,14 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   }
 
   private def validate() = {
+    //print("Validating CFG")
     mustReach(end)
     edges.keys.foreach(mustReach)
     edges.values.foreach{ _ match {
       case Edge(next) => mustReach(next)
       case Fork(_, left, right) => mustReach(left); mustReach(right)
     }}
+    //print("Finished validating")
   }
 
   private def mustReach(block: Block): Unit = {
