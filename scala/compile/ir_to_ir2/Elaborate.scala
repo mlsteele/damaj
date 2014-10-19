@@ -24,7 +24,7 @@ object Elaborate {
           if (f.dtype == DTInt) LoadInt(0) else LoadBool(false)
         )
       )
-      case Some(length) => (0L to length).map { i =>
+      case Some(length) => (0L to (length -1)).map { i =>
         Assignment(
           Store(f, Some(LoadInt(i))),
           if (f.dtype == DTInt) LoadInt(0) else LoadBool(false)
