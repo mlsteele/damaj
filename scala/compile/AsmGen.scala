@@ -41,9 +41,11 @@ class AsmGen(ir2: IR2.Program) {
               labl("Exit1")\
               mov(1 $,rax)\
               mov(-1 $,rbx)\
+              "int 0x80"
               labl("Exit2")\
               mov(1 $, rax)\
-              mov(-2 $, rbx)
+              mov(-2 $, rbx)\
+              "int 0x80"
     val data = strings.toData
     file(text, data)
     // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
