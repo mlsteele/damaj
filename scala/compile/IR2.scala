@@ -67,7 +67,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   val traversed = scala.collection.mutable.Set[Block]()
   
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
-  // TODO(miles): when should we validate?
+  // TODO(jessk): when should we validate?
   //validate()
 
   // Requires that there are no blocks in both CFGs
