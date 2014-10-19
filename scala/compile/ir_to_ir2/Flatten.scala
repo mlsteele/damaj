@@ -33,17 +33,22 @@ object Flatten {
   }
 
   implicit class MaybeSimpleExpr (expr: Expr) {
-    def isLoad() : Boolean = expr match {
-      case l:Load => true
-      case _      => false
+    def isSimpleLoad() : Boolean = expr match {
+      case l:Load => l match {
+        case LoadField(_, None) => true
+        case LoadField(_, Some(_)) => false
+        case _:LoadInt   => true
+        case _:LoadBool  => true
+      }
+      case _ => false
     }
 
     // Determines whether an expression is "simple"
     // 
     def isSimple() : Boolean = expr match {
-      case BinOp(left, _, right) => left.isLoad() && right.isLoad()
-      case UnaryOp(_, right)     => right.isLoad()
-      case Ternary(cond, left, right) => cond.isLoad() && left.isLoad() && right.isLoad()
+      case BinOp(left, _, right) => left.isSimpleLoad() && right.isSimpleLoad()
+      case UnaryOp(_, right)     => right.isSimpleLoad()
+      case Ternary(cond, left, right) => cond.isSimpleLoad() && left.isSimpleLoad() && right.isSimpleLoad()
       case c:CalloutCall => all(c.args.map {
         case Left(_) => true
         case Right(e) => e.isSimple()
@@ -65,7 +70,17 @@ object Flatten {
       * final expr: (t2 + d)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
-      case load:Load => return (List(), load) // Already simple!
+      case LoadField(from, Some(index)) => {
+        // Flatten the index
+        val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
+        val indexTempVar = tempGen.newIntVar()
+        return (
+          indexStmts :+ Assignment(Store(indexTempVar, None), finalIndexExpr),
+          LoadField(from, Some(LoadField(indexTempVar, None)))
+        )
+      }
+
+      case l:Load => (List(),l)
 
       case UnaryOp(op, e) => {
         // Flatten the operand, and assign it to a temporary var
