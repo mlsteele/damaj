@@ -181,7 +181,9 @@ object Flatten {
       * are only Loads.
       */
     def isSimple() : Boolean = stmt match {
-      case Assignment(left, right) => right.isSimple()
+      case Assignment(Store(_, None), right) => right.isSimple() // Simple scalar access
+      case Assignment(Store(_, Some(index)), right) => index.isSimpleLoad() && right.isSimpleLoad()
+
       case m:MethodCall => {val e:Expr = m; e.isSimple()}
       case c:CalloutCall => {val e:Expr = c; e.isSimple()}
       case If(preStmts, condition, thenb, elseb) => {
