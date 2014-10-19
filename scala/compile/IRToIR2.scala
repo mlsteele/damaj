@@ -46,7 +46,8 @@ class IR2Builder(program: ProgramIR) {
       case f:FieldSymbol => Some(convertField(f))
       case _ => None
     }),
-    convertBlock(method.block))
+    convertBlock(method.block),
+  method.returns)
 
   def convertBlock(block: IR.Block): CFG = {
     block.stmts

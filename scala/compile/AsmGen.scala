@@ -331,7 +331,8 @@ object AsmDSL {
   def sete(a: String): String = s"sete $a" // ==
   def setne(a: String): String = s"setne $a" // !=
   def cqto(): String = "cqto" // convert quad to oct
-
+  def exit1(): String = "jmp exit1" // jmp to exit1 code to jump with appropriate exit values
+  def exit2(): String = "jmp exit2" // jmp to exit2 code that can handle control fall off
   // other assembly tools
   def labl(a: String): String = s"$a:"
   def datastring(label: String, contents: String): String =
