@@ -39,13 +39,11 @@ class AsmGen(ir2: IR2.Program) {
       generateCFG(ir2.main.cfg))
     val text = main\
               labl("Exit1")\
-              mov(1 $,rax)\
-              mov(-1 $,rbx)\
-              "int 0x80"
+              mov(-1 $,rdi)\
+              "call exit"
               labl("Exit2")\
-              mov(1 $, rax)\
-              mov(-2 $, rbx)\
-              "int 0x80"
+              mov(-2 $, rdi)\
+              "call exit"
     val data = strings.toData
     file(text, data)
     // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
