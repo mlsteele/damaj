@@ -207,7 +207,7 @@ object SymbolTable {
         breakable {for (s <- table.symbols) s match {
           case f:FieldSymbol => {
             if (f == field) break
-            offset += f.size.getOrElse(1).asInstanceOf[Int]
+            offset += f.size.getOrElse(1L).toInt
           }
           case _ =>
         }}
@@ -228,7 +228,7 @@ object SymbolTable {
     def size() : Int = {
       var s: Int = 0;
       for (f <- symbols) f match {
-        case FieldSymbol(_, _, size) => s += size.getOrElse(1).asInstanceOf[Int]
+        case FieldSymbol(_, _, size) => s += size.getOrElse(1L).toInt
         case _ => // skip non-fields
       }
       return s
