@@ -258,18 +258,21 @@ class AsmGen(ir2: IR2.Program) {
   }
 
   // Represents how to access a variable location in assembly.
-  // Setup must be executed after which asmloc is a valid argument.
+  // .setup MUST be executed, after which asmloc is a valid argument.
   case class WhereVar(setup: String, asmloc: String)
 
   // Get the location of a symbol
   // Could clobber reg_arridx!
   // for example: "-32(%rbp)", "$coolglobal+8"
-  def whereVar(id: ID, arrIdx: Option[IR.LoadField], symbols: SymbolTable): WhereVar = {
+  def whereVar(id: ID, arrIdx: Option[Load], symbols: SymbolTable): WhereVar = {
     // Optionally put the array index into reg_arridx.
     val setup = arrIdx match {
-      case Some(IR.LoadField(from, None)) =>
+      case Some(LoadField(from, None)) =>
         val w = whereVar(from.id, None, symbols)
+        // NOTE: We ignore w.setup here because from is guaranteed to be a scalar.
         mov(w.asmloc, reg_arridx)
+      case Some(LoadLiteral(value)) =>
+        mov(value $, reg_arridx)
       case None => "nop"
       case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
@@ -287,28 +290,21 @@ class AsmGen(ir2: IR2.Program) {
         val off = 8 * (offIdx - argregc)
         (rbp offset off)
       case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented()
+      case (true, LocalOffset(offIdx)) =>
+        val off = -8 * (offIdx + 1)
+        // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
+        arrayAccess(off, rbp, reg_arridx, 8)
       case (true, _) => throw new AsmNotImplemented("arrays, hahahahha")
     }
 
     WhereVar(setup, asmLocation)
   }
 
-  def whereVar(load: LoadField, symbols: SymbolTable): WhereVar = load.index match {
-    case Some(index: IR.LoadField) =>
-      whereVar(load.from.id, Some(index), symbols)
-    case None =>
-      whereVar(load.from.id, None, symbols)
-    // TODO remove _ case
-    case _ => throw new AsmPreconditionViolated("Array index must be field")
-  }
+  def whereVar(load: LoadField, symbols: SymbolTable): WhereVar =
+    whereVar(load.from.id, load.index, symbols)
 
-  def whereVar(store: Store, symbols: SymbolTable): WhereVar = store.index match {
-    case Some(index: IR.LoadField) =>
-      whereVar(store.to.id, Some(index), symbols)
-    case None =>
-      whereVar(store.to.id, None, symbols)
-    case _ => throw new AsmPreconditionViolated("Array index must be field")
-  }
+  def whereVar(store: Store, symbols: SymbolTable): WhereVar =
+    whereVar(store.to.id, store.index, symbols)
 
 }
 
@@ -430,6 +426,8 @@ object AsmDSL {
     s"""$label: .string "$contents""""
   // whole line comment. See ? for inline comment
   def comment(a: String): String = s"# $a"
+  def arrayAccess(displacement: Int, baseReg: String, offsetReg: String, multiplier: Int) =
+    s"$displacement($baseReg, $offsetReg, $multiplier)"
 
   // stackvars is the number of vars in the method's stack frame
   def method(label: String, stackvars: Int, body: String): String = {
