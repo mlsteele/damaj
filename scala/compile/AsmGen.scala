@@ -20,7 +20,12 @@ class AsmGen(ir2: IR2.Program) {
   val reg_divquo = rax // Division input and quotient
   val reg_divrem = rdx // Division input and remainder
 
-  var strings = new StringStore()
+  // Generates local labels
+  val labelGenerator = new LabelGenerator()
+  // Store all string literals used in the program.
+  val strings = new StringStore()
+  // Keeps track of what Blocks have been assembled and their label.
+  var assembledLabels = Map[Block, String]()
 
   val asm = generateProgram(ir2)
 
@@ -43,8 +48,8 @@ class AsmGen(ir2: IR2.Program) {
     file(text, data)
     // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
   }
-  def generateMethod(method: Method): String = {
 
+  def generateMethod(method: Method): String = {
     generateCFG(method.cfg)
 
     method.returnType match {
@@ -52,23 +57,40 @@ class AsmGen(ir2: IR2.Program) {
       case _ => jmp("Exit2")
     }
   }
-  def generateCFG(cfg: CFG): String ={
-    generateCFGBlock(cfg.start, cfg) 
-  }
 
-  def generateCFGBlock(b: Block, cfg: CFG): String = {
+  // Generate assembly for a CFG.
+  def generateCFG(cfg: CFG): String =
+    generateCFG(cfg.start, cfg)
+
+  // Helper for generateCFG recursion.
+  def generateCFG(b: Block, cfg: CFG): String = {
+    val blockAsm = generateBlock(b)
     val next = cfg.edges(b) match {
       case None => ""
-      case Some(Edge(next)) => generateCFGBlock(next, cfg)
-      case Some(_:Fork) => throw new AsmNotImplemented()
+      case Some(Edge(next)) =>
+        assembledLabels.get(next) match {
+          case Some(label) => jmp(label)
+          case None => generateCFG(next, cfg)
+        }
+      case Some(Fork(condition, ifTrue, ifFalse)) => throw new AsmNotImplemented()
+        // val trueAsm = generateCFG(ifTrue, cfg)
+        // val falseAsm = generateCFG(ifTrue, cfg)
+        // trueAsm
+        // falseAsm
     }
-    generateBlock(b) \
+
+    blockAsm \
     "" \
     next
   }
 
-  def generateBlock(b: Block): String =
-    b.stmts.map(stmt => generateStatement(stmt, b.fields)).mkString("\n")
+  def generateBlock(b: Block): String = {
+    val blockAsm = b.stmts.map(stmt => generateStatement(stmt, b.fields)).mkString("\n")
+    val label = labelGenerator.nextLabel()
+    assembledLabels += (b -> label)
+    labl(label) \
+    - blockAsm
+  }
 
   def generateStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
@@ -272,7 +294,7 @@ class StringStore {
     "str%s".format(store.size)
 
   // takes a string, returns it's label.
-  // dose escaping.
+  // dos escaping.
   def put(s: String): String =
     putEscaped(Escape.escape(s))
 
@@ -287,6 +309,25 @@ class StringStore {
   def toData: String = store.map{ case (payload, key) =>
     """%s: .string "%s"""".format(key, payload)
   }.mkString("\n")
+}
+
+// Generator for local labels (start with a dot)
+class LabelGenerator {
+  // map from strings to their labels
+  private var taken = Set[String]()
+  private var counter = 0
+
+  def reserve(lbl: String): Unit =
+    taken += lbl
+
+  def nextLabel(): String = {
+    val lbl = s"._node_$counter"
+    counter += 1
+    taken contains lbl match {
+      case false => lbl
+      case true => nextLabel()
+    }
+  }
 }
 
 object AsmDSL {
@@ -366,7 +407,7 @@ object AsmDSL {
     - push(rbp) \
     - mov(rsp, rbp) ? "set bp" \
     - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
-    - body \
+    body \
     "" \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \

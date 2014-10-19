@@ -74,10 +74,10 @@ class IR2Builder(program: ProgramIR) {
           case Some(b) =>
             val elseCFG = convertBlock(b, ctx)
             edges.putAll(elseCFG.edges)
-            edges.put(startCFG.end, Fork(condition, thenCFG.start, elseCFG.start))
+            edges.put(startCFG.end, Fork(convertExpr(condition), thenCFG.start, elseCFG.start))
             edges.put(elseCFG.end, Edge(endBlock))
           case None =>
-            edges.put(startCFG.end, Fork(condition, thenCFG.start, endBlock))
+            edges.put(startCFG.end, Fork(convertExpr(condition), thenCFG.start, endBlock))
         }
         new CFG(startCFG.start, endBlock, edges)
 
@@ -91,7 +91,7 @@ class IR2Builder(program: ProgramIR) {
         val endBlock = CFGFactory.nopBlock
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges
-        edges.put(startCFG.end, Fork(condition, blockCFG.start, endBlock))
+        edges.put(startCFG.end, Fork(convertExpr(condition), blockCFG.start, endBlock))
         edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)
@@ -129,7 +129,7 @@ class IR2Builder(program: ProgramIR) {
     case None => None
   }
 
-  def convertExpr(expr: IR.Expr):IR2.Expr = expr match {
+  def convertExpr(expr: IR.Expr): IR2.Expr = expr match {
     case IR.BinOp(l, op, r) => IR2.BinOp(exprToLoad(l), op, exprToLoad(r))
     case IR.UnaryOp(op, r) => IR2.UnaryOp(op, exprToLoad(r))
     case IR.Ternary(condition, l, r) =>

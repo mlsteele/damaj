@@ -42,7 +42,7 @@ object IR2 {
 
   sealed trait Transition
   case class Edge(to: Block) extends Transition
-  case class Fork(condition: IR.Expr, ifTrue: Block, ifFalse: Block) extends Transition
+  case class Fork(condition: Expr, ifTrue: Block, ifFalse: Block) extends Transition
 
   type EdgeMap = IdentityMap[IR2.Block, IR2.Transition]
 }
