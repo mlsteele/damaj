@@ -59,7 +59,7 @@ class IR2Printer(ir2: IR2.Program) {
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
 // There is a single entry point and a single exit point, marked as start and end.
 // So a control flow of a -> b -> c may look like (pseudocode)
-//   CFG(a, c, {a -> Edge(b), b -> Edge(c)})
+//   CFG(a, c, {a -> Edge(b), b -> Ed)ge(c)})
 // We hold on to the end so that CFGs can be easily chained/combined
 class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._

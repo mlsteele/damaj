@@ -127,17 +127,15 @@ class AsmGen(ir2: IR2.Program) {
     case ir: Return => throw new RuntimeException("Return not yet implemented") // TODO
   }
 
-  // TODO(miles): There's some ignoring of what type the ir access indices are.
-  //              I think they're runtime enforced but I'm not really sure.
   def generateAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
     case (store, LoadLiteral(v)) =>
       val wherestore = whereVar(store, symbols)
       wherestore.setup \
-      mov(v $, wherestore.asmloc) ? "%s <- %s".format(store.to.id, v)
+      mov(v $, wherestore.asmloc) ? "%s <- %s".format(commentStore(store), v)
     case (store, load: LoadField) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(load, symbols)
-      comment("%s <- %s".format(store.to.id, load.from.id)) \
+      comment("%s <- %s".format(commentStore(store), commentLoad(load))) \
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
@@ -151,7 +149,7 @@ class AsmGen(ir2: IR2.Program) {
         case _:Not => throw new AsmNotImplemented("Op not op should not make it to asmgen")
         case _:Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
       }
-      comment("%s <- (%s %s)".format(store.to.id, op, right.from.id)) \
+      comment("%s <- (%s %s)".format(commentStore(store), op, commentLoad(right))) \
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       opinstr \
@@ -215,7 +213,7 @@ class AsmGen(ir2: IR2.Program) {
       // Load right into reg_transfer
       // Operations mostly use reg_opresult and reg_transfer internally.
       // Some operations like idiv use additional registers.
-      comment("%s <- (%s %s %s)".format(store.to.id, left.from.id, op, right.from.id)) \
+      comment("%s <- (%s %s %s)".format(commentStore(store), commentLoad(left), op, commentLoad(right))) \
       whereleft.setup \
       mov(whereleft.asmloc, reg_opresult) \
       whereright.setup \
@@ -306,6 +304,18 @@ class AsmGen(ir2: IR2.Program) {
   def whereVar(store: Store, symbols: SymbolTable): WhereVar =
     whereVar(store.to.id, store.index, symbols)
 
+  def commentLoad(load: LoadField): String = load.index match {
+    case None => load.from.id
+    case Some(LoadLiteral(index)) =>
+      "%s[%s]".format(load.from.id, index)
+    case Some(LoadField(index, _)) =>
+      "%s[%s]".format(load.from.id, index.id)
+  }
+
+  def commentStore(store: Store): String = store.to.size match {
+    case None => store.to.id
+    case Some(size) => "%s[_]"
+  }
 }
 
 // Mutable map for storing strings in the data segment of an assembly file.
