@@ -32,13 +32,29 @@ class AsmGen(ir2: IR2.Program) {
     val main = method("main",
       10, // TODO(miles): this needs to be a real number.
       generateCFG(ir2.main.cfg))
-    val text = main
+    val text = main\
+              labl("Exit1")\
+              mov(1 $,rax)\
+              mov(-1 $,rbx)\
+              labl("Exit2")\
+              mov(1 $, rax)\
+              mov(-2 $, rbx)
     val data = strings.toData
     file(text, data)
+    // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
   }
+  def generateMethod(method: Method): String = {
 
-  def generateCFG(cfg: CFG): String =
-    generateCFGBlock(cfg.start, cfg)
+    generateCFG(method.cfg)
+
+    method.returnType match {
+      case DTVoid => ret
+      case _ => exit2()
+    }
+  }
+  def generateCFG(cfg: CFG): String ={
+    generateCFGBlock(cfg.start, cfg) 
+  }
 
   def generateCFGBlock(b: Block, cfg: CFG): String = {
     val next = cfg.edges(b) match {
@@ -314,6 +330,7 @@ object AsmDSL {
   def push(a: String): String = s"push $a"
   def pop(a: String): String = s"pop $a"
   def int(a: String): String = s"int $a"
+  def jmp(a: String): String = s"jmp $a"
   def add(a: String, b: String): String = s"addq $a, $b"
   def sub(a: String, b: String): String = s"subq $a, $b"
   def imul(a: String, b: String): String = s"imulq $a, $b"
