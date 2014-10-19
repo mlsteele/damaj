@@ -212,9 +212,22 @@ object Flatten {
      * temporary variables for complex sub-expressions.
      */
     def flatten(tempGen: TempVarGen) : List[Statement] = stmt match {
-      case Assignment(left, right) => {
+      case Assignment(left@Store(_, None), right) => {
         val (stmts, finalExpr) = right.flatten(tempGen)
         return stmts :+ Assignment(left, finalExpr)
+      }
+      case Assignment(Store(from, Some(index)),  right) => {
+        // Anything of the form a[b] = c gets converted to a form similar to:
+        // t0 = c
+        // a[t1] = t0
+        val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
+        val (rightStmts, finalRightExpr) = right.flatten(tempGen)
+        val tempIndex = tempGen.newIntVar()
+        val tempRight = tempGen.newVarLike(right)
+        return indexStmts ++ rightStmts :+
+          Assignment(Store(tempIndex, None), finalIndexExpr) :+
+          Assignment(Store(tempRight, None), finalRightExpr) :+
+          Assignment(Store(from, Some(LoadField(tempIndex, None))), LoadField(tempRight, None))
       }
       // MethodCall and CalloutCall have weird casts because they
       // are both Exprs and Statements
