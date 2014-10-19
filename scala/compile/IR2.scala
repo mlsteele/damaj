@@ -133,4 +133,7 @@ object CFGFactory {
     val b = nopBlock
     new CFG(b, b, new EdgeMap())
   }
+
+  def chain(cfgs: TraversableOnce[CFG]): CFG =
+    cfgs.fold(dummy)(_ ++ _)
 }

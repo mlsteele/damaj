@@ -63,7 +63,8 @@ class IR2Builder(program: ProgramIR) {
  
   def convertStatement(statement: IR.Statement, ctx: Context): CFG = statement match {
       case IR.If(pre, condition, thenb, elseb) =>
-        val startCFG = pre.map(x => convertStatement(x, ctx)).reduceLeft((x,y) => x ++ y)
+        val startCFG = CFGFactory.chain(
+          pre.map(x => convertStatement(x, ctx)))
         val thenCFG = convertBlock(thenb, ctx)
         val endBlock = CFGFactory.nopBlock
         val edges = startCFG.edges ++ thenCFG.edges
@@ -85,7 +86,8 @@ class IR2Builder(program: ProgramIR) {
         CFGFactory.dummy
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
-        val startCFG = pre.map(x => convertStatement(x, ctx)).reduceLeft((x,y) => x ++ y)
+        val startCFG = CFGFactory.chain(
+          pre.map(x => convertStatement(x, ctx)))
         val endBlock = CFGFactory.nopBlock
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges
