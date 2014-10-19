@@ -38,10 +38,10 @@ class AsmGen(ir2: IR2.Program) {
       10, // TODO(miles): this needs to be a real number.
       generateCFG(ir2.main.cfg))
     val text = main\
-              labl("Exit1")\
+              labl(".Exit1")\
               mov(-1 $,rdi)\
               "call exit"
-              labl("Exit2")\
+              labl(".Exit2")\
               mov(-2 $, rdi)\
               "call exit"
     val data = strings.toData
@@ -49,12 +49,16 @@ class AsmGen(ir2: IR2.Program) {
     // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
   }
 
+// insert returns at the end of the method
+// if control reaches here something went wrong
+// if method should return a value, we go to a exit handler
+// if method shouldn't return a value, we return so we can go back to the caller
+
   def generateMethod(method: Method): String = {
     generateCFG(method.cfg)
-
     method.returnType match {
       case DTVoid => ret
-      case _ => jmp("Exit2")
+      case _ => jmp(".Exit2")
     }
   }
 
