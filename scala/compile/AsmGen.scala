@@ -69,24 +69,38 @@ class AsmGen(ir2: IR2.Program) {
       case None => ""
       case Some(Edge(next)) =>
         assembledLabels.get(next) match {
-          case Some(label) => jmp(label)
+          case Some(label) => - jmp(label)
           case None => generateCFG(next, cfg)
         }
-      case Some(Fork(condition, ifTrue, ifFalse)) => throw new AsmNotImplemented()
-        // val trueAsm = generateCFG(ifTrue, cfg)
-        // val falseAsm = generateCFG(ifTrue, cfg)
-        // trueAsm
-        // falseAsm
+      case Some(Fork(condition, ifTrue, ifFalse)) =>
+        val trueAsm = assembledLabels.get(ifTrue) match {
+          case Some(label) => - jmp(label)
+          case None => generateCFG(ifTrue, cfg)
+        }
+        val falseLabel = labelGenerator.nextLabel("false")
+        val falseAsm = assembledLabels.get(ifTrue) match {
+          case Some(label) => - jmp(label)
+          case None => generateCFG(ifFalse, cfg)
+        }
+        val joinLabel = labelGenerator.nextLabel("join")
+        // TODO(miles): check condition
+        // TODO(miles): this doesn't work at all. I'm on it.
+       - jmp(falseLabel) \
+        trueAsm \
+        -jmp(joinLabel) \
+        labl(falseLabel) \
+        falseAsm \
+        labl(joinLabel)
     }
 
     blockAsm \
-    "" \
     next
   }
 
   def generateBlock(b: Block): String = {
+    assert(assembledLabels.get(b).isDefined == false)
     val blockAsm = b.stmts.map(stmt => generateStatement(stmt, b.fields)).mkString("\n")
-    val label = labelGenerator.nextLabel()
+    val label = labelGenerator.nextLabel("block")
     assembledLabels += (b -> label)
     labl(label) \
     - blockAsm
@@ -320,8 +334,10 @@ class LabelGenerator {
   def reserve(lbl: String): Unit =
     taken += lbl
 
-  def nextLabel(): String = {
-    val lbl = s"._node_$counter"
+  def nextLabel(): String = nextLabel("")
+
+  def nextLabel(hint: String): String = {
+    val lbl = "._node_%s_%s".format(counter, hint)
     counter += 1
     taken contains lbl match {
       case false => lbl
