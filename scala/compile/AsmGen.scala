@@ -22,46 +22,46 @@ class AsmGen(ir2: IR2.Program) {
 
   var strings = new StringStore()
 
-  val asm = convertProgram(ir2)
+  val asm = generateProgram(ir2)
 
   // TODO these should all be gone eventually.
   class AsmNotImplemented(message: String=null) extends RuntimeException(message)
   class AsmPreconditionViolated(message: String=null) extends RuntimeException(message)
 
-  def convertProgram(ir2: IR2.Program): String = {
+  def generateProgram(ir2: IR2.Program): String = {
     val main = method("main",
       10, // TODO(miles): this needs to be a real number.
-      convertCFG(ir2.main.cfg))
+      generateCFG(ir2.main.cfg))
     val text = main
     val data = strings.toData
     file(text, data)
   }
 
-  def convertCFG(cfg: CFG): String =
-    convertCFGBlock(cfg.start, cfg)
+  def generateCFG(cfg: CFG): String =
+    generateCFGBlock(cfg.start, cfg)
 
-  def convertCFGBlock(b: Block, cfg: CFG): String = {
+  def generateCFGBlock(b: Block, cfg: CFG): String = {
     val next = cfg.edges(b) match {
       case None => ""
-      case Some(Edge(next)) => convertCFGBlock(next, cfg)
+      case Some(Edge(next)) => generateCFGBlock(next, cfg)
       case Some(_:Fork) => throw new AsmNotImplemented()
     }
-    convertBlock(b) \
+    generateBlock(b) \
     "" \
     next
   }
 
-  def convertBlock(b: Block): String =
-    b.stmts.map(stmt => convertStatement(stmt, b.fields)).mkString("\n")
+  def generateBlock(b: Block): String =
+    b.stmts.map(stmt => generateStatement(stmt, b.fields)).mkString("\n")
 
-  def convertStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
-    case ir: Call => convertCall(ir, symbols)
-    case ir: Assignment => convertAssignment(ir, symbols)
+  def generateStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
+    case ir: Call => generateCall(ir, symbols)
+    case ir: Assignment => generateAssignment(ir, symbols)
   }
 
   // TODO(miles): There's some ignoring of what type the ir access indices are.
   //              I think they're runtime enforced but I'm not really sure.
-  def convertAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
+  def generateAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
     case (store, LoadLiteral(v)) =>
       val wherestore = whereVar(store, symbols)
       wherestore.setup \
@@ -158,15 +158,15 @@ class AsmGen(ir2: IR2.Program) {
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
-  def convertCall(ir: Call, symbols: SymbolTable): String = {
+  def generateCall(ir: Call, symbols: SymbolTable): String = {
     ir.args
       .zipWithIndex
-      .map(Function.tupled(convertCallArg(_,_,symbols)))
+      .map(Function.tupled(generateCallArg(_,_,symbols)))
       .mkString("\n") \
     call(ir.id)
   }
 
-  def convertCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: SymbolTable): String = {
+  def generateCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: SymbolTable): String = {
     arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) =>
