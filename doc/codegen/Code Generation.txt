@@ -20,7 +20,7 @@
   ~./run.sh -t assembly --debug tests/codegen/input/04-math2.dcf -o 04-math2.asm~
   
 * IR Preprocessing
-  Relevant files: ~scala/compile/IRSimplify.scala
+  Relevant files: ~scala/compile/ir_to_ir2/*~
   In part 2, we generated an IR for the decaf progam (see ~docs/semantic_checker/Lab2.pdf~).
   In part 3, we start by applying a series of transformations on the IR. We want to do operations at
   the highest level we can, so that it's easier to debug and simpler to convert to a low-level IR.
@@ -31,6 +31,9 @@
   To implement short-circuiting, we turn And/Or expressions into an If/Else block and a temp
   var that stores the result. Inside the If/Else block, the variable set according to the result
   of the sub-expressions.
+
+** Turn Ternaries into If/Else
+  Ternaries are expanded straightforwardly into if/else blocks.
   
 ** Flatten Expressions
   Expressions (~IR.Expr~) have become non-recursive. The arguments of expressions are always loads
@@ -44,11 +47,14 @@
   For loops were converted to while loops. So for example ~for (i=0; 10) {...}~ is now ~i=0; while
   (i<10) {...; i = i + 1}~
 
+** Initialize variables to 0
+  All variables declared are immediately assigned value 0 or false.
+
 * New low-level IR
   Relevant files: ~scala/compile/IR2.scala~
   The low-level IR is named ~IR2~. A program is comprised of:
   - A list of fields
-  - A list of methods
+  - A list of methods, with the ~main~ method saved separately.
   The callouts were discarded, since we don't need to declare them in assembly.
   
 ** Fields
@@ -67,7 +73,7 @@
 
 *** CFG Blocks
   A ~Block~ in the CFG is different than an ~IR.Block~. ~Block~s in the CFG are a sequence of simple
-  (non-branching) statements.
+  (non-branching) statements. It also contains a SymbolTable.
 
 *** CFG Transitions
   There are two types of transitions, ~Edge~ and ~Fork~.
