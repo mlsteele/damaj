@@ -73,6 +73,7 @@ class AsmGen(ir2: IR2.Program) {
   def generateStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
     case ir: Assignment => generateAssignment(ir, symbols)
+    case ir: Return => throw new RuntimeException("Return not yet implemented") // TODO
   }
 
   // TODO(miles): There's some ignoring of what type the ir access indices are.

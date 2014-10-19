@@ -26,6 +26,7 @@ object IR2 {
   case class Assignment(left: Store, right: Expr) extends Statement
   // TODO call should Load
   case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr
+  case class Return(expr: Option[Expr]) extends Statement
 
   sealed trait Expr
   case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr

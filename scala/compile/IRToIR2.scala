@@ -110,7 +110,8 @@ class IR2Builder(program: ProgramIR) {
         val edges = new EdgeMap()
         edges.put(nop, Edge(ctx.continueTo.get))
         new CFG(nop, nop, edges)
-      case _:IR.Return => throw new RuntimeException("Not yet implemented") // TODO
+      case IR.Return(e) =>
+        CFGFactory.fromStatement(IR2.Return(convertOptionExpr(e)), ctx.symbols.get)
   }
 
   def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Expr] = arg match {
