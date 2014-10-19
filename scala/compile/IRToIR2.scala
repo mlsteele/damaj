@@ -13,6 +13,11 @@ class IR2Builder(program: ProgramIR) {
 
   val ir2 = convertProgram(program)
 
+  // The continueTo and breakTo blocks are guaranteed to exist whenever
+  // continue or break are called (semantic check in IR). So it's safe to use get
+  // to pull the block out of the Option
+  case class Context(symbols: Option[SymbolTable], continueTo: Option[IR2.Block], breakTo: Option[IR2.Block])
+
   // Programming error.
   class IR2ConstructionException(msg: String) extends RuntimeException(msg)
 
@@ -46,26 +51,27 @@ class IR2Builder(program: ProgramIR) {
       case f:FieldSymbol => Some(convertField(f))
       case _ => None
     }),
-    convertBlock(method.block),
+    convertBlock(method.block, Context(None, None, None)),
   method.returns)
 
-  def convertBlock(block: IR.Block): CFG = {
+  def convertBlock(block: IR.Block, ctx: Context): CFG = {
+    val newCtx = Context(Some(block.fields), ctx.continueTo, ctx.breakTo)
     block.stmts
-      .map(stmt => convertStatement(stmt, block.fields))
+      .map(stmt => convertStatement(stmt, newCtx))
       .fold(CFGFactory.dummy)(_ ++ _)
   }
  
-  def convertStatement(statement: IR.Statement, symbols: SymbolTable): CFG = statement match {
+  def convertStatement(statement: IR.Statement, ctx: Context): CFG = statement match {
       case IR.If(pre, condition, thenb, elseb) =>
-        val startCFG = pre.map(x => convertStatement(x, symbols)).reduceLeft((x,y) => x ++ y)
-        val thenCFG = convertBlock(thenb)
+        val startCFG = pre.map(x => convertStatement(x, ctx)).reduceLeft((x,y) => x ++ y)
+        val thenCFG = convertBlock(thenb, ctx)
         val endBlock = CFGFactory.nopBlock
         val edges = startCFG.edges ++ thenCFG.edges
         edges.put(thenCFG.end, Edge(endBlock))
 
         elseb match {
           case Some(b) =>
-            val elseCFG = convertBlock(b)
+            val elseCFG = convertBlock(b, ctx)
             edges.putAll(elseCFG.edges)
             edges.put(startCFG.end, Fork(condition, thenCFG.start, elseCFG.start))
             edges.put(elseCFG.end, Edge(endBlock))
@@ -79,23 +85,31 @@ class IR2Builder(program: ProgramIR) {
         CFGFactory.dummy
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
-        val startCFG = pre.map(x => convertStatement(x, symbols)).reduceLeft((x,y) => x ++ y)
-        val blockCFG = convertBlock(block)
+        val startCFG = pre.map(x => convertStatement(x, ctx)).reduceLeft((x,y) => x ++ y)
         val endBlock = CFGFactory.nopBlock
+        val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges
         edges.put(startCFG.end, Fork(condition, blockCFG.start, endBlock))
         edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)
       case IR.MethodCall(s, args) =>
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), symbols)
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), ctx.symbols.get)
       case IR.CalloutCall(s, args)=> 
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), symbols)
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), ctx.symbols.get)
       case IR.Assignment(left, right) =>
         CFGFactory.fromStatement(
-          IR2.Assignment(convertStore(left), convertExpr(right)), symbols)
-      case _:IR.Break => throw new RuntimeException("Not yet implemented") // TODO
-      case _:IR.Continue => throw new RuntimeException("Not yet implemented") // TODO
+          IR2.Assignment(convertStore(left), convertExpr(right)), ctx.symbols.get)
+      case _:IR.Break =>
+        val nop = CFGFactory.nopBlock
+        val edges = new EdgeMap()
+        edges.put(nop, Edge(ctx.breakTo.get))
+        new CFG(nop, nop, edges)
+      case _:IR.Continue =>
+        val nop = CFGFactory.nopBlock
+        val edges = new EdgeMap()
+        edges.put(nop, Edge(ctx.continueTo.get))
+        new CFG(nop, nop, edges)
       case _:IR.Return => throw new RuntimeException("Not yet implemented") // TODO
   }
 
