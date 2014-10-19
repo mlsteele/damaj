@@ -74,10 +74,10 @@ class IR2Builder(program: ProgramIR) {
           case Some(b) =>
             val elseCFG = convertBlock(b, ctx)
             edges.putAll(elseCFG.edges)
-            edges.put(startCFG.end, Fork(convertExpr(condition), thenCFG.start, elseCFG.start))
+            edges.put(startCFG.end, Fork(exprToLoad(condition), thenCFG.start, elseCFG.start))
             edges.put(elseCFG.end, Edge(endBlock))
           case None =>
-            edges.put(startCFG.end, Fork(convertExpr(condition), thenCFG.start, endBlock))
+            edges.put(startCFG.end, Fork(exprToLoad(condition), thenCFG.start, endBlock))
         }
         new CFG(startCFG.start, endBlock, edges)
 
@@ -91,7 +91,7 @@ class IR2Builder(program: ProgramIR) {
         val endBlock = CFGFactory.nopBlock
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges
-        edges.put(startCFG.end, Fork(convertExpr(condition), blockCFG.start, endBlock))
+        edges.put(startCFG.end, Fork(exprToLoad(condition), blockCFG.start, endBlock))
         edges.put(blockCFG.end, Edge(startCFG.start))
 
         new CFG(startCFG.start, endBlock, edges)

@@ -82,16 +82,27 @@ class AsmGen(ir2: IR2.Program) {
           case None => generateCFG(ifTrue, cfg)
         }
         val falseLabel = labelGenerator.nextLabel("false")
-        val falseAsm = assembledLabels.get(ifTrue) match {
+        val falseAsm = assembledLabels.get(ifFalse) match {
           case Some(label) => - jmp(label)
           case None => generateCFG(ifFalse, cfg)
         }
         val joinLabel = labelGenerator.nextLabel("join")
         // TODO(miles): check condition
         // TODO(miles): this doesn't work at all. I'm on it.
-       - jmp(falseLabel) \
+        val setup = condition match {
+          case load: LoadField =>
+            val whereload = whereVar(load, b.fields)
+            whereload.setup \
+            - cmp(0 $, whereload.asmloc)
+          case LoadLiteral(v) =>
+            - mov(v $, reg_transfer)
+            - cmp(0 $, reg_transfer)
+        }
+
+        setup \
+        je(falseLabel) \
         trueAsm \
-        -jmp(joinLabel) \
+        - jmp(joinLabel) \
         labl(falseLabel) \
         falseAsm \
         labl(joinLabel)
@@ -397,6 +408,7 @@ object AsmDSL {
   def sub(a: String, b: String): String = s"subq $a, $b"
   def imul(a: String, b: String): String = s"imulq $a, $b"
   def idiv(a: String): String = s"idivq $a"
+  def je(a: String): String = s"je $a"
   // Two's complement negation
   def neg(a: String): String = s"negq $a"
   def and(a: String, b: String): String = s"andq $a, $b"
