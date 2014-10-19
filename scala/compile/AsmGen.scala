@@ -24,9 +24,9 @@ class AsmGen(ir2: IR2.Program) {
 
   val asm = generateProgram(ir2)
 
-  // TODO these should all be gone eventually.
-  class AsmNotImplemented(message: String=null) extends RuntimeException(message)
   class AsmPreconditionViolated(message: String=null) extends RuntimeException(message)
+  // TODO these notimplemented exceptions should all be gone eventually.
+  class AsmNotImplemented(message: String=null) extends RuntimeException(message)
 
   def generateProgram(ir2: IR2.Program): String = {
     val main = method("main",
