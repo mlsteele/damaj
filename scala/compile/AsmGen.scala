@@ -49,7 +49,7 @@ class AsmGen(ir2: IR2.Program) {
 
     method.returnType match {
       case DTVoid => ret
-      case _ => exit2()
+      case _ => jmp("Exit2")
     }
   }
   def generateCFG(cfg: CFG): String ={
