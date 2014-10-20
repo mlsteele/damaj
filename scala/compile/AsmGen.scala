@@ -56,7 +56,7 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateMethod(m: Method): String = {
     // TODO(miles): Make 9008/8 a real number
-    val body = method(m.id, 9008/8, generateCFG(m.cfg))
+    val body = method(m.id, 9008/8, generateCFG(m.cfg, m.id + "_end"))
     val end = m.returnType match {
       case DTVoid => "" // cool, no return needed
       case _ => jmp(".Exit2")
@@ -65,28 +65,28 @@ class AsmGen(ir2: IR2.Program) {
   }
 
   // Generate assembly for a CFG.
-  def generateCFG(cfg: CFG): String =
-    generateCFG(cfg.start, cfg)
+  def generateCFG(cfg: CFG, returnTo: String): String =
+    generateCFG(cfg.start, cfg, returnTo)
 
   // Helper for generateCFG recursion.
-  def generateCFG(b: Block, cfg: CFG): String = {
-    val blockAsm = generateBlock(b)
+  def generateCFG(b: Block, cfg: CFG, returnTo: String): String = {
+    val blockAsm = generateBlock(b, returnTo)
     val next = cfg.edges(b) match {
       case None => ""
       case Some(Edge(next)) =>
         assembledLabels.get(next) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(next, cfg)
+          case None => generateCFG(next, cfg, returnTo)
         }
       case Some(Fork(condition, ifTrue, ifFalse)) =>
         val trueAsm = assembledLabels.get(ifTrue) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(ifTrue, cfg)
+          case None => generateCFG(ifTrue, cfg, returnTo)
         }
         val falseLabel = labelGenerator.nextLabel("false")
         val falseAsm = assembledLabels.get(ifFalse) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(ifFalse, cfg)
+          case None => generateCFG(ifFalse, cfg, returnTo)
         }
         val joinLabel = labelGenerator.nextLabel("join")
         // TODO(miles): check condition
@@ -114,19 +114,19 @@ class AsmGen(ir2: IR2.Program) {
     next
   }
 
-  def generateBlock(b: Block): String = {
+  def generateBlock(b: Block, returnTo: String): String = {
     assert(assembledLabels.get(b).isDefined == false)
-    val blockAsm = b.stmts.map(stmt => generateStatement(stmt, b.fields)).mkString("\n")
+    val blockAsm = b.stmts.map(stmt => generateStatement(stmt, b.fields, returnTo)).mkString("\n")
     val label = labelGenerator.nextLabel("block")
     assembledLabels += (b -> label)
     labl(label) \
     - blockAsm
   }
 
-  def generateStatement(stmt: Statement, symbols: SymbolTable): String = stmt match {
+  def generateStatement(stmt: Statement, symbols: SymbolTable, returnTo: String): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
     case ir: Assignment => generateAssignment(ir, symbols)
-    case ir: Return => throw new RuntimeException("Return not yet implemented") // TODO
+    case ir: Return => generateReturn(ir, symbols, returnTo)
   }
 
   def generateAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
@@ -233,6 +233,20 @@ class AsmGen(ir2: IR2.Program) {
       .map(Function.tupled(generateCallArg(_,_,symbols)))
       .mkString("\n") \
     call(ir.id)
+  }
+
+  def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
+    case Some(LoadLiteral(v)) =>
+      mov(v $, rax) ? "set return value to %s".format(v) \
+      jmp(returnTo)
+    case Some(load: LoadField) =>
+      val whereload = whereVar(load, symbols)
+      comment("set return value to %s".format(commentLoad(load))) \
+      whereload.setup \
+      mov(whereload.asmloc, rax) \
+      jmp(returnTo)
+    case None => jmp(returnTo)
+    case _ => throw new RuntimeException("That return wasn't flattened enough!")
   }
 
   def generateCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: SymbolTable): String = {

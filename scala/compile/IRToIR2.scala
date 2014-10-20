@@ -113,7 +113,7 @@ class IR2Builder(program: ProgramIR) {
         edges.put(nop, Edge(ctx.continueTo.get))
         new CFG(nop, nop, edges)
       case IR.Return(e) =>
-        CFGFactory.fromStatement(IR2.Return(convertOptionExpr(e)), ctx.symbols.get)
+        CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)), ctx.symbols.get)
   }
 
   def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Expr] = arg match {
@@ -152,4 +152,10 @@ class IR2Builder(program: ProgramIR) {
     }
     case _ => throw new IR2ConstructionException("That expr should be a load!")
   }
+
+  def convertOptionExprToLoad(oexpr: Option[IR.Expr]): Option[IR2.Load] = oexpr match {
+    case Some(expr) => Some(exprToLoad(expr))
+    case None => None
+  }
+
 }
