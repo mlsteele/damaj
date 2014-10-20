@@ -58,7 +58,7 @@ object IRPrinter {
         printBlock(thenb))
     case While(preStmts, condition, block, max) => max match {
       case Some(max) =>"PRE-while\n%s\nwhile (%s) : %s %s".format(printPreStmts(preStmts), printExpr(condition), max, printBlock(block))
-      case None => "PRE-while\n%s\nwhile (%s) \nPRE-whilemax %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(block))
+      case None => "PRE-while\n%s\nwhile (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(block))
     }
     case Return(expr) => expr match {
       case Some(e) => "return %s".format(printExpr(e))
