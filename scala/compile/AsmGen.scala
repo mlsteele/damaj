@@ -146,7 +146,8 @@ class AsmGen(ir2: IR2.Program) {
       val opinstr = op match {
         case _:Negative =>
           neg(reg_transfer) ? "negate"
-        case _:Not => throw new AsmNotImplemented("Op not op should not make it to asmgen")
+        case _:Not =>
+          xor(1 $, reg_transfer) ? "not"
         case _:Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
       }
       comment("%s <- (%s %s)".format(commentStore(store), op, commentLoad(right))) \
