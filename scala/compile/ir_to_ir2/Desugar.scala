@@ -229,8 +229,8 @@ object Desugar {
           LoadInt(limit)
         )
         val newBlockStmts = block.stmts :+ counterInc
-        return While(
-          counterInit :: preStmts,
+        return counterInit :: While(
+          preStmts,
           BinOp(counterCondition, And(), cond),
           Block(newBlockStmts, block.fields),
           None).desugar(tempGen)
