@@ -189,7 +189,7 @@ object Desugar {
           val condVar = tempGen.newBoolVar()
           val condAssign = Assignment(Store(condVar, None), iterExpr)
           // While (loopVar != condVar)
-          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), NotEquals(), LoadField(condVar, None))
+          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), LessThan(), LoadField(condVar, None))
           // Generate statement to increment the loop var
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
           val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
