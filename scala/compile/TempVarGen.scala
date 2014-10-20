@@ -12,7 +12,7 @@ object TempVarGen {
   class TempVarGen (var table: SymbolTable, prefix: String) {
     var counter: Int = 0
 
-    def this(t: SymbolTable) = this(t, "_t")
+    def this(t: SymbolTable) = this(t, "~t")
 
     private def newVarName() : ID = {
       val varName: String = prefix + counter;
