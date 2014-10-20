@@ -374,7 +374,9 @@ class AsmGen(ir2: IR2.Program) {
         val off = -8 * (offIdx + 1)
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
         arrayAccess(off, rbp, reg_arridx, 8)
-      case (true, GlobalOffset(offIdx)) => throw new AsmNotImplemented("global array")
+      case (true, GlobalOffset(offIdx)) => {
+        "decaf_global_%s(,%s,8)".format(id, reg_arridx)
+      }
       case (true, _:ArgOffset) => throw new AsmPreconditionViolated("Arrays cannot be parameters")
     }
 
