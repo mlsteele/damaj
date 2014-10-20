@@ -202,7 +202,7 @@ object Flatten {
         return all(preds)
       }
       case Return(None) => true
-      case Return(Some(e)) => e.isSimple()
+      case Return(Some(e)) => e.isSimpleLoad()
       case Break() => true
       case Continue() => true
     }
@@ -271,7 +271,10 @@ object Flatten {
       case Return(None) => List(Return(None))
       case Return(Some(expr)) => {
         val (exprStmts, finalExpr) = expr.flatten(tempGen)
-        return exprStmts :+ Return(Some(finalExpr))
+        val tempVar = tempGen.newVarLike(finalExpr)
+        return (exprStmts :+
+          Assignment(Store(tempVar, None), finalExpr)) :+
+          Return(Some(LoadField(tempVar, None)))
       }
       case Break() => List(Break())
       case Continue() => List(Continue())
