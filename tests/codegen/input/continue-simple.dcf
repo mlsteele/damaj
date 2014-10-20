@@ -1,0 +1,12 @@
+callout printf;
+
+int i;
+void main() {
+    while(i < 4) {
+        i += 1;
+        printf("%d\n", i);
+        continue;
+        printf("this should never happen\n");
+    }
+    printf("done\n");
+}
