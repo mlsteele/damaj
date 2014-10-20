@@ -90,4 +90,10 @@
     - Callee saves RBP, RBX, R12-R15. All other regs must be assumed munged.
     - Return value returned in RAX
 
+** Division by Zero
+  Damaj does not handle division by zero, but a valid way to prevent division by zero before the processor has to call a interupt, is to insert
+  assembly code that checks the divisor at run time and jumps to exit handler code if it equals zero. If it equals zero, the exit handler will
+  terminate the program and have an exit value of -3 (or some other value the programmer would know about)
+
+
   TODO
