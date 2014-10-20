@@ -40,7 +40,7 @@ class AsmGen(ir2: IR2.Program) {
               methods\
               labl(".Exit1")\
               mov(-1 $,rdi)\
-              "call exit"
+              "call exit"\
               labl(".Exit2")\
               mov(-2 $, rdi)\
               "call exit"
@@ -224,6 +224,11 @@ class AsmGen(ir2: IR2.Program) {
       opinstr \
       wherestore.setup \
       mov(reg_opresult, wherestore.asmloc)
+    case (store, call:Call) => 
+      val wherestore = whereVar(store, symbols)
+      wherestore.setup \
+      generateCall(call, symbols) \
+      mov(rax, wherestore.asmloc)
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
