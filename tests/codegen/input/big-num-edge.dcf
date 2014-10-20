@@ -1,0 +1,10 @@
+callout printf;
+void main() {
+    int max, min;
+    max =  0x7FFFFFFF;
+    min = -0x80000000;
+    printf("max: %d\n", max);
+    printf("max+: %d\n", max + 1);
+    printf("min: %d\n", min);
+    printf("min-: %d\n", min - 1);
+}
