@@ -1,14 +1,14 @@
 callout printf;
-//Produces a runtime error
+// Produces a runtime error
 int array[4];
 void main() {
-  int i;
-  int b;
-  i=0;
-  b=1;  
-for(i=0,5){
-  printf("array at this postiton is %d\n",0);
-  array[i] = b;
-  printf("array at this position is now %d\n",b);
-}
+    int i;
+    int b;
+    i = 0;
+    b = 1;
+    for(i = 0, 5) {
+        // printf("array at this postiton is initially %d\n", 0);
+        array[i] = b;
+        // printf("array at this position is set to %d\n", b);
+    }
 }
