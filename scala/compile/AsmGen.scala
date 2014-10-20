@@ -35,7 +35,7 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateProgram(ir2: IR2.Program): String = {
     val main = method("main",
-      10, // TODO(miles): this needs to be a real number.
+      9008/8, // TODO(miles): this needs to be a real number.
       generateCFG(ir2.main.cfg))
     val text = main\
               labl(".Exit1")\
