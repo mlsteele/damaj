@@ -9,8 +9,8 @@ object CombineScopes {
   import SymbolTable._
   import FunctionalUtils._
 
-  def renameVarExpr(o: ID, n: ID)(expr: Expr) : Expr = {
-    val renameE = renameVarExpr(o, n)(_)
+  def renameVarExpr(oldName: ID, newName: ID)(expr: Expr) : Expr = {
+    val renameE = renameVarExpr(oldName, newName)(_)
     expr match {
       case MethodCall(method, args) => MethodCall(method, args.map(_.map(renameE)));
 
@@ -30,8 +30,8 @@ object CombineScopes {
         renameE(right)
       )
 
-      case load@LoadField(FieldSymbol(dtype, id, size), index) => if (id == o) {
-        LoadField(FieldSymbol(dtype, n, size), index)
+      case load@LoadField(FieldSymbol(dtype, id, size), index) => if (id == oldName) {
+        LoadField(FieldSymbol(dtype, newName, size), index)
       } else load
 
       case _:LoadInt  => expr
@@ -39,15 +39,15 @@ object CombineScopes {
     }
   }
 
-  def renameVarStmt(o: ID, n: ID)(stmt: Statement) : Statement = {
-    val renameE = renameVarExpr(o, n)(_)
-    val renameS = renameVarStmt(o, n)(_)
-    val renameB = renameVarBlock(o, n)(_)
+  def renameVarStmt(oldName: ID, newName: ID)(stmt: Statement) : Statement = {
+    val renameE = renameVarExpr(oldName, newName)(_)
+    val renameS = renameVarStmt(oldName, newName)(_)
+    val renameB = renameVarBlock(oldName, newName)(_)
     stmt match {
       case Assignment(Store(FieldSymbol(dtype, id, size), index), right) =>
-        id == o match {
+        id == oldName match {
           // Rename the store's id to n.
-          case true  => Assignment(Store(FieldSymbol(dtype, n, size), index), renameE(right))
+          case true  => Assignment(Store(FieldSymbol(dtype, newName, size), index), renameE(right))
           // Leave the store alone, but make sure to renameE the right.
           case false => Assignment(Store(FieldSymbol(dtype, id, size), index), renameE(right))
         }
@@ -83,8 +83,8 @@ object CombineScopes {
     }
   }
 
-  def renameVarBlock(o: ID, n: ID)(block: Block) : Block = {
-    return Block(block.stmts.map(renameVarStmt(o, n)), block.fields)
+  def renameVarBlock(oldName: ID, newName: ID)(block: Block) : Block = {
+    return Block(block.stmts.map(renameVarStmt(oldName, newName)), block.fields)
   }
 
 }
