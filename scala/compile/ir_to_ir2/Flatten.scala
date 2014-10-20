@@ -190,7 +190,7 @@ object Flatten {
         var preds: List[Boolean] = preStmts.map(_.isSimple()) ++
           thenb.stmts.map(_.isSimple())
         elseb.map(_.stmts.map(s => preds = preds :+ s.isSimple()))
-        preds = preds :+ condition.isSimple()
+        preds = preds :+ condition.isSimpleLoad()
         return all(preds)
       }
       case _:For => assert(false, "Unelaborated for loop encountered"); false // For loops should be converted to while loops
@@ -241,10 +241,12 @@ object Flatten {
       }
       case If(preStmts, cond, thenb, elseb) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)
+        val condTemp = tempGen.newVar(DTBool)
         val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
-          condStmts
+          condStmts :+
+          Assignment(Store(condTemp, None), condExpr)
         return List(If(newPreStmts,
-          condExpr,
+          LoadField(condTemp, None),
           thenb.flatten(),
           elseb.map(_.flatten())
         ))
