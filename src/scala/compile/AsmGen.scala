@@ -357,6 +357,7 @@ class AsmGen(ir2: IR2.Program) {
       case None => "nop"
       case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
+
     val offset = symbols.varOffset(id)
     val isArray = arrIdx.isDefined
     val asmLocation: String = (isArray, offset) match {
@@ -366,8 +367,7 @@ class AsmGen(ir2: IR2.Program) {
       case (false, ArgOffset(offIdx)) if offIdx < argregc =>
         argregs(offIdx)
       case (false, ArgOffset(offIdx)) =>
-        // TODO(miles): not tested.
-        val off = 8 * (offIdx - argregc - 2)
+        val off = 8 * (offIdx - argregc + 2)
         (rbp offset off)
       case (false, GlobalOffset(offIdx)) => {
         "(decaf_global_%s)".format(id)
