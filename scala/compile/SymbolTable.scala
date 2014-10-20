@@ -221,7 +221,7 @@ object SymbolTable {
         return LocalOffset(offset)
       }
       case Some((_, _)) => throw new OffsetCalcInvalid("Tried to calculate the offset of a callout or a method. This makes no sense.")
-      case None => throw new OffsetCalcInvalid("Tried to calculate offset of variable that doesn't exist")
+      case None => throw new OffsetCalcInvalid(s"Tried to calculate offset of variable that doesn't exist '$id'")
     }
 
     // The total number of words occupied by the fields in this scope

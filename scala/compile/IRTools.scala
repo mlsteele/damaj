@@ -47,8 +47,8 @@ object IRPrinter {
     case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
     case If(preStmts, condition, thenb, elseb) => elseb match {
       case Some(block) =>
-        "%s\nif (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
-      case None => "%s\nif (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb))
+        "PRE-if\n%s\nif (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
+      case None => "PRE-if\n%s\nif (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb))
     }
     case For(id, start, iter, thenb) =>
       "for (%s = %s, %s) %s".format(
@@ -57,8 +57,8 @@ object IRPrinter {
         printExpr(iter),
         printBlock(thenb))
     case While(preStmts, condition, block, max) => max match {
-      case Some(int) =>"%s\nwhile (%s) : %s %s".format(printPreStmts(preStmts), printExpr(condition), int, printBlock(block))
-      case None => "%s\nwhile (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printPreStmts(preStmts), printBlock(block))
+      case Some(max) =>"PRE-while\n%s\nwhile (%s) : %s %s".format(printPreStmts(preStmts), printExpr(condition), max, printBlock(block))
+      case None => "PRE-while\n%s\nwhile (%s) \nPRE-whilemax %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(block))
     }
     case Return(expr) => expr match {
       case Some(e) => "return %s".format(printExpr(e))
