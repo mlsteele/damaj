@@ -11,8 +11,6 @@ object CombineScopes {
 
   def renameVarExpr(o: ID, n: ID)(expr: Expr) : Expr = {
     val renameE = renameVarExpr(o, n)(_)
-    val renameS = renameVarStmt(o, n)(_)
-    val renameB = renameVarBlock(o, n)(_)
     expr match {
       case MethodCall(method, args) => MethodCall(method, args.map(_.map(renameE)));
 
@@ -25,6 +23,19 @@ object CombineScopes {
       )
 
       case UnaryOp(op, operand) => UnaryOp(op, renameE(operand))
+
+      case Ternary(cond, left, right) => Ternary(
+        renameE(cond),
+        renameE(left),
+        renameE(right)
+      )
+
+      case load@LoadField(FieldSymbol(dtype, id, size), index) => if (id == o) {
+        LoadField(FieldSymbol(dtype, n, size), index)
+      } else load
+
+      case _:LoadInt  => expr
+      case _:LoadBool => expr
     }
   }
 
