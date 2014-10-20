@@ -1,0 +1,6 @@
+callout printf;
+int array[2];
+void main() {
+ int b;
+ b = array[-1];
+}
