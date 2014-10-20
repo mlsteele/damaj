@@ -33,12 +33,34 @@ object CombineScopes {
     val renameS = renameVarStmt(o, n)(_)
     val renameB = renameVarBlock(o, n)(_)
     stmt match {
+      case MethodCall(method, args) => MethodCall(method, args.map(_.map(renameE)));
+
+      case CalloutCall(callout, args) => CalloutCall(callout, args.map(_.map(renameE)));
+
       case If(preStmts, cond, thenb, elseb) => If(
         preStmts.map(renameS),
         renameE(cond),
         renameB(thenb),
         elseb.map(renameB)
       )
+
+      case For(id, start, iter, thenb) => For(
+        id,
+        renameE(start),
+        renameE(iter),
+        renameB(thenb)
+      )
+
+      case While(preStmts, condition, block, max) => While(
+        preStmts.map(renameS),
+        renameE(condition),
+        renameB(block),
+        max
+      )
+
+      case Return(expr) => Return(expr.map(renameE))
+      case b: Break => b
+      case c: Continue => c
     }
   }
 
