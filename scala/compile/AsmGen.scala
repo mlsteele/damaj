@@ -95,7 +95,7 @@ class AsmGen(ir2: IR2.Program) {
             whereload.setup \
             - cmp(0 $, whereload.asmloc)
           case LoadLiteral(v) =>
-            - mov(v $, reg_transfer)
+            - mov(v $, reg_transfer)\
             - cmp(0 $, reg_transfer)
         }
 
