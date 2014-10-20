@@ -1,12 +1,11 @@
 callout printf;
 int main() {
- int i;
- i =0;
-if (i ==5){
-  printf("should not reach here");
-  return 0;}
-else{
-  printf("Shits getting fucked up\n");
-}
-printf("Holy moly");
+    if (false) {
+        printf("Should not reach here.\n");
+        return 0;
+    } else{
+        printf("This branch has no return.\n");
+    }
+
+    printf("Last statement.\n");
 }
