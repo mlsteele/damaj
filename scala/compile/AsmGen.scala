@@ -284,14 +284,27 @@ class AsmGen(ir2: IR2.Program) {
     val setup = arrIdx match {
       case Some(LoadField(from, None)) =>
         val w = whereVar(from.id, None, symbols)
+        val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
         // NOTE: We ignore w.setup here because from is guaranteed to be a scalar.
-        mov(w.asmloc, reg_arridx)
+        //
+        // We want to check two things:
+        // 1) an array access is within bounds
+        // 2) an array access is greater than 0
+        mov(w.asmloc, reg_arridx)\
+        cmp(arraySize $,reg_arridx)\ 
+        jle(".Exit1")\
+        cmp(0 $, reg_arridx)\
+        jge(".Exit1")
       case Some(LoadLiteral(value)) =>
-        mov(value $, reg_arridx)
+        val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
+        mov(value $, reg_arridx)\
+        cmp(arraySize $,reg_arridx)\
+        jle(".Exit1")\
+        cmp(0 $, reg_arridx)\
+        jge(".Exit1")
       case None => "nop"
       case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
-
     val offset = symbols.varOffset(id)
     val isArray = arrIdx.isDefined
     val asmLocation: String = (isArray, offset) match {
@@ -432,6 +445,8 @@ object AsmDSL {
   def imul(a: String, b: String): String = s"imulq $a, $b"
   def idiv(a: String): String = s"idivq $a"
   def je(a: String): String = s"je $a"
+  def jge(a: String): String = s"jge $a"
+  def jle(a: String): String = s"jle $a"
   // Two's complement negation
   def neg(a: String): String = s"negq $a"
   def and(a: String, b: String): String = s"andq $a, $b"
