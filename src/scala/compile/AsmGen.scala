@@ -41,7 +41,7 @@ class AsmGen(ir2: IR2.Program) {
   def generateProgram(ir2: IR2.Program): String = {
     val main = generateMethod(ir2.main)
 
-    val methods = ir2.methods.map(generateMethod).mkString("\n")
+    val methods = ir2.methods.map(generateMethod).mkString("\n\n")
     val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
     val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
     val exits =
@@ -541,11 +541,10 @@ object AsmDSL {
     - push(rbp) \
     - mov(rsp, rbp) ? "set bp" \
     - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
-    "PUSH_ALL" \
+    - "PUSH_ALL" \
     body \
-    "" \
     labl(label + "_end") \
-    "POP_ALL" \
+    - "POP_ALL" \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
     - ret
