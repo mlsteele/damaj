@@ -94,9 +94,9 @@ object CombineScopes {
         renameE(right)
       )
 
-      case load@LoadField(FieldSymbol(dtype, id, size), index) => if (id == oldName) {
-        LoadField(FieldSymbol(dtype, newName, size), index)
-      } else load
+      case LoadField(FieldSymbol(dtype, id, size), index) =>
+        val name = if (id == oldName) newName else id
+        LoadField(FieldSymbol(dtype, name, size), index.map(renameE))
 
       case _:LoadInt  => expr
       case _:LoadBool => expr
