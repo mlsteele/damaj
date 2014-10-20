@@ -1,0 +1,11 @@
+callout printf;
+
+int i;
+void main() {
+    printf("pre loop\n");
+    while(i < 10) {
+        break;
+        printf("this should not happen\n");
+        i += 1;
+    }
+}
