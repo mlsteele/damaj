@@ -76,12 +76,14 @@ class AsmGen(ir2: IR2.Program) {
     val numLocals = m.symbols.size()
     // ABI requires even number of locals.. or something.
     val evenNumLocals = numLocals + (numLocals % 2)
-    val body = method(m.id, evenNumLocals, generateCFG(m.cfg, m.id + "_end"))
-    val end = m.returnType match {
+
+    // Defend against control falling off the edge of the method.
+    val controlCheck = m.returnType match {
       case DTVoid => "" // cool, no return needed
       case _ => jmp("._exit2")
     }
-    body + "\n" + end
+    val body = generateCFG(m.cfg, m.id + "_end") \ controlCheck
+    return method(m.id, evenNumLocals, body)
   }
 
   // Generate assembly for a CFG.
