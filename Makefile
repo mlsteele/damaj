@@ -13,30 +13,30 @@ WARNINGS = \
 	-Ywarn-unused-import \
 	-Ywarn-value-discard
 
-ANTLR_SOURCES := grammars/DecafScanner.g grammars/DecafParser.g
+ANTLR_SOURCES := src/grammars/DecafScanner.g src/grammars/DecafParser.g
 #Gathers up .java files found under the java/ directory
-JAVA_SOURCES := $(shell find java -name "*.java")
+JAVA_SOURCES := $(shell find src -name "*.java")
 #Gathers up .java files found under the scala/ directory
-SCALA_SOURCES := $(shell find scala -name "*.scala")
+SCALA_SOURCES := $(shell find src -name "*.scala")
 
 # Generates .class file names while preserving subdirectories
-ANTLR_CLASSES := $(patsubst %.g, %.class, $(patsubst grammars/%, build/grammars/%, $(ANTLR_SOURCES)))
-JAVA_CLASSES := $(patsubst %.java, %.class, $(patsubst java/%, build/%, $(JAVA_SOURCES)))
-# SCALA_CLASSES := $(patsubst %.scala, %.class, $(patsubst scala/%, build/%, $(SCALA_SOURCES)))
+ANTLR_CLASSES := $(patsubst %.g, %.class, $(patsubst src/grammars/%, build/src/grammars/%, $(ANTLR_SOURCES)))
+JAVA_CLASSES := $(patsubst %.java, %.class, $(patsubst src/java/%, build/src/%, $(JAVA_SOURCES)))
+# SCALA_CLASSES := $(patsubst %.scala, %.class, $(patsubst src/scala/%, build/src/%, $(SCALA_SOURCES)))
 
 
 # Compile a .class file from a .java file
-build/%.class: java/%.java
+build/src/%.class: src/java/%.java
 	@mkdir -p build
 	javac -cp $(CLASSPATH) $< -d build
 
 # Generate the .java file for a .g file
-build/grammars/%.java: grammars/%.g 
+build/src/grammars/%.java: src/grammars/%.g 
 	@mkdir -p build
 	java -cp $(CLASSPATH) org.antlr.Tool -o build $< -debug
 
 # Compile a .class file from a ANTLR-generated .java file
-build/grammars/%.class: build/grammars/%.java
+build/src/grammars/%.class: build/src/grammars/%.java
 	@mkdir -p build
 	javac -cp $(CLASSPATH) -d build $<
 
