@@ -74,7 +74,9 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateMethod(m: Method): String = {
     val numLocals = m.symbols.size()
-    val body = method(m.id, numLocals, generateCFG(m.cfg, m.id + "_end"))
+    // ABI requires even number of locals.. or something.
+    val evenNumLocals = numLocals + (numLocals % 2)
+    val body = method(m.id, evenNumLocals, generateCFG(m.cfg, m.id + "_end"))
     val end = m.returnType match {
       case DTVoid => "" // cool, no return needed
       case _ => jmp("._exit2")
