@@ -47,7 +47,7 @@ object IRPrinter {
     case CalloutCall(callout, args) => "%s(%s)".format(callout.id, printArgs(args))
     case If(preStmts, condition, thenb, elseb) => elseb match {
       case Some(block) =>
-        "PRE-if\n%s\nif (%s) %s %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
+        "PRE-if\n%s\nif (%s) %s else %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb), printBlock(block))
       case None => "PRE-if\n%s\nif (%s) %s".format(printPreStmts(preStmts), printExpr(condition), printBlock(thenb))
     }
     case For(id, start, iter, thenb) =>
