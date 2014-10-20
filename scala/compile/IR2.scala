@@ -53,7 +53,8 @@ class IR2Printer(ir2: IR2.Program) {
   val print: String = printIR2(ir2)
 
   private def printIR2(ir2: Program): String =
-    "IR2.Program(xx- %s -xx)".format(ir2.main)
+    // "IR2.Program(xx- %s -xx)".format(ir2.main)
+    "IR2(... pretty sweet ir2, wish I knew how to print it ...)"
 }
 
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
@@ -99,6 +100,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     "CFG(%s)".format(traverse(start))
   }
 
+  /*
   private def validate() = {
     //print("Validating CFG")
     mustReach(end)
@@ -109,7 +111,9 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     }}
     //print("Finished validating")
   }
+  */
 
+  /*
   private def mustReach(block: Block): Unit = {
     // TODO maybe traversing all the time is slow.
     traverse(start).contains(block) match {
@@ -117,6 +121,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
       case false => throw new CFGIntegrityError(s"block not reachable $block")
     }
   }
+  */
 }
 
 object CFGFactory {
