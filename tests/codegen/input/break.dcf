@@ -8,4 +8,5 @@ void main() {
 
         printf("%d ", z);
     }
+    printf("\n");
 }

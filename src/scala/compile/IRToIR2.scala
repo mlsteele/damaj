@@ -105,14 +105,19 @@ class IR2Builder(program: ProgramIR) {
           IR2.Assignment(convertStore(left), convertExpr(right)), ctx.symbols.get)
       case _:IR.Break =>
         val nop = CFGFactory.nopBlock
+        // Hackity Hackity Hack
+        // This does not return a well-formed CFG because break is a special snowflake.
+        // TODO(jessk) make this not hacky.
+        val nop2 = CFGFactory.nopBlock
         val edges = new EdgeMap()
         edges.put(nop, Edge(ctx.breakTo.get))
-        new CFG(nop, nop, edges)
+        new CFG(nop, nop2, edges)
       case _:IR.Continue =>
         val nop = CFGFactory.nopBlock
+        val nop2 = CFGFactory.nopBlock
         val edges = new EdgeMap()
         edges.put(nop, Edge(ctx.continueTo.get))
-        new CFG(nop, nop, edges)
+        new CFG(nop, nop2, edges)
       case IR.Return(e) =>
         CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)), ctx.symbols.get)
   }
