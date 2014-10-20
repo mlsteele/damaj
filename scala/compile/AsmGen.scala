@@ -34,10 +34,10 @@ class AsmGen(ir2: IR2.Program) {
   class AsmNotImplemented(message: String=null) extends RuntimeException(message)
 
   def generateProgram(ir2: IR2.Program): String = {
-    val main = method("main",
-      9008/8, // TODO(miles): this needs to be a real number.
-      generateCFG(ir2.main.cfg))
-    val text = main\
+    val main = generateMethod(ir2.main)
+    val methods = ir2.methods.map(generateMethod).mkString("/n")
+    val text = main\ 
+              methods\
               labl(".Exit1")\
               mov(-1 $,rdi)\
               "call exit"
@@ -54,12 +54,14 @@ class AsmGen(ir2: IR2.Program) {
 // if method should return a value, we go to a exit handler
 // if method shouldn't return a value, we return so we can go back to the caller
 
-  def generateMethod(method: Method): String = {
-    generateCFG(method.cfg)
-    method.returnType match {
-      case DTVoid => ret
+  def generateMethod(m: Method): String = {
+    // TODO(miles): Make 9008/8 a real number
+    val body = method(m.id, 9008/8, generateCFG(m.cfg))
+    val end = m.returnType match {
+      case DTVoid => "" // cool, no return needed
       case _ => jmp(".Exit2")
     }
+    body + "\n" + end
   }
 
   // Generate assembly for a CFG.
@@ -491,6 +493,7 @@ object AsmDSL {
     - pushall() \
     body \
     "" \
+    labl(label + "_end") \
     - popall() \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
