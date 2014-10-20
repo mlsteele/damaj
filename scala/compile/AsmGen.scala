@@ -311,7 +311,7 @@ class AsmGen(ir2: IR2.Program) {
     case true => argregs(argi)
     case false =>
       // Position above stack pointer
-      val position = argi - argregc - 2
+      val position = argi - argregc
       rsp offset (position * 8)
   }
 
@@ -358,7 +358,7 @@ class AsmGen(ir2: IR2.Program) {
         argregs(offIdx)
       case (false, ArgOffset(offIdx)) =>
         // TODO(miles): not tested.
-        val off = 8 * (offIdx - argregc)
+        val off = 8 * (offIdx - argregc - 2)
         (rbp offset off)
       case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented("global scalar field")
       case (true, LocalOffset(offIdx)) =>
