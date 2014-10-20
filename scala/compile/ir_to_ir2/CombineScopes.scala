@@ -9,6 +9,65 @@ object CombineScopes {
   import SymbolTable._
   import FunctionalUtils._
 
+  def combineScopes(program: ProgramIR) : ProgramIR = {
+    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    methods.map(m => m.block = combineScopesTopLevel(m.block))
+    return program
+  }
+
+  def combineScopesTopLevel(block: Block) : Block = {
+    val newStmts = block.stmts.map(combineScopes(_, block.fields))
+    return Block(newStmts, block.fields)
+  }
+
+  def combineScopes(stmt: Statement, table : SymbolTable) : Statement = stmt match {
+    case a:Assignment => a
+
+    case m:MethodCall => m
+
+    case c:CalloutCall => c
+
+    case If(preStmts, cond, thenb, elseb) => If(
+      preStmts.map(combineScopes(_, table)),
+      cond,
+      combineScopes(thenb, table),
+      elseb.map(combineScopes(_, table))
+    )
+
+    case For(id, start, iter, thenb) => For(
+      id,
+      start,
+      iter,
+      combineScopes(thenb, table)
+    )
+
+    case While(preStmts, cond, thenb, max) => While(
+      preStmts.map(combineScopes(_, table)),
+      cond,
+      combineScopes(thenb, table),
+      max
+    )
+
+    case r:Return => r
+
+    case b:Break => b
+
+    case c:Continue => c
+  }
+
+  def combineScopes(block: Block, table: SymbolTable) : Block = {
+    var newStmts = block.stmts
+    for (sym <- block.fields.symbols) sym match {
+      case FieldSymbol(dtype, oldId, size) => {
+        val newId = "^" + oldId
+        table.addSymbol(FieldSymbol(dtype, newId, size))
+        newStmts = newStmts.map(renameVarStmt(oldId, newId))
+      }
+      case _ => ();
+    }
+    return Block(newStmts, table)
+  }
+
   /**
     * Renames all references to the variable oldName with newName in
     * the given expression.
