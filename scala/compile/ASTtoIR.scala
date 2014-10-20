@@ -163,8 +163,6 @@ class IRBuilder(input: AST.ProgramAST) {
       // Negate literal values instead of negating literal loads
       case AST.UnaryOp("-", l@AST.Literal(IntLiteral(v))) =>
         convertExpr(srcmap.alias(l, AST.Literal(IntLiteral(-v))), ctx)
-      // Collapse stacked negations.
-      // TODO(miles): Collapse stacked negations.
       case AST.UnaryOp(op, right) =>
         convertExpr(right, ctx) match {
           case Some(right) => Some(IR.UnaryOp(op, right))
