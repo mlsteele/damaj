@@ -196,6 +196,13 @@ object Compiler {
       }
       flattened
     }.map{ ir1 =>
+      val combined = CombineScopes.combineScopes(ir1)
+      if (CLI.debug) {
+        Console.err.println("\nCombined Scope IR (pretty):")
+        Console.err.println(IRPrinter.print(combined))
+      }
+      combined
+    }.map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
         Console.err.println("\nIR2 (CFG):")

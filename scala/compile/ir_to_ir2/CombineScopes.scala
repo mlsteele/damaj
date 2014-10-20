@@ -56,8 +56,9 @@ object CombineScopes {
   }
 
   def combineScopes(block: Block, table: SymbolTable) : Block = {
-    var newStmts = block.stmts
-    for (sym <- block.fields.symbols) sym match {
+    val newBlock = combineScopesTopLevel(block)
+    var newStmts = newBlock.stmts
+    for (sym <- newBlock.fields.symbols) sym match {
       case FieldSymbol(dtype, oldId, size) => {
         val newId = "^" + oldId
         table.addSymbol(FieldSymbol(dtype, newId, size))
@@ -65,7 +66,7 @@ object CombineScopes {
       }
       case _ => ();
     }
-    return Block(newStmts, table)
+    return Block(newStmts, new SymbolTable())
   }
 
   /**
