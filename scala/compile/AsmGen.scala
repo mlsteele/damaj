@@ -237,7 +237,9 @@ class AsmGen(ir2: IR2.Program) {
       .zipWithIndex
       .map(Function.tupled(generateCallArg(_,_,symbols)))
       .mkString("\n") \
-    call(ir.id)
+    pushall() \
+    call(ir.id) \
+    popall()
   }
 
   def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
@@ -480,7 +482,6 @@ object AsmDSL {
   // r8, r9, r10, r11, r12, r13, r14, r15) 
   // and pop in reverse order
   def pushall(): String ={
-    push(rax)\
     push(rbx)\
     push(rcx)\
     push(rdx)\
@@ -513,8 +514,7 @@ object AsmDSL {
     pop(rbp)\
     pop(rdx)\
     pop(rcx)\
-    pop(rbx)\
-    pop(rax)
+    pop(rbx)
   }
   // stackvars is the number of vars in the method's stack frame
   def method(label: String, stackvars: Int, body: String): String = {
