@@ -225,7 +225,7 @@ object Desugar {
         )
         val counterCondition = BinOp(
           LoadField(counterVar, None),
-          Equals(),
+          LessThan(),
           LoadInt(limit)
         )
         val newBlockStmts = block.stmts :+ counterInc
