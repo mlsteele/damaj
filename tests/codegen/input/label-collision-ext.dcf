@@ -1,0 +1,11 @@
+int printf(int a, int b) {
+    return 0xBEEF;
+}
+
+void main() {
+    int a[1];
+    if (printf(1, 2) != 0xBEEF) {
+        // die here.
+        a[3] = a[3];
+    }
+}

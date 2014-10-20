@@ -1,0 +1,34 @@
+callout printf;
+
+void exit() {
+    printf("hehe\n");
+}
+
+void exit1() {
+    printf("haha\n");
+}
+
+void exit2() {
+    printf("hoho\n");
+}
+
+void _exit() {
+    printf("_hehe\n");
+}
+
+void _exit1() {
+    printf("_haha\n");
+}
+
+void _exit2() {
+    printf("_hoho\n");
+}
+
+void main() {
+    exit();
+    exit1();
+    exit2();
+    _exit();
+    _exit1();
+    _exit2();
+}
