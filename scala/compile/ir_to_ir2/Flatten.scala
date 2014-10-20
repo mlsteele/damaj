@@ -198,7 +198,7 @@ object Flatten {
       case While(preStmts, condition, block, None) => {
         val preds: List[Boolean] = preStmts.map(_.isSimple()) ++
           block.stmts.map(_.isSimple()) :+
-          condition.isSimple()
+          condition.isSimpleLoad()
         return all(preds)
       }
       case Return(None) => true
@@ -255,10 +255,13 @@ object Flatten {
       // While loops with no limit are straight forward to convert
       case While(preStmts, cond, block, None) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)
-        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++ condStmts
+        val condTemp = tempGen.newVar(DTBool)
+        val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
+          condStmts :+
+          Assignment(Store(condTemp, None), condExpr)
         return List(While(
           newPreStmts,
-          condExpr,
+          LoadField(condTemp, None),
           block.flatten(),
           None
         ))
