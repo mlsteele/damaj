@@ -158,8 +158,13 @@ class IRBuilder(input: AST.ProgramAST) {
           case (Some(left), Some(right)) => Some(IR.BinOp(left, op, right))
           case _ => None
         }
-      // @ is special because it must hold an load array on the right.
+      // '@' is special because it must hold an load array on the right.
       case AST.UnaryOp("@", right) => getArrayLength(right, ctx)
+      // Negate literal values instead of negating literal loads
+      case AST.UnaryOp("-", l@AST.Literal(IntLiteral(v))) =>
+        convertExpr(srcmap.alias(l, AST.Literal(IntLiteral(-v))), ctx)
+      // Collapse stacked negations.
+      // TODO(miles): Collapse stacked negations.
       case AST.UnaryOp(op, right) =>
         convertExpr(right, ctx) match {
           case Some(right) => Some(IR.UnaryOp(op, right))
