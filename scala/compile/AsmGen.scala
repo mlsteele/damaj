@@ -60,7 +60,7 @@ class AsmGen(ir2: IR2.Program) {
       - mov(-2 $, argregs(0)) \
       - call("exit")
 
-    val bss = ".section bss"\
+    val bss = ".data"\
       ir2.fields.flatMap { f:Field =>
         labl("decaf_global_%s".format(f.id))\
         - ".zero %d".format(f.size.getOrElse(1L)*8)\
@@ -368,9 +368,7 @@ class AsmGen(ir2: IR2.Program) {
         val off = 8 * (offIdx - argregc - 2)
         (rbp offset off)
       case (false, GlobalOffset(offIdx)) => {
-        val off = offIdx * 8
-        val base = ("decaf_global_%s".format(id) $)
-        (base offset off)
+        "(decaf_global_%s)".format(id)
       }
       case (true, LocalOffset(offIdx)) =>
         val off = -8 * (offIdx + 1)
