@@ -256,8 +256,9 @@ class AsmGen(ir2: IR2.Program) {
       mov(reg_opresult, wherestore.asmloc)
     case (store, call:Call) => 
       val wherestore = whereVar(store, symbols)
-      wherestore.setup \
+      // wherestore must not modify rax.
       generateCall(call, symbols) \
+      wherestore.setup \
       mov(rax, wherestore.asmloc)
     case _ => throw new AsmNotImplemented(ir.toString)
   }
@@ -272,11 +273,12 @@ class AsmGen(ir2: IR2.Program) {
     // Weird stack alignment thing.
     val stackArgs = stackArgsUnrounded + (stackArgsUnrounded % 2)
 
+    comment("calling %s".format(ir.id)) \
     "PUSH_ALL" \
-    sub((stackArgs * 8) $, rbp) ? s"reserve space for $stackArgs stack args" \
+    sub((stackArgs * 8) $, rsp) ? s"reserve space for $stackArgs stack args" \
     argMovs \
     call(ir.id) \
-    add((stackArgs * 8) $, rbp) ? s"free space from stack args" \
+    add((stackArgs * 8) $, rsp) ? s"free space from stack args" \
     "POP_ALL"
   }
 
