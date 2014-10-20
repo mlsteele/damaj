@@ -118,7 +118,7 @@ object Compiler {
         if (CLI.debug && (CLI.target == CLI.Action.PARSE)) {
           // print("\nParse Tree:")
           // println(tree.toStringTree())
-          
+
           println("\nParse Tree (pretty):")
           println(PTTools.prettyprint(tree))
 
@@ -174,24 +174,27 @@ object Compiler {
     val ir1 = inter(fileName)
     // Use map to go through stages.
     // Returns true or false based on whether all stages work.
-    ir1.map{ ir1 => {
+    ir1.map{ ir1 =>
       val elaborated = Elaborate.elaborate(ir1)
       if (CLI.debug) {
         Console.err.println("\nElaborated IR (pretty):")
         Console.err.println(IRPrinter.print(elaborated))
       }
-      val desugared = Desugar.desugar(elaborated)
+      elaborated
+    }.map{ ir1 =>
+      val desugared = Desugar.desugar(ir1)
       if (CLI.debug) {
         Console.err.println("\nDesugared IR (pretty):")
         Console.err.println(IRPrinter.print(desugared))
       }
-      val flattened = Flatten.flatten(desugared)
+      desugared
+    }.map{ ir1 =>
+      val flattened = Flatten.flatten(ir1)
       if (CLI.debug) {
         Console.err.println("\nFlattened IR (pretty):")
         Console.err.println(IRPrinter.print(flattened))
       }
       flattened
-    }
     }.map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
