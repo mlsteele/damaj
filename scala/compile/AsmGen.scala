@@ -47,15 +47,15 @@ class AsmGen(ir2: IR2.Program) {
     val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
     val exits =
       labl("._exit1") \
-      - mov(strings.put(array_oob_error) $, argregs(0)) \
       - "PUSH_ALL" \
+      - mov(strings.put(array_oob_error) $, argregs(0)) \
       - call("printf") \
       - "POP_ALL" \
       - mov(-1 $, argregs(0)) \
       - call("exit") \
       labl("._exit2") \
-      - mov(strings.put(control_runoff_error) $, argregs(0)) \
       - "PUSH_ALL" \
+      - mov(strings.put(control_runoff_error) $, argregs(0)) \
       - call("printf") \
       - "POP_ALL" \
       - mov(-2 $, argregs(0)) \
@@ -265,12 +265,12 @@ class AsmGen(ir2: IR2.Program) {
     // Weird stack alignment thing.
     val stackArgs = stackArgsUnrounded + (stackArgsUnrounded % 2)
 
+    "PUSH_ALL" \
     sub((stackArgs * 8) $, rbp) ? s"reserve space for $stackArgs stack args" \
     argMovs \
-    "PUSH_ALL" \
     call(ir.id) \
-    "POP_ALL" \
-    add((stackArgs * 8) $, rbp)
+    add((stackArgs * 8) $, rbp) ? s"free space from stack args" \
+    "POP_ALL"
   }
 
   def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
