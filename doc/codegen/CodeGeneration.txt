@@ -16,7 +16,9 @@
   
   Now you should be able to run the compiler using run.sh.
   For example:
+
   ~./run.sh -t assembly --debug tests/codegen/input/01-callout.dcf~
+
   ~./run.sh -t assembly --debug tests/codegen/input/04-math2.dcf -o 04-math2.asm~
 
   Alternatively, you can use ~compile.sh~ to compile and run a program.
