@@ -1,0 +1,11 @@
+callout printf;
+void main() {
+    int z;
+    for (z=0, 10) {
+        if (z > 3) {
+            break;
+        }
+
+        printf("%d ", z);
+    }
+}
