@@ -22,6 +22,10 @@ class AsmGen(ir2: IR2.Program) {
 
   // Generates local labels
   val labelGenerator = new LabelGenerator()
+  // TODO(miles): reserve more stuff
+  labelGenerator.reserve("main")
+  labelGenerator.reserve("PUSH_ALL")
+  labelGenerator.reserve("POP_ALL")
   // Store all string literals used in the program.
   val strings = new StringStore()
   // Keeps track of what Blocks have been assembled and their label.
@@ -237,9 +241,9 @@ class AsmGen(ir2: IR2.Program) {
       .zipWithIndex
       .map(Function.tupled(generateCallArg(_,_,symbols)))
       .mkString("\n") \
-    pushall() \
+    "PUSH_ALL" \
     call(ir.id) \
-    popall()
+    "POP_ALL"
   }
 
   def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
@@ -384,21 +388,24 @@ class StringStore {
 }
 
 // Generator for local labels (start with a dot)
+// Case insensitive, so picky.
 class LabelGenerator {
   // map from strings to their labels
   private var taken = Set[String]()
   private var counter = 0
 
   def reserve(lbl: String): Unit =
-    taken += lbl
+    taken += lbl.toLowerCase
 
   def nextLabel(): String = nextLabel("")
 
   def nextLabel(hint: String): String = {
     val lbl = "._node_%s_%s".format(counter, hint)
     counter += 1
-    taken contains lbl match {
-      case false => lbl
+    taken contains lbl.toLowerCase match {
+      case false =>
+        reserve(lbl)
+        lbl
       case true => nextLabel()
     }
   }
@@ -467,8 +474,6 @@ object AsmDSL {
   def sete(a: String): String = s"sete $a" // ==
   def setne(a: String): String = s"setne $a" // !=
   def cqto(): String = "cqto" // convert quad to oct
-  def exit1(): String = "jmp exit1" // jmp to exit1 code to jump with appropriate exit values
-  def exit2(): String = "jmp exit2" // jmp to exit2 code that can handle control fall off
   // other assembly tools
   def labl(a: String): String = s"$a:"
   def datastring(label: String, contents: String): String =
@@ -481,41 +486,7 @@ object AsmDSL {
   // (rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
   // r8, r9, r10, r11, r12, r13, r14, r15) 
   // and pop in reverse order
-  def pushall(): String ={
-    push(rbx)\
-    push(rcx)\
-    push(rdx)\
-    push(rbp)\
-    push(rsp)\
-    push(rsi)\
-    push(rdi)\
-    push(r8) \
-    push(r9) \
-    push(r10)\
-    push(r11)\
-    push(r12)\
-    push(r13)\
-    push(r14)\
-    push(r15)
-  }
   
-  def popall(): String ={
-    pop(r15)\
-    pop(r14)\
-    pop(r13)\
-    pop(r12)\
-    pop(r11)\
-    pop(r10)\
-    pop(r9) \
-    pop(r8) \
-    pop(rdi)\
-    pop(rsi)\
-    pop(rsp)\
-    pop(rbp)\
-    pop(rdx)\
-    pop(rcx)\
-    pop(rbx)
-  }
   // stackvars is the number of vars in the method's stack frame
   def method(label: String, stackvars: Int, body: String): String = {
     // TODO(miles): push and pop all regs.
@@ -524,17 +495,21 @@ object AsmDSL {
     - push(rbp) \
     - mov(rsp, rbp) ? "set bp" \
     - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
-    - pushall() \
+    "PUSH_ALL" \
     body \
     "" \
     labl(label + "_end") \
-    - popall() \
+    "POP_ALL" \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
     - ret
   }
 
   def file(text: String, data: String): String = {
+    define_push_all \
+    "" \
+    define_pop_all \
+    "" \
     ".text" \
     ".globl main" \
     text \
@@ -543,4 +518,42 @@ object AsmDSL {
     data \
     ""
   }
+
+  def define_push_all: String =
+    ".macro PUSH_ALL" \
+    - push(rbx) \
+    - push(rcx) \
+    - push(rdx) \
+    - push(rbp) \
+    - push(rsp) \
+    - push(rsi) \
+    - push(rdi) \
+    - push(r8) \
+    - push(r9) \
+    - push(r10) \
+    - push(r11) \
+    - push(r12) \
+    - push(r13) \
+    - push(r14) \
+    - push(r15) \
+    ".endm"
+
+  def define_pop_all: String =
+    ".macro POP_ALL" \
+    - pop(r15) \
+    - pop(r14) \
+    - pop(r13) \
+    - pop(r12) \
+    - pop(r11) \
+    - pop(r10) \
+    - pop(r9) \
+    - pop(r8) \
+    - pop(rdi) \
+    - pop(rsi) \
+    - pop(rsp) \
+    - pop(rbp) \
+    - pop(rdx) \
+    - pop(rcx) \
+    - pop(rbx) \
+    ".endm"
 }
