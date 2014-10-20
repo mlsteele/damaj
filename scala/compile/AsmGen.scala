@@ -371,11 +371,11 @@ class AsmGen(ir2: IR2.Program) {
         "(decaf_global_%s)".format(id)
       }
       case (true, LocalOffset(offIdx)) =>
-        val off = -8 * (offIdx + 1)
+        val off = (-8 * (offIdx + 1)).toString
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
         arrayAccess(off, rbp, reg_arridx, 8)
       case (true, GlobalOffset(offIdx)) => {
-        "decaf_global_%s(,%s,8)".format(id, reg_arridx)
+        arrayAccess("decaf_global_%s".format(id), "", reg_arridx, 8)
       }
       case (true, _:ArgOffset) => throw new AsmPreconditionViolated("Arrays cannot be parameters")
     }
@@ -526,7 +526,7 @@ object AsmDSL {
     s"""$label: .string "$contents""""
   // whole line comment. See ? for inline comment
   def comment(a: String): String = s"# $a"
-  def arrayAccess(displacement: Int, baseReg: String, offsetReg: String, multiplier: Int) =
+  def arrayAccess(displacement: String, baseReg: String, offsetReg: String, multiplier: Int) =
     s"$displacement($baseReg, $offsetReg, $multiplier)"
   // We push all registers in following orde:
   // (rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
