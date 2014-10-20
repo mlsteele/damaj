@@ -5,6 +5,7 @@ package compile;
 class AsmGen(ir2: IR2.Program) {
   import AsmDSL._
   import scala.language.postfixOps
+  import scala.math.max
   import IRShared._
   import SymbolTable._
   import IR2._
@@ -40,7 +41,7 @@ class AsmGen(ir2: IR2.Program) {
   def generateProgram(ir2: IR2.Program): String = {
     val main = generateMethod(ir2.main)
 
-    val methods = ir2.methods.map(generateMethod).mkString("/n")
+    val methods = ir2.methods.map(generateMethod).mkString("\n")
 
     val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
     val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
@@ -255,13 +256,21 @@ class AsmGen(ir2: IR2.Program) {
   }
 
   def generateCall(ir: Call, symbols: SymbolTable): String = {
-    ir.args
+    val argMovs: String = ir.args
       .zipWithIndex
       .map(Function.tupled(generateCallArg(_,_,symbols)))
-      .mkString("\n") \
+      .mkString("\n")
+    // How much space to reserve on the stack for arguments.
+    val stackArgsUnrounded = max(ir.args.length - argregc, 0)
+    // Weird stack alignment thing.
+    val stackArgs = stackArgsUnrounded + (stackArgsUnrounded % 2)
+
+    sub((stackArgs * 8) $, rbp) ? s"reserve space for $stackArgs stack args" \
+    argMovs \
     "PUSH_ALL" \
     call(ir.id) \
-    "POP_ALL"
+    "POP_ALL" \
+    add((stackArgs * 8) $, rbp)
   }
 
   def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
@@ -290,15 +299,20 @@ class AsmGen(ir2: IR2.Program) {
         val whereload = whereVar(load, symbols)
         val whereargi = whereArg(argi)
         whereload.setup \
-        mov(whereload.asmloc, whereargi) ? s"stage callout arg #$argi"
+        mov(whereload.asmloc, reg_transfer) ? s"stage callout arg #$argi" \
+        mov(reg_transfer, whereargi)
       case Right(e: Expr) => throw new AsmNotImplemented(e.toString)
     }
   }
 
   // Get the location to stage an argument.
+  // Assumes space has already been pushed onto stack for args.
   def whereArg(argi: Int): String = argi < argregc match {
     case true => argregs(argi)
-    case false => throw new AsmNotImplemented("high args")
+    case false =>
+      // Position above stack pointer
+      val position = argi - argregc - 2
+      rsp offset (position * 8)
   }
 
   // Represents how to access a variable location in assembly.
@@ -346,12 +360,13 @@ class AsmGen(ir2: IR2.Program) {
         // TODO(miles): not tested.
         val off = 8 * (offIdx - argregc)
         (rbp offset off)
-      case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented()
+      case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented("global scalar field")
       case (true, LocalOffset(offIdx)) =>
         val off = -8 * (offIdx + 1)
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
         arrayAccess(off, rbp, reg_arridx, 8)
-      case (true, _) => throw new AsmNotImplemented("arrays, hahahahha")
+      case (true, GlobalOffset(offIdx)) => throw new AsmNotImplemented("global array")
+      case (true, _:ArgOffset) => throw new AsmPreconditionViolated("Arrays cannot be parameters")
     }
 
     WhereVar(setup, asmLocation)
@@ -539,6 +554,7 @@ object AsmDSL {
     ""
   }
 
+  // This must push an even number of quads to keep rsp 16byte aligned.
   def define_push_all: String =
     ".macro PUSH_ALL" \
     - push(rbx) \
@@ -556,10 +572,13 @@ object AsmDSL {
     - push(r13) \
     - push(r14) \
     - push(r15) \
+    - push(r15) \ // duplicate for alignment
     ".endm"
 
+  // This must pop an even number of quads to keep rsp 16byte aligned.
   def define_pop_all: String =
     ".macro POP_ALL" \
+    - pop(r15) \ // duplicate for alignment
     - pop(r15) \
     - pop(r14) \
     - pop(r13) \
