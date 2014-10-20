@@ -6,7 +6,6 @@ void main() {
             break;
         }
 
-        printf("%d ", z);
+        printf("%d\n", z);
     }
-    printf("\n");
 }
