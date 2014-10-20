@@ -39,18 +39,32 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateProgram(ir2: IR2.Program): String = {
     val main = generateMethod(ir2.main)
+
     val methods = ir2.methods.map(generateMethod).mkString("/n")
-    val text = main\ 
-              methods\
-              labl(".Exit1")\
-              mov(-1 $,rdi)\
-              "call exit"\
-              labl(".Exit2")\
-              mov(-2 $, rdi)\
-              "call exit"
+
+    val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
+    val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
+    val exits =
+      labl("._exit1") \
+      - mov(strings.put(array_oob_error) $, argregs(0)) \
+      - "PUSH_ALL" \
+      - call("printf") \
+      - "POP_ALL" \
+      - mov(-1 $, argregs(0)) \
+      - call("exit") \
+      labl("._exit2") \
+      - mov(strings.put(control_runoff_error) $, argregs(0)) \
+      - "PUSH_ALL" \
+      - call("printf") \
+      - "POP_ALL" \
+      - mov(-2 $, argregs(0)) \
+      - call("exit")
+
+    val text = main \
+              methods \
+              exits
     val data = strings.toData
     file(text, data)
-    // TODO(andres): put exit1 and exit2 code here, and any other auxillary code
   }
 
 // insert returns at the end of the method
@@ -63,7 +77,7 @@ class AsmGen(ir2: IR2.Program) {
     val body = method(m.id, numLocals, generateCFG(m.cfg, m.id + "_end"))
     val end = m.returnType match {
       case DTVoid => "" // cool, no return needed
-      case _ => jmp(".Exit2")
+      case _ => jmp("._exit2")
     }
     body + "\n" + end
   }
@@ -299,20 +313,20 @@ class AsmGen(ir2: IR2.Program) {
         // NOTE: We ignore w.setup here because from is guaranteed to be a scalar.
         //
         // We want to check two things:
-        // 1) an array access is within bounds
+        // 1) an array access is less than array size
         // 2) an array access is greater than 0
-        mov(w.asmloc, reg_arridx)\
-        cmp(arraySize $,reg_arridx)\ 
-        jle(".Exit1")\
-        cmp(0 $, reg_arridx)\
-        jge(".Exit1")
+        mov(w.asmloc, reg_arridx) \
+        cmp(arraySize $, reg_arridx) \
+        jge("._exit1") \
+        cmp(0 $, reg_arridx) \
+        jl("._exit1")
       case Some(LoadLiteral(value)) =>
         val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
-        mov(value $, reg_arridx)\
-        cmp(arraySize $,reg_arridx)\
-        jle(".Exit1")\
-        cmp(0 $, reg_arridx)\
-        jge(".Exit1")
+        mov(value $, reg_arridx) \
+        cmp(arraySize $, reg_arridx) \
+        jge("._exit1") \
+        cmp(0 $, reg_arridx) \
+        jl("._exit1")
       case None => "nop"
       case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
@@ -460,7 +474,9 @@ object AsmDSL {
   def idiv(a: String): String = s"idivq $a"
   def je(a: String): String = s"je $a"
   def jge(a: String): String = s"jge $a"
+  def jg(a: String): String = s"jg $a"
   def jle(a: String): String = s"jle $a"
+  def jl(a: String): String = s"jl $a"
   // Two's complement negation
   def neg(a: String): String = s"negq $a"
   def and(a: String, b: String): String = s"andq $a, $b"
