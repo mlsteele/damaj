@@ -42,7 +42,6 @@ class AsmGen(ir2: IR2.Program) {
     val main = generateMethod(ir2.main)
 
     val methods = ir2.methods.map(generateMethod).mkString("\n")
-
     val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
     val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
     val exits =
@@ -61,11 +60,19 @@ class AsmGen(ir2: IR2.Program) {
       - mov(-2 $, argregs(0)) \
       - call("exit")
 
+    val bss = ".section bss"\
+      ir2.fields.flatMap { f:Field =>
+        labl("decaf_global_%s".format(f.id))\
+        - ".zero %d".format(f.size.getOrElse(1L)*8)\
+        ""
+      }.mkString
+
     val text = main \
               methods \
               exits
+
     val data = strings.toData
-    file(text, data)
+    file(bss, text, data)
   }
 
 // insert returns at the end of the method
@@ -360,7 +367,11 @@ class AsmGen(ir2: IR2.Program) {
         // TODO(miles): not tested.
         val off = 8 * (offIdx - argregc - 2)
         (rbp offset off)
-      case (false, GlobalOffset(offIdx)) => throw new AsmNotImplemented("global scalar field")
+      case (false, GlobalOffset(offIdx)) => {
+        val off = offIdx * 8
+        val base = ("decaf_global_%s".format(id) $)
+        (base offset off)
+      }
       case (true, LocalOffset(offIdx)) =>
         val off = -8 * (offIdx + 1)
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
@@ -540,10 +551,11 @@ object AsmDSL {
     - ret
   }
 
-  def file(text: String, data: String): String = {
+  def file(bss: String, text: String, data: String): String = {
     define_push_all \
     "" \
     define_pop_all \
+    bss \
     "" \
     ".text" \
     ".globl main" \
