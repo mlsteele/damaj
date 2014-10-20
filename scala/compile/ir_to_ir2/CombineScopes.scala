@@ -9,6 +9,10 @@ object CombineScopes {
   import SymbolTable._
   import FunctionalUtils._
 
+  /**
+    * Renames all references to the variable oldName with newName in
+    * the given expression.
+    */
   def renameVarExpr(oldName: ID, newName: ID)(expr: Expr) : Expr = {
     val renameE = renameVarExpr(oldName, newName)(_)
     expr match {
@@ -39,6 +43,10 @@ object CombineScopes {
     }
   }
 
+  /**
+    * Renames all references to the variable oldName with newName in
+    * the given statement.
+    */
   def renameVarStmt(oldName: ID, newName: ID)(stmt: Statement) : Statement = {
     val renameE = renameVarExpr(oldName, newName)(_)
     val renameS = renameVarStmt(oldName, newName)(_)
@@ -83,6 +91,10 @@ object CombineScopes {
     }
   }
 
+  /**
+    * Renames all references to the variable oldName with newName in
+    * the given block.
+    */
   def renameVarBlock(oldName: ID, newName: ID)(block: Block) : Block = {
     return Block(block.stmts.map(renameVarStmt(oldName, newName)), block.fields)
   }
