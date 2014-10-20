@@ -113,12 +113,8 @@ object CombineScopes {
     val renameB = renameVarBlock(oldName, newName)(_)
     stmt match {
       case Assignment(Store(FieldSymbol(dtype, id, size), index), right) =>
-        id == oldName match {
-          // Rename the store's id to n.
-          case true  => Assignment(Store(FieldSymbol(dtype, newName, size), index), renameE(right))
-          // Leave the store alone, but make sure to renameE the right.
-          case false => Assignment(Store(FieldSymbol(dtype, id, size), index), renameE(right))
-        }
+        val name = if (id == oldName) newName else id
+        Assignment(Store(FieldSymbol(dtype, name, size), index.map(renameE)), renameE(right))
 
       case MethodCall(method, args) => MethodCall(method, args.map(_.map(renameE)));
 
