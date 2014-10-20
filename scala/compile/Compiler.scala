@@ -116,20 +116,21 @@ object Compiler {
       case (false, Some(tree)) =>
         // Parse succeeded!
         if (CLI.debug && (CLI.target == CLI.Action.PARSE)) {
-          // print("\nParse Tree:")
-          // println(tree.toStringTree())
+          // Console.err.println("\nParse Tree:")
+          // Console.err.println(tree.toStringTree())
 
-          println("\nParse Tree (pretty):")
-          println(PTTools.prettyprint(tree))
+          Console.err.println("\nParse Tree (pretty):")
+          Console.err.println(PTTools.prettyprint(tree))
 
           val code = io.Source.fromFile(fileName).mkString
           val ast = new ASTBuilder(tree, fileName, code).ast
-          // println("\nAST:")
-          // println(ast)
+
+          // Console.err.println("\nAST:")
+          // Console.err.println(ast)
 
           val ast_pretty = new ASTPrinter(ast).print
-          println("\nAST (pretty):")
-          println(ast_pretty)
+          Console.err.println("\nAST (pretty):")
+          Console.err.println(ast_pretty)
         }
     }
 
@@ -160,8 +161,8 @@ object Compiler {
             case Right(ir1) =>
               // Semantic checks passed!
               if (CLI.debug) {
-                println("\nIR (pretty):")
-                println(IRPrinter.print(ir1))
+                Console.err.println("\nIR (pretty):")
+                Console.err.println(IRPrinter.print(ir1))
               }
               return Some(ir1)
           }
@@ -215,14 +216,4 @@ object Compiler {
     }.isDefined
   }
 
-  def print_tree(tree: ParseTree, level: Int): Unit  = {
-    val prefix = "  " * level
-    val ttype = tree.getType()
-    val token = tree.getText()
-    val line = tree.getLine()
-    val linechar = tree.getCharPositionInLine()
-    val children = Range(0, tree.getChildCount()).map (tree.getChild(_).asInstanceOf[ParseTree])
-    Console.err.println(prefix + token + " (t:" + ttype + ", l:" + line + ":" + linechar + ")")
-    children.foreach(print_tree(_, level + 1))
-  }
 }
