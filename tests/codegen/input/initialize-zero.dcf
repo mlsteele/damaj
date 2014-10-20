@@ -1,0 +1,5 @@
+callout printf;
+void main() {
+    int a;
+    printf("should be zero %d\n", a);
+}

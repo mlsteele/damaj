@@ -1,0 +1,4 @@
+callout printf;
+void main() {
+    printf("my number is: %d\n", 6);
+}
