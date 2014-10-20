@@ -51,6 +51,7 @@ class IR2Builder(program: ProgramIR) {
       case f:FieldSymbol => Some(convertField(f))
       case _ => None
     }),
+    method.block.fields,
     convertBlock(method.block, Context(None, None, None)),
   method.returns)
 

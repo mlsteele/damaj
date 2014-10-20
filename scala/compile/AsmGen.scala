@@ -59,8 +59,8 @@ class AsmGen(ir2: IR2.Program) {
 // if method shouldn't return a value, we return so we can go back to the caller
 
   def generateMethod(m: Method): String = {
-    // TODO(miles): Make 9008/8 a real number
-    val body = method(m.id, 9008/8, generateCFG(m.cfg, m.id + "_end"))
+    val numLocals = m.symbols.size()
+    val body = method(m.id, numLocals, generateCFG(m.cfg, m.id + "_end"))
     val end = m.returnType match {
       case DTVoid => "" // cool, no return needed
       case _ => jmp(".Exit2")

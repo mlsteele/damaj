@@ -66,7 +66,7 @@ object CombineScopes {
       }
       case _ => ();
     }
-    return Block(newStmts, new SymbolTable())
+    return Block(newStmts, table)
   }
 
   /**
