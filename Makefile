@@ -1,3 +1,4 @@
+.PHONY: java_classes scala_classes antlr_classes fsc_reset docs repl clean
 all: fsc_reset scala_classes
 
 CLASSPATH = build:vendor/antlr.jar
@@ -41,25 +42,20 @@ build/src/grammars/%.class: build/src/grammars/%.java
 	javac -cp $(CLASSPATH) -d build $<
 
 # Compile all .java files to .class
-.PHONY:
 java_classes: $(JAVA_CLASSES)
 
-# .PHONY:
 # scala_classes: $(SCALA_CLASSES)
 
 # Compile all scala files together.
-.PHONY:
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build
 	@echo "===============SCALA COMPILATION==============="
 	@fsc $(SCALAC_FLAGS) -d build $(SCALA_SOURCES)
 	@echo "===========SCALA COMPILATION COMPLETE=========="
 
-.PHONY:
 antlr_classes: $(ANTLR_CLASSES)
 
 # Clear fsc cache
-.PHONY:
 fsc_reset:
 	fsc -reset
 
@@ -67,15 +63,12 @@ fsc_reset:
 doc/%.pdf: doc/%.txt
 	emacs -q -file $< --batch -f org-mode -f org-export-as-pdf
 
-.PHONY:
 docs: doc/semantic_checker/Lab2.pdf	doc/codegen/CodeGeneration.pdf
 
 # Runs the scala REPL with our files added to the path
-.PHONY:
 repl:
 	CLASSPATH=$(CLASSPATH) scala -deprecation -feature -language:implicitConversions
 
-.PHONY:
 clean:
 	fsc -reset
 	rm -rf build/*
