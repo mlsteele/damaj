@@ -119,17 +119,21 @@ object Compiler {
           // Console.err.println("\nParse Tree:")
           // Console.err.println(tree.toStringTree())
 
-          Console.err.println("\nParse Tree (pretty):")
+          Console.err.println("="*40)
+          Console.err.println("Parse Tree (pretty):")
+          Console.err.println("="*40)
           Console.err.println(PTTools.prettyprint(tree))
 
           val code = io.Source.fromFile(fileName).mkString
           val ast = new ASTBuilder(tree, fileName, code).ast
 
-          // Console.err.println("\nAST:")
+          // Console.err.println("AST:")
           // Console.err.println(ast)
 
           val ast_pretty = new ASTPrinter(ast).print
-          Console.err.println("\nAST (pretty):")
+          Console.err.println("="*40)
+          Console.err.println("AST (pretty):")
+          Console.err.println("="*40)
           Console.err.println(ast_pretty)
         }
     }
@@ -161,7 +165,9 @@ object Compiler {
             case Right(ir1) =>
               // Semantic checks passed!
               if (CLI.debug) {
-                Console.err.println("\nIR (pretty):")
+                Console.err.println("="*40)
+                Console.err.println("IR (pretty):")
+                Console.err.println("="*40)
                 Console.err.println(IRPrinter.print(ir1))
               }
               return Some(ir1)
@@ -169,44 +175,43 @@ object Compiler {
       }
   }
 
+  def applySimplification(pass : (IR.ProgramIR => IR.ProgramIR), name: String) (ir: IR.ProgramIR) : IR.ProgramIR = {
+    // Apply the simplification pass
+    val simp = pass(ir);
+    // Print the resulting pass
+    if (CLI.debug) {
+      Console.err.println("="*40)
+      Console.err.println("%s Pass:".format(name))
+      Console.err.println("="*40)
+      Console.err.println(IRPrinter.print(simp))
+    }
+    return simp
+  }
+
+  type SimplificationPass = (IR.ProgramIR => IR.ProgramIR)
+
   // Returns whether it worked.
   def assembly(fileName: String): Boolean = {
     // TODO appropriate output with/without debug
     val ir1 = inter(fileName)
     // Use map to go through stages.
     // Returns true or false based on whether all stages work.
-    ir1.map{ ir1 =>
-      val elaborated = Elaborate.elaborate(ir1)
-      if (CLI.debug) {
-        Console.err.println("\nElaborated IR (pretty):")
-        Console.err.println(IRPrinter.print(elaborated))
-      }
-      elaborated
-    }.map{ ir1 =>
-      val desugared = Desugar.desugar(ir1)
-      if (CLI.debug) {
-        Console.err.println("\nDesugared IR (pretty):")
-        Console.err.println(IRPrinter.print(desugared))
-      }
-      desugared
-    }.map{ ir1 =>
-      val flattened = Flatten.flatten(ir1)
-      if (CLI.debug) {
-        Console.err.println("\nFlattened IR (pretty):")
-        Console.err.println(IRPrinter.print(flattened))
-      }
-      flattened
-    }.map{ ir1 =>
-      val combined = CombineScopes.combineScopes(ir1)
-      if (CLI.debug) {
-        Console.err.println("\nCombined Scope IR (pretty):")
-        Console.err.println(IRPrinter.print(combined))
-      }
-      combined
-    }.map{ ir1 =>
+    val simplification_passes = List(
+      (Elaborate.elaborate(_:IR.ProgramIR)         , "Elaboration"),
+      (Desugar.desugar(_:IR.ProgramIR)             , "Desugaring"),
+      (Flatten.flatten(_:IR.ProgramIR)             , "Expression Flattening"),
+      (CombineScopes.combineScopes(_:IR.ProgramIR) , "Scope Combination")
+    ).map(x => Function.tupled(applySimplification _)(x))
+
+    // Combine each individual pass into one large pass
+    val simplify = simplification_passes.reduce(_ andThen _)
+
+    ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        Console.err.println("\nIR2 (CFG):")
+        Console.err.println("="*40)
+        Console.err.println("IR2 (CFG):")
+        Console.err.println("="*40)
         Console.err.println(new IR2Printer(ir2).print)
       }
       ir2
