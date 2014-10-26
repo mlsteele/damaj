@@ -23,6 +23,12 @@ object Compiler {
 
   var outFile = Console.out
 
+  def section(string: String) = {
+    Console.err.println("="*40)
+    Console.err.println(string)
+    Console.err.println("="*40)
+  }
+
   def main(args: Array[String]): Unit = {
     CLI.parse(args, Array[String]());
     outFile = Option(CLI.outfile) match {
@@ -119,9 +125,7 @@ object Compiler {
           // Console.err.println("\nParse Tree:")
           // Console.err.println(tree.toStringTree())
 
-          Console.err.println("="*40)
-          Console.err.println("Parse Tree (pretty):")
-          Console.err.println("="*40)
+          section("Parse Tree (pretty):")
           Console.err.println(PTTools.prettyprint(tree))
 
           val code = io.Source.fromFile(fileName).mkString
@@ -131,9 +135,7 @@ object Compiler {
           // Console.err.println(ast)
 
           val ast_pretty = new ASTPrinter(ast).print
-          Console.err.println("="*40)
-          Console.err.println("AST (pretty):")
-          Console.err.println("="*40)
+          section("AST (pretty):")
           Console.err.println(ast_pretty)
         }
     }
@@ -165,9 +167,7 @@ object Compiler {
             case Right(ir1) =>
               // Semantic checks passed!
               if (CLI.debug) {
-                Console.err.println("="*40)
-                Console.err.println("IR (pretty):")
-                Console.err.println("="*40)
+                section("IR (pretty):")
                 Console.err.println(IRPrinter.print(ir1))
               }
               return Some(ir1)
@@ -180,9 +180,7 @@ object Compiler {
     val simp = pass(ir);
     // Print the resulting pass
     if (CLI.debug) {
-      Console.err.println("="*40)
-      Console.err.println("%s Pass:".format(name))
-      Console.err.println("="*40)
+      section("%s Pass:".format(name))
       Console.err.println(IRPrinter.print(simp))
     }
     return simp
@@ -209,9 +207,7 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        Console.err.println("="*40)
-        Console.err.println("IR2 (CFG):")
-        Console.err.println("="*40)
+        section("IR2 (CFG):")
         Console.err.println(new IR2Printer(ir2).print)
       }
       ir2
