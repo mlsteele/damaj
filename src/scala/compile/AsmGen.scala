@@ -47,14 +47,14 @@ class AsmGen(ir2: IR2.Program) {
     val exits =
       labl("._exit1") \
       - "PUSH_ALL" \
-      - mov(strings.put(array_oob_error) $, argregs(0)) \
+      - mov(strings.put("array_oob_err", array_oob_error) $, argregs(0)) \
       - call("printf") \
       - "POP_ALL" \
       - mov(-1 $, argregs(0)) \
       - call("exit") \
       labl("._exit2") \
       - "PUSH_ALL" \
-      - mov(strings.put(control_runoff_error) $, argregs(0)) \
+      - mov(strings.put("control_runoff_err", control_runoff_error) $, argregs(0)) \
       - call("printf") \
       - "POP_ALL" \
       - mov(-2 $, argregs(0)) \
@@ -412,18 +412,23 @@ class StringStore {
   // map from strings to their labels
   private var store: ListMap[String, String] = ListMap()
 
-  private def nextKey(): String =
-    "str%s".format(store.size)
+  private def nextKey(hint: String): String = hint match {
+    case "" => "str%s".format(store.size)
+    case _ => "str%s_%s".format(store.size, hint)
+  }
 
   // takes a string, returns it's label.
-  // dos escaping.
+  // does escaping.
   def put(s: String): String =
-    putEscaped(Escape.escape(s))
+    putEscaped("", Escape.escape(s))
 
-  private def putEscaped(s: String): String = store.get(s) match {
-    case Some(label) => label
+  def put(hint: String, s: String): String =
+    putEscaped(hint, Escape.escape(s))
+
+  private def putEscaped(hint: String, s: String): String = store.get(s) match {
+    case Some(label) => label // discards hint, oh well.
     case None =>
-      val key = nextKey()
+      val key = nextKey(hint)
       store += (s -> key)
       key
   }
