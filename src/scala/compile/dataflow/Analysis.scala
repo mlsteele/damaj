@@ -7,8 +7,17 @@ package compile
   * - direction
   * - merge
   * - transfer
+  * 
+  * You must also define the T type, which represents the internal
+  * state.
   */
 abstract trait Analysis {
+  /**
+    * The type of the internal state.  This is usually a set of some
+    * kind. For example, for a Reaching Statements analysis, T would
+    * be defined as type T = Set[IR2.Statement], representing the
+    * statements which actually reach a certain program point.
+    */
   type T; // The datatype of the internal state, usually a set
 
   /*
