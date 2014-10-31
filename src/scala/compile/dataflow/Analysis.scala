@@ -12,10 +12,11 @@ package compile
   * state.
   */
 abstract trait Analysis {
+  import IR2._
   /**
     * The type of the internal state.  This is usually a set of some
     * kind. For example, for a Reaching Statements analysis, T would
-    * be defined as type T = Set[IR2.Statement], representing the
+    * be defined as type T = Set[Statement], representing the
     * statements which actually reach a certain program point.
     */
   type T; // The datatype of the internal state, usually a set
@@ -45,14 +46,33 @@ abstract trait Analysis {
    * The transfer function. This takes as input the previous state,
    * the current statement, and returns a new state.
    */
-  def transfer(previous: T, stmt: IR2.Statement) : T
+  def transfer(previous: T, block: Block) : T
 
   /*
    * Runs the dataflow analysis using the overriden
    * operations. Returns the information known about each statement.
    */
-  final def analyze(method: IR2.Method) : Map[IR2.Statement, T] = {
+  final def analyze(method: Method) : Map[Block, T] = {
+    var state:Map[Block, T] = Map()
+
+    // Process the first block, which has no input
+    val firstOutput:T = transfer(bottom(), method.cfg.start)
+    state = state + ((method.cfg.start, firstOutput))
     // TODO: actually run the dataflow algorithm
-    return Map()
+    return state
+  }
+
+  private def successors(cfg: CFG, block: Block) : Set[Block] = cfg.edges(block) match {
+    case None => Set()
+    case Some(Edge(to)) => Set(to)
+    case Some(Fork(_, left, right)) => Set(left, right)
+  }
+
+  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.keys.filter {k =>
+    cfg.edges(k) match {
+      case None => false
+      case Some(Edge(next)) => next == block
+      case Some(Fork(_, left, right)) => (left == block) || (right == block)
+    }
   }
 }
