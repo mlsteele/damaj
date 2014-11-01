@@ -48,34 +48,46 @@ abstract trait Analysis {
    */
   def transfer(previous: T, block: Block) : T
 
-  def analyze(method: Method) : Map[Block, T] = direction() match {
-    case Forward  => analyzeForward(method)
-    case Backward => analyzeBackward(method)
-  }
-
   /*
    * Runs the dataflow analysis using the overriden
    * operations. Returns the information known about each statement.
+   * If direction() is Forward, then each value in the map is to be
+   * interpreted as the information known AFTER the block. If
+   * direction() is Backward, then each value in the map is to be
+   * interpreted as the information known BEFORE the block.
    */
-  private final def analyzeForward(method: Method) : Map[Block, T] = {
+  final def analyze(method: Method) : Map[Block, T] = {
     var state:Map[Block, T] = Map()
 
-    val start = method.cfg.start
+    // In forward, we choose start as the first block, otherwise choose the end block
+    val firstBlock = direction() match {
+      case Forward  => method.cfg.start
+      case Backward => method.cfg.end
+    }
+
     // Process the first block, which has no input
-    val firstOutput:T = transfer(bottom(), start)
-    state = state + ((start, firstOutput))
+    val firstOutput:T = transfer(bottom(), firstBlock)
+    state = state + ((firstBlock, firstOutput))
 
-    val succ:(Block => Set[Block]) = successors(method.cfg, _)
-    val pred:(Block => Set[Block]) = predecessors(method.cfg, _)
+    // In the forward direction, the next nodes to process will be the successors
+    val next:(Block => Set[Block]) = direction() match {
+      case Forward  => successors(method.cfg, _)
+      case Backward => predecessors(method.cfg, _)
+    }
 
-    var workSet: Set[Block] = succ(start)
+    val prev:(Block => Set[Block]) = direction() match {
+      case Forward  => predecessors(method.cfg, _)
+      case Backward => successors(method.cfg, _)
+    }
+
+    var workSet: Set[Block] = next(firstBlock)
 
     while (!workSet.isEmpty) {
       // Remove from the work set
       val block = workSet.head
       workSet = workSet - block
       // Calculate the inputs from all the nodes brancing to this one
-      val inputs: Set[T] = pred(block).map(state(_))
+      val inputs: Set[T] = prev(block).map(state(_))
       val combinedInput: T = inputs.reduce(merge _)
       // Retrieve the previous value of the transfer function
       val prevOutput: T = state.getOrElse(block, bottom())
@@ -84,16 +96,10 @@ abstract trait Analysis {
       if (newOutput != prevOutput) {
         // If the value has changed, update state, and add successors to working set
         state = state + ((block, newOutput))
-        workSet = workSet ++ succ(block)
+        workSet = workSet ++ next(block)
       }
     }
 
-    return state
-  }
-
-  private final def analyzeBackward(method: Method) : Map[Block, T] = {
-    // TODO: backwards analysis
-    var state:Map[Block, T] = Map()
     return state
   }
 
