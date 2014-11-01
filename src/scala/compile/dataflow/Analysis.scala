@@ -55,9 +55,34 @@ abstract trait Analysis {
   final def analyze(method: Method) : Map[Block, T] = {
     var state:Map[Block, T] = Map()
 
+    val start = method.cfg.start
     // Process the first block, which has no input
-    val firstOutput:T = transfer(bottom(), method.cfg.start)
-    state = state + ((method.cfg.start, firstOutput))
+    val firstOutput:T = transfer(bottom(), start)
+    state = state + ((start, firstOutput))
+
+    val succ:(Block => Set[Block]) = successors(method.cfg, _)
+    val pred:(Block => Set[Block]) = predecessors(method.cfg, _)
+
+    var workSet: Set[Block] = succ(start)
+
+    while (!workSet.isEmpty) {
+      // Remove from the work set
+      val block = workSet.head
+      workSet = workSet - block
+      // Calculate the inputs from all the nodes brancing to this one
+      val inputs: Set[T] = pred(block).map(state(_))
+      val combinedInput: T = inputs.reduce(merge _)
+      // Retrieve the previous value of the transfer function
+      val prevOutput: T = state.getOrElse(block, bottom())
+      // Calculate new value
+      val newOutput = transfer(combinedInput, block)
+      if (newOutput != prevOutput) {
+        // If the value has changed, update state, and add successors to working set
+        state = state + ((block, newOutput))
+        workSet = workSet ++ succ(block)
+      }
+    }
+
     // TODO: actually run the dataflow algorithm
     return state
   }
