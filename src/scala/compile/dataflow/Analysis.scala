@@ -33,8 +33,8 @@ abstract trait Analysis {
     * forward or backwards.
     */
   abstract sealed trait AnalysisDirection;
-  case class Forward()  extends AnalysisDirection;
-  case class Backward() extends AnalysisDirection;
+  case object Forward  extends AnalysisDirection;
+  case object Backward extends AnalysisDirection;
   def direction() : AnalysisDirection
 
   /*
@@ -48,11 +48,16 @@ abstract trait Analysis {
    */
   def transfer(previous: T, block: Block) : T
 
+  def analyze(method: Method) : Map[Block, T] = direction() match {
+    case Forward  => analyzeForward(method)
+    case Backward => analyzeBackward(method)
+  }
+
   /*
    * Runs the dataflow analysis using the overriden
    * operations. Returns the information known about each statement.
    */
-  final def analyze(method: Method) : Map[Block, T] = {
+  private final def analyzeForward(method: Method) : Map[Block, T] = {
     var state:Map[Block, T] = Map()
 
     val start = method.cfg.start
@@ -83,7 +88,12 @@ abstract trait Analysis {
       }
     }
 
-    // TODO: actually run the dataflow algorithm
+    return state
+  }
+
+  private final def analyzeBackward(method: Method) : Map[Block, T] = {
+    // TODO: backwards analysis
+    var state:Map[Block, T] = Map()
     return state
   }
 
