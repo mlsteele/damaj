@@ -139,7 +139,7 @@ class IR2Builder(program: ProgramIR) {
     case IR.BinOp(l, op, r) => IR2.BinOp(exprToLoad(l), op, exprToLoad(r))
     case IR.UnaryOp(op, r) => IR2.UnaryOp(op, exprToLoad(r))
     case IR.Ternary(condition, l, r) =>
-      IR2.Ternary(convertExpr(condition), exprToLoad(l), exprToLoad(r))
+      IR2.Ternary(exprToLoad(condition), exprToLoad(l), exprToLoad(r))
     case l:IR.LoadField => exprToLoad(expr)
     case l:IR.LoadInt => exprToLoad(expr)
     case l:IR.LoadBool => exprToLoad(expr)

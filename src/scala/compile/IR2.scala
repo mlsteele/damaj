@@ -31,7 +31,7 @@ object IR2 {
   sealed trait Expr
   case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr
   case class UnaryOp(op: UnaryOpType, right: Load) extends Expr
-  case class Ternary(condition: Expr, left: Load, right: Load) extends Expr
+  case class Ternary(condition: Load, left: Load, right: Load) extends Expr
 
   sealed trait Load extends Expr
   // hmm, should this have something other than a FieldSymbol?
