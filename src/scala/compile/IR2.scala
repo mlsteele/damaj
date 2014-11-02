@@ -53,8 +53,8 @@ class IR2Printer(ir2: IR2.Program) {
   val print: String = printIR2(ir2)
 
   private def printIR2(ir2: Program): String =
-    // "IR2.Program(xx- %s -xx)".format(ir2.main)
-    "IR2(... pretty sweet ir2, wish I knew how to print it ...)"
+    "IR2.Program(xx- %s -xx)".format(ir2.main)
+    //"IR2(... pretty sweet ir2, wish I knew how to print it ...)"
 }
 
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
@@ -87,11 +87,12 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
   def _traverse(from: Block): Set[Block] = {
     if (traversed contains from) return Set()
+    traversed add from
 
     val rest: Set[Block] = edges(from) match {
       case None => Set()
-      case Some(Edge(next)) => traverse(next)
-      case Some(Fork(_, left, right)) => traverse(left) union traverse(right)
+      case Some(Edge(next)) => _traverse(next)
+      case Some(Fork(_, left, right)) => _traverse(left) union _traverse(right)
     }
     Set(from) union rest
   }
