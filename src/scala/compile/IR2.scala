@@ -78,6 +78,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     newEdges.put(end, Edge(rhs.start))
     new CFG(start, rhs.end, newEdges)
   }
+
+  def traverse() : Set[Block] = traverse(start)
   
   def traverse(from: Block): Set[Block] = {
     assert(traversed != null, "yug")

@@ -6,7 +6,19 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
 
   type T = Set[Expr]
 
-  override def bottom() = Set()
+  private val allExprs:Set[Expr] = cfg.traverse().flatMap {
+    _.stmts.flatMap {
+      case Assignment(_, right) => List(right)
+      case Call(_, args) => args.flatMap {
+        case Left(_) => List()
+        case Right(e) => List(e)
+      }
+      case Return(Some(e)) => List(e)
+      case Return(None) => List()
+    }
+  }
+
+  override def bottom() = allExprs
 
   override def direction() = Forward
 
