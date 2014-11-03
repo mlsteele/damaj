@@ -34,9 +34,24 @@ object IRPrinter {
   def printParams(p:SymbolTable): String =
     p.getFields.map(x => "%s %s".format(printDType(x.dtype), x.id)).mkString(", ")
 
-  def printBlock(b:Block): String =
-    "{\n%s\n%s\n}".format(indent(lines(b.fields.getFields.map(printField))), 
-      indent(lines(b.stmts.map(printStatement))))
+  def printBlock(b:Block): String = {
+    "{\n%s\n%s\n%s\n}".format(
+      indent(printSymbolsHeader(b.fields)),
+      indent(
+        lines(b.fields.getFields.map(printField))),
+          indent(lines(b.stmts.map(printStatement))))
+  }
+
+  def printSymbolsHeader(st:SymbolTable): String = {
+    val id = SlugGenerator.id(st)
+    st.parent match {
+      case None =>
+        s"SymbolTable($id, parent=None)"
+      case Some(parent) =>
+        val parentid = SlugGenerator.id(parent)
+        s"SymbolTable($id, parent=$parentid)"
+    }
+  }
 
   def printPreStmts(preStmts: List[Statement]) = 
     lines(preStmts.map(printStatement(_)))
