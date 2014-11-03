@@ -21,6 +21,8 @@ abstract trait Analysis {
     */
   type T; // The datatype of the internal state, usually a set
 
+  val cfg: CFG
+
   /*
    * The member representing nothing, a default state.  For any
    * set-based Analysis, this is most likely going to be the empty
@@ -56,13 +58,13 @@ abstract trait Analysis {
    * direction() is Backward, then each value in the map is to be
    * interpreted as the information known BEFORE the block.
    */
-  final def analyze(method: Method) : Map[Block, T] = {
+  final def analyze() : Map[Block, T] = {
     var state:Map[Block, T] = Map()
 
     // In forward, we choose start as the first block, otherwise choose the end block
     val firstBlock = direction() match {
-      case Forward  => method.cfg.start
-      case Backward => method.cfg.end
+      case Forward  => cfg.start
+      case Backward => cfg.end
     }
 
     // Process the first block, which has no input
@@ -71,13 +73,13 @@ abstract trait Analysis {
 
     // In the forward direction, the next nodes to process will be the successors
     val next:(Block => Set[Block]) = direction() match {
-      case Forward  => successors(method.cfg, _)
-      case Backward => predecessors(method.cfg, _)
+      case Forward  => successors(cfg, _)
+      case Backward => predecessors(cfg, _)
     }
 
     val prev:(Block => Set[Block]) = direction() match {
-      case Forward  => predecessors(method.cfg, _)
-      case Backward => successors(method.cfg, _)
+      case Forward  => predecessors(cfg, _)
+      case Backward => successors(cfg, _)
     }
 
     var workSet: Set[Block] = next(firstBlock)

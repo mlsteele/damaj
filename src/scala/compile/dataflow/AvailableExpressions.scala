@@ -1,6 +1,6 @@
 package compile
 
-object AvailableExpressions extends Analysis {
+class AvailableExpressions(override val cfg: CFG) extends Analysis {
   import IR2._
   import ExprDependencies._
 
@@ -30,6 +30,4 @@ object AvailableExpressions extends Analysis {
     }
     return avail
   }
-
-
 }
