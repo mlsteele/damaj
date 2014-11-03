@@ -65,7 +65,4 @@ object IR {
   case class LoadBool(value: Boolean) extends Load
 
   case class Store(to: FieldSymbol, index: Option[Expr])
-
-  def newBlock(stmts: List[Statement]) = Block(stmts, new SymbolTable())
-
 }

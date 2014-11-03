@@ -16,13 +16,18 @@ object Desugar {
    * This method mutates the input program, in addition to returning a new one.
    */
   def desugar(program: ProgramIR): ProgramIR = {
-    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-    methods.map(m => m.block = m.block.desugar())
+    val globals = program.symbols
+    val methods: List[MethodSymbol] = globals.symbols
+      .filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    methods.foreach{ m =>
+      val tempGen = new TempVarGen(m.block.fields)
+      m.block = m.block.desugar(tempGen)
+    }
     return program
   }
 
   implicit class DesugaredExpr (expr: Expr) {
-    def desugar(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+    def desugar(parent: SymbolTable, tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case _:Load => (List(), expr)
       case BinOp(left, And(), right) => {
         /*
@@ -41,10 +46,10 @@ object Desugar {
         val ifStmt = If(
           List(),
           UnaryOp(Not(), left),
-          newBlock(List(thenStmt)),
-          Some(newBlock(List(elseStmt)))
+          Block(List(thenStmt), new SymbolTable(parent)),
+          Some(Block(List(elseStmt), new SymbolTable(parent)))
         );
-        return (ifStmt.desugar(tempGen), LoadField(tempVar, None))
+        return (ifStmt.desugar(parent, tempGen), LoadField(tempVar, None))
       }
       case BinOp(left, Or(), right) => {
         /*
@@ -63,21 +68,21 @@ object Desugar {
         val ifStmt = If(
           List(),
           left,
-          newBlock(List(thenStmt)),
-          Some(newBlock(List(elseStmt)))
+          Block(List(thenStmt), new SymbolTable(parent)),
+          Some(Block(List(elseStmt), new SymbolTable(parent)))
         );
-        return (ifStmt.desugar(tempGen), LoadField(tempVar, None))
+        return (ifStmt.desugar(parent, tempGen), LoadField(tempVar, None))
       }
       case BinOp(left, op, right) => {
-        val (leftStmts, finalLeftExpr) = left.desugar(tempGen)
-        val (rightStmts, finalRightExpr) = right.desugar(tempGen)
+        val (leftStmts, finalLeftExpr) = left.desugar(parent, tempGen)
+        val (rightStmts, finalRightExpr) = right.desugar(parent, tempGen)
         return (
           leftStmts ++ rightStmts,
           BinOp(finalLeftExpr, op, finalRightExpr)
         )
       }
       case UnaryOp(op, operand) => {
-        val (stmts, finalOperandExpr) = operand.desugar(tempGen)
+        val (stmts, finalOperandExpr) = operand.desugar(parent, tempGen)
         return (
           stmts,
           UnaryOp(op, finalOperandExpr)
@@ -99,11 +104,11 @@ object Desugar {
         val ifStmt = If(
           List(),
           cond,
-          newBlock(List(thenStmt)),
-          Some(newBlock(List(elseStmt)))
+          Block(List(thenStmt), new SymbolTable(parent)),
+          Some(Block(List(elseStmt), new SymbolTable(parent)))
         );
         return (
-          ifStmt.desugar(tempGen),
+          ifStmt.desugar(parent, tempGen),
           LoadField(tempVar, None)
         )
       }
@@ -114,7 +119,7 @@ object Desugar {
           // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
           eitherArg.map (arg => {
             // desugar all the args, collecting their dependency statements and temporary vars
-            val (argStatements, argExpr) = arg.desugar(tempGen)
+            val (argStatements, argExpr) = arg.desugar(parent, tempGen)
             val argTempVar = tempGen.newVarLike(argExpr)
             statements = (statements ++ argStatements) :+
               Assignment(Store(argTempVar, None), argExpr)
@@ -132,7 +137,7 @@ object Desugar {
           eitherArg match {
             case Right(arg) => {
               // desugar all the args, collecting their dependency statements and temporary vars
-              val (argStatements, argExpr) = arg.desugar(tempGen)
+              val (argStatements, argExpr) = arg.desugar(parent, tempGen)
               val argTempVar = tempGen.newVarLike(argExpr)
               statements = (statements ++ argStatements) :+
                 Assignment(Store(argTempVar, None), argExpr)
@@ -151,40 +156,40 @@ object Desugar {
   }
 
   implicit class DesugaredStatement(stmt: Statement) {
-    def desugar(tempGen: TempVarGen) : List[Statement] = stmt match {
+    def desugar(parent: SymbolTable, tempGen: TempVarGen) : List[Statement] = stmt match {
       case Assignment(left, right) => {
-        val (stmts, finalExpr) = right.desugar(tempGen)
+        val (stmts, finalExpr) = right.desugar(parent, tempGen)
         return stmts :+ Assignment(left, finalExpr)
       }
       // MethodCall and CalloutCall have weird casts because they
       // are both Exprs and Statements
       case m:MethodCall => {
-        val (stmts, finalExpr) = m.asInstanceOf[Expr].desugar(tempGen)
+        val (stmts, finalExpr) = m.asInstanceOf[Expr].desugar(parent, tempGen)
         return stmts :+ finalExpr.asInstanceOf[MethodCall]
       }
       case c:CalloutCall => {
-        val (stmts, finalExpr) = c.asInstanceOf[Expr].desugar(tempGen)
+        val (stmts, finalExpr) = c.asInstanceOf[Expr].desugar(parent, tempGen)
         return stmts :+ finalExpr.asInstanceOf[CalloutCall]
       }
       case If(preStmts, cond, thenb, elseb) => {
-        val (condStmts, condExpr) = cond.desugar(tempGen)
-        val newPreStmts = preStmts.flatMap(_.desugar(tempGen)) ++
+        val (condStmts, condExpr) = cond.desugar(parent, tempGen)
+        val newPreStmts = preStmts.flatMap(_.desugar(parent, tempGen)) ++
           condStmts
         return List(If(newPreStmts,
           condExpr,
-          thenb.desugar(),
-          elseb.map(_.desugar())
+          thenb.desugar(tempGen),
+          elseb.map(_.desugar(tempGen))
         ))
       }
-      case For(id, start, iter, thenb) => tempGen.table.lookupSymbol(id) match {
+      case For(id, start, iter, thenb) => parent.lookupSymbol(id) match {
         // Convert thr for loop into a while loop
         case None => assert(false, "Could not find ID in symbol table."); List()
         case Some(loopVar) => {
           // Generate statements needed to generate start value of loop variable
-          val (startStmts, startExpr) = start.desugar(tempGen)
+          val (startStmts, startExpr) = start.desugar(parent, tempGen)
           val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
           // Generates statements needed to re-calculate ending expression each loop
-          val (iterStmts, iterExpr) = iter.desugar(tempGen)
+          val (iterStmts, iterExpr) = iter.desugar(parent, tempGen)
           // Temp var for the right side of the condition
           val condVar = tempGen.newBoolVar()
           val condAssign = Assignment(Store(condVar, None), iterExpr)
@@ -194,22 +199,23 @@ object Desugar {
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
           val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
           // The original statements of the while loop, plus incVarStmt
-          val loopStmts = thenb.desugar().stmts :+ incVarStmt
+          val thenStmts = thenb.desugar(tempGen).stmts :+ incVarStmt
           val whileLoop = While(iterStmts :+ condAssign,
             condExpr,
-            Block(loopStmts, thenb.fields),
+            // TODO(miles): Should thenb.fields actually be a new child symboltable? See other TODO below.
+            Block(thenStmts, thenb.fields),
             None)
           return preStmts :+ whileLoop
         }
       }
       // While loops with no limit are straight forward to convert
       case While(preStmts, cond, block, None) => {
-        val (condStmts, condExpr) = cond.desugar(tempGen)
-        val newPreStmts = preStmts.flatMap(_.desugar(tempGen)) ++ condStmts
+        val (condStmts, condExpr) = cond.desugar(parent, tempGen)
+        val newPreStmts = preStmts.flatMap(_.desugar(parent, tempGen)) ++ condStmts
         return List(While(
           newPreStmts,
           condExpr,
-          block.desugar(),
+          block.desugar(tempGen),
           None
         ))
       }
@@ -228,16 +234,17 @@ object Desugar {
           LessThan(),
           LoadInt(limit)
         )
-        val newBlockStmts = block.stmts :+ counterInc
+        val blockStmts = block.stmts :+ counterInc
         return counterInit :: While(
           preStmts,
           BinOp(counterCondition, And(), cond),
-          Block(newBlockStmts, block.fields),
-          None).desugar(tempGen)
+          // TODO(miles): Should thenb.fields actually be a new child symboltable? Like in and/or shortcircuiting.
+          Block(blockStmts, block.fields),
+          None).desugar(parent, tempGen)
       }
       case Return(None) => List(Return(None))
       case Return(Some(expr)) => {
-        val (exprStmts, finalExpr) = expr.desugar(tempGen)
+        val (exprStmts, finalExpr) = expr.desugar(parent, tempGen)
         return exprStmts :+ Return(Some(finalExpr))
       }
       case Break() => List(Break())
@@ -245,10 +252,9 @@ object Desugar {
     }
   }
 
-  implicit class DesugaredBlock (var block: Block) {
-    def desugar() : Block = {
-      val tempGen = new TempVarGen(block.fields)
-      val newStmts = block.stmts.flatMap(_.desugar(tempGen))
+  implicit class DesugaredBlock(var block: Block) {
+    def desugar(tempGen: TempVarGen) : Block = {
+      val newStmts = block.stmts.flatMap(_.desugar(block.fields, tempGen))
       return Block(newStmts, block.fields)
     }
   }
