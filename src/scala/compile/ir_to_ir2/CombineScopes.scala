@@ -1,7 +1,8 @@
 package compile
 
 /**
-  * Adds in explicit assignments to zero / false of all variables.
+  * Combines all SymbolTable's in a program into one.
+  * Adds '^' to the beginning of symbols from embedded blocks.
   */
 object CombineScopes {
   import IR._
