@@ -182,30 +182,41 @@ object Desugar {
         ))
       }
       case For(id, start, iter, thenb) => parent.lookupSymbol(id) match {
-        // Convert thr for loop into a while loop
+        // Convert the for loop into a while loop
         case None => assert(false, "Could not find ID in symbol table."); List()
         case Some(loopVar) => {
           // Generate statements needed to generate start value of loop variable
-          val (startStmts, startExpr) = start.desugar(parent, tempGen)
-          val preStmts = startStmts :+ Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), startExpr)
+          val (startPrepare, startExpr) = start.desugar(parent, tempGen)
+          // Subtract 1 because we move the incrementer to the beginning of the loop.
+          val startAssign = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None),
+            BinOp(startExpr, Subtract(), LoadInt(1)))
+
           // Generates statements needed to re-calculate ending expression each loop
-          val (iterStmts, iterExpr) = iter.desugar(parent, tempGen)
-          // Temp var for the right side of the condition
-          val condVar = tempGen.newBoolVar()
-          val condAssign = Assignment(Store(condVar, None), iterExpr)
-          // While (loopVar != condVar)
-          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), LessThan(), LoadField(condVar, None))
+          val (maxPrepare, maxExpr) = iter.desugar(parent, tempGen)
+          // Store the end value to only calculate it once.
+          val maxCache = tempGen.newVarLike(iter)
+          val maxAssign = Assignment(Store(maxCache, None), maxExpr)
+
+          val before: List[Statement] =
+            (startPrepare :+ startAssign) ++ (maxPrepare :+ maxAssign)
+
+          // While (loopVar < maxCache)
+          val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None),
+            LessThan(), LoadField(maxCache, None))
+
           // Generate statement to increment the loop var
           val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
-          val incVarStmt = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
-          // The original statements of the while loop, plus incVarStmt
-          val thenStmts = thenb.desugar(tempGen).stmts :+ incVarStmt
-          val whileLoop = While(iterStmts :+ condAssign,
+          val incrementLoopVar = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
+
+          // The original statements of the while loop
+          val thenStmts = thenb.desugar(tempGen).stmts
+
+          return before :+ While(
+            List(incrementLoopVar),
             condExpr,
             // TODO(miles): Should thenb.fields actually be a new child symboltable? See other TODO below.
             Block(thenStmts, thenb.fields),
             None)
-          return preStmts :+ whileLoop
         }
       }
       // While loops with no limit are straight forward to convert
