@@ -1,0 +1,9 @@
+callout printf;
+
+void main ( ) {
+    int EXTRA_VAR;
+    if (false || (1 > 2)) {
+        printf("FAIL\n");
+    }
+    printf("always prints\n");
+}
