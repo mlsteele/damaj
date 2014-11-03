@@ -29,6 +29,7 @@ object IR {
   ) extends Call
 
   case class If(
+    // preStmts for if are not strictly necessary, they exist for clarity.
     preStmts: List[Statement],
     condition: Expr,
     thenb: Block,
@@ -36,9 +37,10 @@ object IR {
   ) extends Statement
 
   case class For(
+    // For has no preStmts because it is desugared into While before preStmts would be necessary.
     id: ID,
     start: Expr,
-    iter: Expr,
+    iter: Expr, // iter should be called max.
     thenb: Block
   ) extends Statement
 
