@@ -65,7 +65,7 @@ class IR2Printer(ir2: IR2.Program) {
 class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
-  val traversed = scala.collection.mutable.Set[Block]()
+  private val traversed = scala.collection.mutable.Set[Block]()
 
   def reverseEdgesForBlock(block:Block):List[Block] = (edges.keys filter { pred =>
     edges.get(pred) match {
@@ -76,7 +76,9 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   }).toList
 
   val reverseEdges:Map[Block, List[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
-  
+
+  val blocks:Set[Block] = traverse
+
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
   // TODO(jessk): when should we validate?
   //validate()
@@ -88,6 +90,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     new CFG(start, rhs.end, newEdges)
   }
 
+  // TODO make traverse private; use `blocks` instead
   def traverse() : Set[Block] = traverse(start)
   
   def traverse(from: Block): Set[Block] = {
@@ -106,6 +109,54 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
       case Some(Fork(_, left, right)) => _traverse(left) union _traverse(right)
     }
     Set(from) union rest
+  }
+
+  private def condenseFromBlock(block:Block):CFG = {
+    edges get block match {
+      case Some(Edge(next)) => reverseEdges(next).length match {
+        case 1 => // condense `block` and `next`
+          // Constraint: `block` and `next` have the same symbol table
+          val newStartBlock = Block(block.stmts ++ next.stmts,  block.fields)
+          val newEdgeMap = edges - block
+          new CFG(newStartBlock, end, newEdgeMap)
+        case _ => this
+      }
+      case _ => this
+    }
+  }
+
+  def condense(): CFG = {
+    // Warning: this is not very fast and has lots of var's
+
+    // Blocks whose sucessor(s) must be a new block
+    // i.e. blocks who cannot collapse with their successor(s)
+    var condensed:Set[Block] = Set()
+
+    var currentCFG:CFG = this
+
+    // More like *potentially* condensable.
+    var condensable:Set[Block] = currentCFG.blocks
+
+    // we can do more!
+    while (!condensable.isEmpty) {
+
+      // Just to get an arbitrary-ish block
+      val block = condensable.head
+
+      // condense block as far as possible
+      var newCFG = currentCFG.condenseFromBlock(block)
+      while (newCFG != currentCFG) {
+        // fixed point woo
+        currentCFG = newCFG
+        newCFG = newCFG.condenseFromBlock(block)
+      }
+      // Ok starting from `block` we have condensed fully
+      condensed = condensed + block
+      condensable = currentCFG.blocks -- condensed
+    }
+    
+    // we're done
+    currentCFG
   }
 
   override def toString: String = {
