@@ -121,11 +121,5 @@ abstract trait Analysis {
     case Some(Fork(_, left, right)) => Set(left, right)
   }
 
-  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.keySet.filter {k =>
-    cfg.edges.get(k) match {
-      case None => false
-      case Some(Edge(next)) => next == block
-      case Some(Fork(_, left, right)) => (left == block) || (right == block)
-    }
-  }
+  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.reverseEdgesForBlock(block).toSet
 }
