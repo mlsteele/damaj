@@ -65,64 +65,54 @@ class IR2Printer(ir2: IR2.Program) {
 class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
-  private val traversed = scala.collection.mutable.Set[Block]()
+  /* All blocks reachable from start */
+  val blocks:Set[Block] = traverse(start, Set[Block]())
 
-  def reverseEdgesForBlock(block:Block):List[Block] = (edges.keys filter { pred =>
+  /* Looks up and returns the predecessors of `block` */
+  def predecessors(block:Block):Set[Block] = reverseEdges get block match {
+    case Some(s:Set[Block]) => s
+    case None => Set[Block]()
+  }
+
+  class CFGIntegrityError(msg: String) extends RuntimeException(msg)
+
+  /* For each block, the list of predecessors */
+  val reverseEdges:Map[Block, Set[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
+
+  /* Find predecessors of `block` 
+   * helper for reverseEdges */
+  private def reverseEdgesForBlock(block:Block):Set[Block] = (edges.keys filter { pred =>
     edges.get(pred) match {
       case None => false
       case Some(Edge(next)) => next == block
       case Some(Fork(_, left, right)) => (left == block) || (right == block)
     }
-  }).toList
+  }).toSet
 
-  val reverseEdges:Map[Block, List[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
-
-  val blocks:Set[Block] = traverse(start)
-
-  class CFGIntegrityError(msg: String) extends RuntimeException(msg)
-  // TODO(jessk): when should we validate?
-  //validate()
-
-  // Requires that there are no blocks in both CFGs
-  // WARNING: destroys one of the input CFGs because edges is mutated.
+  /* Chains CFGs by attaching `rhs` to the end of `this`
+   * Requires that there are no blocks in both CFGs 
+   */
   def ++(rhs: CFG): CFG = {
     val newEdges = (edges ++ rhs.edges) + (end -> Edge(rhs.start))
     new CFG(start, rhs.end, newEdges)
   }
 
-  
-  private def traverse(from: Block): Set[Block] = {
-    assert(traversed != null, "yug")
-    traversed.clear()
-    _traverse(from)
-  }
-
-  private def _traverse(from: Block): Set[Block] = {
+  /* Find all the blocks 
+   * helper for `blocks` and `toString` */
+  private def traverse(from: Block, traversed:Set[Block]): Set[Block] = {
     if (traversed contains from) return Set()
-    traversed add from
+    val newTraversed = traversed + from
 
     val rest: Set[Block] = edges get from match {
       case None => Set()
-      case Some(Edge(next)) => _traverse(next)
-      case Some(Fork(_, left, right)) => _traverse(left) union _traverse(right)
+      case Some(Edge(next)) => traverse(next, newTraversed)
+      case Some(Fork(_, left, right)) => traverse(left, newTraversed) union traverse(right, newTraversed)
     }
     Set(from) union rest
   }
 
-  private def condenseFromBlock(block:Block):CFG = {
-    edges get block match {
-      case Some(Edge(next)) => reverseEdges(next).length match {
-        case 1 => // condense `block` and `next`
-          // Constraint: `block` and `next` have the same symbol table
-          val newStartBlock = Block(block.stmts ++ next.stmts,  block.fields)
-          val newEdgeMap = edges - block
-          new CFG(newStartBlock, end, newEdgeMap)
-        case _ => this
-      }
-      case _ => this
-    }
-  }
-
+  /* Condense every pair of blocks a->b in `this` where a has one edge out
+   * and b has one edge in. */
   def condense(): CFG = {
     // Warning: this is not very fast and has lots of var's
 
@@ -157,11 +147,30 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     currentCFG
   }
 
-  override def toString: String = {
-    "CFG(%s)".format(traverse(start))
+  /* Attempt to condense `block` and its successor.
+   * If `block` has >1 successor, return `this`
+   * If `block`'s successor has >1 edge in, return `this`
+   * Otherwise combine them and return a new CFG
+   *
+   * helper for `condense`
+   */
+  private def condenseFromBlock(block:Block):CFG = {
+    edges get block match {
+      case Some(Edge(next)) => reverseEdges(next).size match {
+        case 1 => // condense `block` and `next`
+          // Constraint: `block` and `next` have the same symbol table
+          val newStartBlock = Block(block.stmts ++ next.stmts,  block.fields)
+          val newEdgeMap = edges - block
+          new CFG(newStartBlock, end, newEdgeMap)
+        case _ => this
+      }
+      case _ => this
+    }
   }
-
-  //def condense:CFG = 
+  
+  override def toString: String = {
+    "CFG(%s)".format(traverse(start, Set[Block]()))
+  }
 
   /*
   private def validate() = {

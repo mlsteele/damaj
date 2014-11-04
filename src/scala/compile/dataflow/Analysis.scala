@@ -121,5 +121,5 @@ abstract trait Analysis {
     case Some(Fork(_, left, right)) => Set(left, right)
   }
 
-  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.reverseEdgesForBlock(block).toSet
+  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.predecessors(block)
 }
