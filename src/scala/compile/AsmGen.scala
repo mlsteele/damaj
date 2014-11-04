@@ -362,17 +362,22 @@ class AsmGen(ir2: IR2.Program) {
     val isArray = arrIdx.isDefined
     val asmLocation: String = (isArray, offset) match {
       case (false, LocalOffset(offIdx)) =>
+        // Local Scalar
         val off = -8 * (offIdx + 1)
         (rbp offset off)
       case (false, ArgOffset(offIdx)) if offIdx < argregc =>
+        // Scalar Argument in a register
         argregs(offIdx)
       case (false, ArgOffset(offIdx)) =>
+        // Scalar Argument on the stack
         val off = 8 * (offIdx - argregc + 2)
         (rbp offset off)
       case (false, GlobalOffset(offIdx)) => {
+        // Scalar Global
         "(decaf_global_%s)".format(id)
       }
       case (true, LocalOffset(offIdx)) =>
+        // Local Array
         val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
         val offTop = (-8 * (offIdx + 1))
         // Offset to the bottom of the array.
@@ -380,6 +385,7 @@ class AsmGen(ir2: IR2.Program) {
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
         arrayAccess(offBottom.toString, rbp, reg_arridx, 8)
       case (true, GlobalOffset(offIdx)) => {
+        // Global Array
         arrayAccess("decaf_global_%s".format(id), "", reg_arridx, 8)
       }
       case (true, _:ArgOffset) => throw new AsmPreconditionViolated("Arrays cannot be parameters")
