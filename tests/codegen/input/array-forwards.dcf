@@ -1,0 +1,34 @@
+callout printf;
+
+void main() {
+    int i0, i1, i2, i3, i4, i5;
+    int a[8];
+    a[0] = 100;
+    a[1] = 101;
+    a[2] = 102;
+    a[3] = 103;
+    a[4] = 104;
+    a[5] = 105;
+    a[6] = 106;
+    a[7] = 107;
+    i0 = 990;
+    i1 = 991;
+    i2 = 992;
+    i3 = 993;
+    i4 = 994;
+    i5 = 995;
+    printf("a[0]: %d\n", a[0]);
+    printf("a[1]: %d\n", a[1]);
+    printf("a[2]: %d\n", a[2]);
+    printf("a[3]: %d\n", a[3]);
+    printf("a[4]: %d\n", a[4]);
+    printf("a[5]: %d\n", a[5]);
+    printf("a[6]: %d\n", a[6]);
+    printf("a[7]: %d\n", a[7]);
+    printf("i0: %d\n", i0);
+    printf("i1: %d\n", i1);
+    printf("i2: %d\n", i2);
+    printf("i3: %d\n", i3);
+    printf("i4: %d\n", i4);
+    printf("i5: %d\n", i5);
+}
