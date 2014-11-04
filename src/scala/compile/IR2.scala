@@ -10,7 +10,7 @@ object IR2 {
   case class Program(fields: List[Field], main: Method, methods: List[Method])
 
   case class Field(id: ID, size: Option[Long])
-  case class Method(id: ID, params: List[Field], symbols: SymbolTable, cfg: CFG,returnType:DType )
+  case class Method(id: ID, params: List[Field], symbols: SymbolTable, cfg: CFG, returnType:DType )
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.

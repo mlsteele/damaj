@@ -17,7 +17,7 @@ object SymbolTable {
   case class MethodSymbol(
     id: ID,
     params: SymbolTable,
-    returns: DType,
+    var returns: DType,
     var block: Block
     ) extends Symbol
 
@@ -234,12 +234,16 @@ object SymbolTable {
       return s
     }
 
-    /**
-     * Get all symbols a type T.
-     */
-    def getFields = symbols.map{
+    def getFields: List[FieldSymbol] = symbols.map{
       _ match {
         case s: FieldSymbol => Some(s)
+        case _ => None
+      }
+    }.flatten
+
+    def getMethods: List[MethodSymbol] = symbols.map{
+      _ match {
+        case s: MethodSymbol => Some(s)
         case _ => None
       }
     }.flatten

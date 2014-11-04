@@ -2,6 +2,7 @@ package compile
 
 /**
   * Adds in explicit assignments to zero / false of all variables.
+  * Converts void main() into int main() that returns 0.
   */
 object Elaborate {
   import IR._
@@ -9,8 +10,8 @@ object Elaborate {
   import SymbolTable._
 
   def elaborate(program: ProgramIR) : ProgramIR = {
-    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-    methods.foreach(m => m.block = m.block.elaborate())
+    // Mutates MethodSymbol's
+    program.symbols.getMethods.foreach(_.elaborate())
     return program
   }
 
@@ -34,11 +35,33 @@ object Elaborate {
     case _ => List()
   }
 
+  implicit class ElaboratedMethodSymbol(method: MethodSymbol) {
+    // Modifies void methods into methods that return int 0.
+    def elaborate(): Unit = {
+      val isVoidMain = (method.id == "main") && (method.returns == DTVoid)
+      isVoidMain match {
+        case true  =>
+          method.block = method.block.elaborate().addReturnZero()
+          method.returns = DTInt
+        case false =>
+          method.block = method.block.elaborate()
+      }
+    }
+  }
+
   implicit class ElaboratedBlock(block: Block) {
     def elaborate(): Block = {
       val newStmts = block.fields.symbols.flatMap(initVar)
       return Block(
         newStmts ++ block.stmts.map(_.elaborate),
+        block.fields
+      )
+    }
+
+    def addReturnZero(): Block = {
+      val returnZero = Return(Some(LoadInt(0L)))
+      return Block(
+        block.stmts :+ returnZero,
         block.fields
       )
     }
