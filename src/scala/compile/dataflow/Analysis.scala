@@ -30,6 +30,12 @@ abstract trait Analysis {
    */
   def bottom() : T
 
+
+  /**
+    * The value used as the first block's input.
+    */
+  def initial(): T
+
   /**
     * The direction of the analysis must be specified as either
     * forward or backwards.
@@ -59,7 +65,12 @@ abstract trait Analysis {
    * interpreted as the information known BEFORE the block.
    */
   final def analyze() : Map[Block, T] = {
-    var state:Map[Block, T] = Map()
+    val allBlocks:Set[Block] = cfg.traverse()
+
+    // Initialize all outputs to be f(⊥)
+    var state:Map[Block, T] = allBlocks.map {b:Block =>
+      (b, transfer(bottom(), b))
+    }.toMap
 
     // In forward, we choose start as the first block, otherwise choose the end block
     val firstBlock = direction() match {
@@ -67,9 +78,8 @@ abstract trait Analysis {
       case Backward => cfg.end
     }
 
-    // Process the first block, which has no input
-    val firstOutput:T = transfer(bottom(), firstBlock)
-    state = state + ((firstBlock, firstOutput))
+    // Use initial value as first block's input
+    state = state + ((firstBlock, transfer(initial(), firstBlock)))
 
     // In the forward direction, the next nodes to process will be the successors
     val next:(Block => Set[Block]) = direction() match {
@@ -82,7 +92,7 @@ abstract trait Analysis {
       case Backward => successors(cfg, _)
     }
 
-    var workSet: Set[Block] = next(firstBlock)
+    var workSet: Set[Block] = allBlocks - firstBlock
 
     while (!workSet.isEmpty) {
       // Remove from the work set
@@ -92,7 +102,7 @@ abstract trait Analysis {
       val inputs: Set[T] = prev(block).map(state(_))
       val combinedInput: T = inputs.reduce(merge _)
       // Retrieve the previous value of the transfer function
-      val prevOutput: T = state.getOrElse(block, bottom())
+      val prevOutput: T = state(block)
       // Calculate new value
       val newOutput = transfer(combinedInput, block)
       if (newOutput != prevOutput) {

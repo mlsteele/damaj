@@ -9,6 +9,8 @@ class ReachingDefinitions(override val cfg: CFG) extends Analysis {
 
   type T = Set[Assignment]
 
+  def initial() = bottom()
+
   def bottom() = Set()
 
   def direction() = Forward

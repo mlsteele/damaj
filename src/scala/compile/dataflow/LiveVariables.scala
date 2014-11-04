@@ -12,6 +12,8 @@ class LiveVariables(override val cfg: CFG) extends Analysis {
 
   type T = Set[Load]
 
+  def initial() = bottom()
+
   def bottom() = Set()
 
   def direction() = Backward

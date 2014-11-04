@@ -18,6 +18,8 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
     }
   }
 
+  override def initial() = Set()
+
   override def bottom() = allExprs
 
   override def direction() = Forward
