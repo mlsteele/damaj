@@ -66,8 +66,16 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   val traversed = scala.collection.mutable.Set[Block]()
-  //val reverseEdges:IdentityMap[Block, List[Transition]] = edges.map{ t => t match {
-  //  case Edge(
+
+  private def reverseEdgesForBlock(block:Block):Iterable[Block] = edges.keys filter { pred =>
+    edges.get(pred) match {
+      case None => false
+      case Some(Edge(next)) => next == block
+      case Some(Fork(_, left, right)) => (left == block) || (right == block)
+    }
+  }
+
+  val reverseEdges:Map[Block, Iterable[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
   
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
   // TODO(jessk): when should we validate?
@@ -88,7 +96,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     _traverse(from)
   }
 
-  def _traverse(from: Block): Set[Block] = {
+  private def _traverse(from: Block): Set[Block] = {
     if (traversed contains from) return Set()
     traversed add from
 
