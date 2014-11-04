@@ -379,7 +379,7 @@ class AsmGen(ir2: IR2.Program) {
       case (true, LocalOffset(offIdx)) =>
         // Local Array
         val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
-        val offTop = (-8 * (offIdx + 1))
+        val offTop = (-8 * (offIdx))
         // Offset to the bottom of the array.
         val offBottom = offTop - 8 * arraySize
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
