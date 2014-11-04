@@ -373,9 +373,12 @@ class AsmGen(ir2: IR2.Program) {
         "(decaf_global_%s)".format(id)
       }
       case (true, LocalOffset(offIdx)) =>
-        val off = (-8 * (offIdx + 1)).toString
+        val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
+        val offTop = (-8 * (offIdx + 1))
+        // Offset to the bottom of the array.
+        val offBottom = offTop - 8 * arraySize
         // arrayAccess(displacement, baseReg, offsetReg, multiplierScalar)
-        arrayAccess(off, rbp, reg_arridx, 8)
+        arrayAccess(offBottom.toString, rbp, reg_arridx, 8)
       case (true, GlobalOffset(offIdx)) => {
         arrayAccess("decaf_global_%s".format(id), "", reg_arridx, 8)
       }
@@ -501,8 +504,8 @@ object AsmDSL {
   def mov(a: String, b: String): String = s"movq $a, $b"
   def call(a: String): String = s"call $a"
   def ret = "ret"
-  def push(a: String): String = s"push $a"
-  def pop(a: String): String = s"pop $a"
+  def push(a: String): String = s"pushq $a"
+  def pop(a: String): String = s"popq $a"
   def int(a: String): String = s"int $a"
   def jmp(a: String): String = s"jmp $a"
   def add(a: String, b: String): String = s"addq $a, $b"
@@ -533,13 +536,14 @@ object AsmDSL {
     s"""$label: .string "$contents""""
   // whole line comment. See ? for inline comment
   def comment(a: String): String = s"# $a"
+
+  // sweet array access helper construct
+  // see http://en.wikibooks.org/wiki/X86_Assembly/GAS_Syntax#Address_operand_syntax
+  // Example Generated: (32 bit example)
+  // -8(%ebp, %edx, 4) // access *(ebp - 8 + (edx * 4))
   def arrayAccess(displacement: String, baseReg: String, offsetReg: String, multiplier: Int) =
     s"$displacement($baseReg, $offsetReg, $multiplier)"
-  // We push all registers in following orde:
-  // (rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
-  // r8, r9, r10, r11, r12, r13, r14, r15) 
-  // and pop in reverse order
-  
+
   // stackvars is the number of vars in the method's stack frame
   def method(label: String, stackvars: Int, body: String): String = {
     // TODO(miles): push and pop all regs.
@@ -571,6 +575,11 @@ object AsmDSL {
     data \
     ""
   }
+
+  // We push all registers in following order:
+  // (rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
+  // r8, r9, r10, r11, r12, r13, r14, r15)
+  // and pop in reverse order
 
   // This must push an even number of quads to keep rsp 16byte aligned.
   def define_push_all: String =
