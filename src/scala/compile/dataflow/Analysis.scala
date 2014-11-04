@@ -21,6 +21,8 @@ abstract trait Analysis {
     */
   type T; // The datatype of the internal state, usually a set
 
+  case class AnalysisResult(outputs: Map[Block, T], inputs: Map[Block, T])
+
   val cfg: CFG
 
   /*
@@ -64,13 +66,15 @@ abstract trait Analysis {
    * direction() is Backward, then each value in the map is to be
    * interpreted as the information known BEFORE the block.
    */
-  final def analyze() : Map[Block, T] = {
+  final def analyze() : AnalysisResult = {
     val allBlocks:Set[Block] = cfg.blocks
 
     // Initialize all outputs to be f(⊥)
-    var state:Map[Block, T] = allBlocks.map {b:Block =>
-      (b, transfer(bottom(), b))
+    var outputs:Map[Block, T] = allBlocks.map {b:Block =>
+      (b -> transfer(bottom(), b))
     }.toMap
+    // Initialize all inputs to be IDKLOL
+    var inputs:Map[Block, T] = Map()
 
     // In forward, we choose start as the first block, otherwise choose the end block
     val firstBlock = direction() match {
@@ -79,7 +83,8 @@ abstract trait Analysis {
     }
 
     // Use initial value as first block's input
-    state = state + ((firstBlock, transfer(initial(), firstBlock)))
+    inputs += (firstBlock -> initial())
+    outputs += (firstBlock -> transfer(inputs(firstBlock), firstBlock))
 
     // In the forward direction, the next nodes to process will be the successors
     val next:(Block => Set[Block]) = direction() match {
@@ -99,20 +104,21 @@ abstract trait Analysis {
       val block = workSet.head
       workSet = workSet - block
       // Calculate the inputs from all the nodes brancing to this one
-      val inputs: Set[T] = prev(block).map(state(_))
-      val combinedInput: T = inputs.reduce(merge _)
+      val blockInputs: Set[T] = prev(block).map(outputs(_))
+      val combinedInput: T = blockInputs.reduce(merge _)
+      inputs += (block -> combinedInput)
       // Retrieve the previous value of the transfer function
-      val prevOutput: T = state(block)
+      val prevOutput: T = outputs(block)
       // Calculate new value
-      val newOutput = transfer(combinedInput, block)
+      val newOutput = transfer(inputs(block), block)
       if (newOutput != prevOutput) {
-        // If the value has changed, update state, and add successors to working set
-        state = state + ((block, newOutput))
+        // If the value has changed, update outputs, and add successors to working set
+        outputs = outputs + ((block, newOutput))
         workSet = workSet ++ next(block)
       }
     }
 
-    return state
+    return AnalysisResult(outputs, inputs)
   }
 
   private def successors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.get(block) match {
