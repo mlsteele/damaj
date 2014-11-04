@@ -77,7 +77,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
   val reverseEdges:Map[Block, List[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
 
-  val blocks:Set[Block] = traverse
+  val blocks:Set[Block] = traverse(start)
 
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
   // TODO(jessk): when should we validate?
@@ -90,10 +90,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     new CFG(start, rhs.end, newEdges)
   }
 
-  // TODO make traverse private; use `blocks` instead
-  def traverse() : Set[Block] = traverse(start)
   
-  def traverse(from: Block): Set[Block] = {
+  private def traverse(from: Block): Set[Block] = {
     assert(traversed != null, "yug")
     traversed.clear()
     _traverse(from)
