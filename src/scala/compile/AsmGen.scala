@@ -101,7 +101,7 @@ class AsmGen(ir2: IR2.Program) {
   // Helper for generateCFG recursion.
   def generateCFG(b: Block, cfg: CFG, returnTo: String): String = {
     val blockAsm = generateBlock(b, returnTo)
-    val next = cfg.edges(b) match {
+    val next = cfg.edges.get(b) match {
       case None => ""
       case Some(Edge(next)) =>
         assembledLabels.get(next) match {

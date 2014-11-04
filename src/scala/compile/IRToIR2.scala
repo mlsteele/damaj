@@ -68,18 +68,16 @@ class IR2Builder(program: ProgramIR) {
           pre.map(x => convertStatement(x, ctx)))
         val thenCFG = convertBlock(thenb, ctx)
         val endBlock = CFGFactory.nopBlock
-        val edges = startCFG.edges ++ thenCFG.edges
-        edges.put(thenCFG.end, Edge(endBlock))
-
-        elseb match {
+        val commonEdges = startCFG.edges ++ thenCFG.edges + (thenCFG.end -> Edge(endBlock))
+        val edges = commonEdges ++ (elseb match {
           case Some(b) =>
             val elseCFG = convertBlock(b, ctx)
-            edges.putAll(elseCFG.edges)
-            edges.put(startCFG.end, Fork(exprToLoad(condition), thenCFG.start, elseCFG.start))
-            edges.put(elseCFG.end, Edge(endBlock))
+            elseCFG.edges +
+                (startCFG.end -> Fork(exprToLoad(condition), thenCFG.start, elseCFG.start)) +
+                (elseCFG.end -> Edge(endBlock))
           case None =>
-            edges.put(startCFG.end, Fork(exprToLoad(condition), thenCFG.start, endBlock))
-        }
+            Map[IR2.Block, IR2.Transition](startCFG.end -> Fork(exprToLoad(condition), thenCFG.start, endBlock))
+        })
         new CFG(startCFG.start, endBlock, edges)
 
       case forb:IR.For => 
@@ -91,10 +89,9 @@ class IR2Builder(program: ProgramIR) {
           pre.map(x => convertStatement(x, ctx)))
         val endBlock = CFGFactory.nopBlock
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
-        val edges = startCFG.edges ++ blockCFG.edges
-        edges.put(startCFG.end, Fork(exprToLoad(condition), blockCFG.start, endBlock))
-        edges.put(blockCFG.end, Edge(startCFG.start))
-
+        val edges = startCFG.edges ++ blockCFG.edges +
+            (startCFG.end -> Fork(exprToLoad(condition), blockCFG.start, endBlock)) +
+            (blockCFG.end -> Edge(startCFG.start))
         new CFG(startCFG.start, endBlock, edges)
       case IR.MethodCall(s, args) =>
         CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), ctx.symbols.get)
@@ -109,14 +106,13 @@ class IR2Builder(program: ProgramIR) {
         // This does not return a well-formed CFG because break is a special snowflake.
         // TODO(jessk) make this not hacky.
         val nop2 = CFGFactory.nopBlock
-        val edges = new EdgeMap()
-        edges.put(nop, Edge(ctx.breakTo.get))
+        val edges = Map[IR2.Block, IR2.Transition](nop -> Edge(ctx.breakTo.get))
         new CFG(nop, nop2, edges)
       case _:IR.Continue =>
         val nop = CFGFactory.nopBlock
         val nop2 = CFGFactory.nopBlock
-        val edges = new EdgeMap()
-        edges.put(nop, Edge(ctx.continueTo.get))
+        // WHY can't you use the arrow syntax on this constructor???
+        val edges = Map[IR2.Block, IR2.Transition]((nop, Edge(ctx.continueTo.get)))
         new CFG(nop, nop2, edges)
       case IR.Return(e) =>
         CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)), ctx.symbols.get)

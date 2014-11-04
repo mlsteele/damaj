@@ -105,14 +105,14 @@ abstract trait Analysis {
     return state
   }
 
-  private def successors(cfg: CFG, block: Block) : Set[Block] = cfg.edges(block) match {
+  private def successors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.get(block) match {
     case None => Set()
     case Some(Edge(to)) => Set(to)
     case Some(Fork(_, left, right)) => Set(left, right)
   }
 
-  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.keys.filter {k =>
-    cfg.edges(k) match {
+  private def predecessors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.keySet.filter {k =>
+    cfg.edges.get(k) match {
       case None => false
       case Some(Edge(next)) => next == block
       case Some(Fork(_, left, right)) => (left == block) || (right == block)

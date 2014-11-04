@@ -44,7 +44,7 @@ object IR2 {
   case class Edge(to: Block) extends Transition
   case class Fork(condition: Load, ifTrue: Block, ifFalse: Block) extends Transition
 
-  type EdgeMap = IdentityMap[IR2.Block, IR2.Transition]
+  type EdgeMap = Map[IR2.Block, IR2.Transition]
 }
 
 class IR2Printer(ir2: IR2.Program) {
@@ -66,6 +66,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   val traversed = scala.collection.mutable.Set[Block]()
+  //val reverseEdges:IdentityMap[Block, List[Transition]] = edges.map{ t => t match {
+  //  case Edge(
   
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
   // TODO(jessk): when should we validate?
@@ -74,8 +76,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   // Requires that there are no blocks in both CFGs
   // WARNING: destroys one of the input CFGs because edges is mutated.
   def ++(rhs: CFG): CFG = {
-    val newEdges = edges ++ rhs.edges
-    newEdges.put(end, Edge(rhs.start))
+    val newEdges = (edges ++ rhs.edges) + (end -> Edge(rhs.start))
     new CFG(start, rhs.end, newEdges)
   }
 
@@ -91,7 +92,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     if (traversed contains from) return Set()
     traversed add from
 
-    val rest: Set[Block] = edges(from) match {
+    val rest: Set[Block] = edges get from match {
       case None => Set()
       case Some(Edge(next)) => _traverse(next)
       case Some(Fork(_, left, right)) => _traverse(left) union _traverse(right)
@@ -102,6 +103,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   override def toString: String = {
     "CFG(%s)".format(traverse(start))
   }
+
+  //def condense:CFG = 
 
   /*
   private def validate() = {
@@ -133,13 +136,13 @@ object CFGFactory {
 
   def fromStatement(stmt: IR2.Statement, fields: SymbolTable): CFG = {
     val block = Block(List(stmt), fields)
-    new CFG(block, block, new EdgeMap())
+    new CFG(block, block, Map[IR2.Block, IR2.Transition]())
   }
 
   def nopBlock: Block = IR2.Block(List(), new SymbolTable())
   def dummy: CFG = {
     val b = nopBlock
-    new CFG(b, b, new EdgeMap())
+    new CFG(b, b, Map[IR2.Block, IR2.Transition]())
   }
 
   def chain(cfgs: TraversableOnce[CFG]): CFG =
