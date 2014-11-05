@@ -33,6 +33,6 @@ class GraphGen(cfg: CFG){
     file(pairs.map(generateEdges).mkString("\n\n"))
   }
   def file(graph: String): String = {
-    s"digraph G{ \n $graph }"
+    s"digraph G{ \n{node [shape=box]} \n $graph }"
   }
 }
