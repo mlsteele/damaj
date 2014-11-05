@@ -8,7 +8,7 @@ object CommonExpressionElimination extends Transformation {
     Method(m.id,
       m.params,
       m.locals,
-      transform(m.cfg, new TempVarGen(m.locals)),
+      transform(m.cfg, new TempVarGen(m.locals, "~cse")),
       m.returnType)
 
   def transform(cfg: CFG, tempVarGen: TempVarGen): CFG = {
@@ -42,26 +42,29 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
   }
 
   private def transform(block: Block): Block = {
-    debug("considering %s".format(block.uuid))
+    val avail = analysis.inputs(block)
+    debug("considering %s avail:%s".format(block.uuid, avail))
     val statements = block.stmts.flatMap{ stmt =>
-      transform(stmt, analysis.inputs(block))
+      transform(stmt, avail)
     }
     return Block(statements)
   }
 
   private def transform(stmt: Statement, available: T): List[Statement] = {
-    debug(s"state $carriers")
-    debug(s"statement $stmt")
+    debug(s"statement $stmt carriers:$carriers")
     stmt match {
       case Assignment(left, right) =>
         // Use stored expression if one is available according to the analysis,
         // (NOT according to carriers, which doesn't respect non-linear programs)
         // Otherwise, store computed value in case anyone wants to use it later.
-        val assign = available(right) match {
+        val assigns = available(right) match {
           case true =>
-            Assignment(left, carriers.load(right))
+            // Load from carrier instead of doing calculation again.
+            List(Assignment(left, carriers.load(right)))
           case false =>
-            Assignment(carriers.store(right), right)
+            // Store for later and do original assignment.
+            List(Assignment(carriers.store(right), right),
+                 Assignment(left, carriers.load(right)))
         }
 
         // Recompute and store any available expressions that this assignment could
@@ -70,7 +73,10 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
           Assignment(carriers.store(dependentExpr), dependentExpr)
         }.toList
 
-        assign +: updates
+        assigns ++ updates
+      case Return(Some(expr)) if available(expr) =>
+        // Use stored expression if available.
+        List(Return(Some(carriers.load(expr))))
       case _ =>
         // Leave all other types of assignment alone.
         List(stmt)
@@ -115,6 +121,10 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
       val carrier = tempVarGen.newIntVar()
       map += (expr -> carrier)
       carrier
+    }
+
+    override def toString: String = {
+      map.toString
     }
   }
 }
