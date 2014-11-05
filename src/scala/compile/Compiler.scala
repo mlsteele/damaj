@@ -22,7 +22,7 @@ object Compiler {
   )
 
   var outFile = Console.out
-
+  
   def section(string: String) = {
     Console.err.println("="*40)
     Console.err.println(string)
@@ -36,7 +36,7 @@ object Compiler {
       case Some(file) => new java.io.PrintStream(new java.io.FileOutputStream(file))
     }
     if (CLI.infile == null || !(new java.io.File(CLI.infile).exists)){
-        Console.err.println(CLI.infile + ": No such file or directory")
+        Console.err.println(CLI.infile + ": No sruh file or directory")
         System.exit(1)
     }
     CLI.target match {
@@ -207,8 +207,7 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        section("IR2 (CFG):")
-        Console.err.println(new IR2Printer(ir2).print)
+        grapher(ir2.main.cfg, "tmp/graph.gv")
       }
       ir2
     }.map{ ir2 =>
@@ -216,5 +215,11 @@ object Compiler {
       outFile.print(asm)
     }.isDefined
   }
+  def grapher(cfg: CFG, fileName: String): Unit ={
+      val graph = new GraphGen(cfg).graph
+      val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
+      file.print(graph)
+  }
+
 
 }
