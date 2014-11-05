@@ -68,7 +68,7 @@ object IR2 {
   sealed trait Load extends Expr
   // hmm, should this have something other than a FieldSymbol?
   case class LoadField(from: FieldSymbol, index: Option[Load]) extends Load {
-    override def toString = "%s%s".format(from, index match {
+    override def toString = "%s%s".format(from.id, index match {
       case Some(i:Load) => "[" + i + "]"
       case None => ""
     })
@@ -78,7 +78,7 @@ object IR2 {
   }
 
   case class Store(to: FieldSymbol, index: Option[Load]) {
-    override def toString = "%s%s".format(to, index match {
+    override def toString = "%s%s".format(to.id, index match {
       case Some(i:Load) => i
       case None => ""
     })
