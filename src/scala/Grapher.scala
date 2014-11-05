@@ -25,7 +25,7 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
     " \"%s\" -> \"%s\";\n \"%s\" -> \"%s\";".format(cond,t,cond,f) 
 
   type Pair = (IR2.Block, IR2.Transition) 
-  val graph = generateGraph(cfg)
+  val graph: String = generateGraph(cfg)
 
   def generateEdges(pair:Pair): List[String] = {
     val edges = pair match{
@@ -62,22 +62,19 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
 object Grapher {
   private val graphDir = "tmp"
 
-  def graph(method: IR2.Method, prefix: String, annotate :Option[IR2.Block => String]) : Unit = {
-    //    val annot = (b:IR2.Block) => "hello world"
-    val graph = new GraphGen(method.cfg, annotate).graph
+  def graph(program: IR2.Program, prefix: String): Unit = graph(program, prefix, None)
+
+  def graph(program: IR2.Program, prefix: String, annotate: Option[IR2.Block => String]): Unit = {
+    graph(program.main, prefix, annotate)
+    program.methods.foreach{ method => graph(method, prefix, annotate) }
+  }
+
+  def graph(method: IR2.Method, prefix: String): Unit = graph(method, prefix, None)
+
+  def graph(method: IR2.Method, prefix: String, annotate: Option[IR2.Block => String]) : Unit = {
+    val graphSrc = new GraphGen(method.cfg, annotate).graph
     val fileName = "%s/%s.%s.gv".format(graphDir, prefix, method.id)
     val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
-    file.print(graph)
+    file.print(graphSrc)
   }
-
-  def graph(method: IR2.Method, prefix: String) : Unit  = graph(method, prefix, None)
-
-  def graph(program: IR2.Program, prefix: String, annotate :Option[IR2.Block => String]) : Unit = {
-    graph(program.main, prefix, annotate)
-    for (method <- program.methods) {
-      graph(method, prefix, annotate)
-    }
-  }
-
-  def graph(program: IR2.Program, prefix: String) : Unit = graph(program, prefix, None)
 }
