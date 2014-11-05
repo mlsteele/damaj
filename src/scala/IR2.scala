@@ -134,7 +134,9 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   
   def getBlocks():Set[Block] = blocks match {
     case None => 
-      blocks = Some(traverse(start, Set[Block]()))
+      Console.err.println("STARTING TRAVERSE")
+      // blocks = Some(traverse(start, Set[Block]()))
+      blocks = Some(traverse2())
       blocks.get
     case Some(s:Set[Block]) => s
   }
@@ -166,6 +168,20 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   def ++(rhs: CFG): CFG = {
     val newEdges = (edges ++ rhs.edges) + (end -> Edge(rhs.start))
     new CFG(start, rhs.end, newEdges)
+  }
+
+  private def traverse2(): Set[Block] = {
+    var blocks = Set[Block]()
+    edges.foreach{
+      case (a, Edge(b)) =>
+        blocks += a
+        blocks += b
+      case (a, Fork(_, b, c)) =>
+        blocks += a
+        blocks += b
+        blocks += c
+    }
+    return blocks
   }
 
   /* Find all the blocks 
