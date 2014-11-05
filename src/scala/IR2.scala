@@ -39,8 +39,12 @@ object IR2 {
       case that: Block => this eq that
       case _ => false
     }
-    override def toString() = "Block %s:\n  %s".format(uuid,
-      stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
+    override def toString() = {
+      val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
+      val symbolsString = IRPrinter.printSymbolsHeader(fields)
+      "Block %s\n%s\n  %s".format(uuid,
+        symbolsString, stmtString)
+    }
   }
 
   // in IR2, Statements can not contain control flow.
