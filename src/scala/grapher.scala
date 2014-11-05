@@ -59,26 +59,25 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
 
 }
 
-// TODO: i've done some ugly shit here
-
 object Grapher {
-  var baseName = ""
+  private val graphDir = "tmp"
 
-  def graph(method: IR2.Method, annotate :Option[IR2.Block => String]) : Unit = {
+  def graph(method: IR2.Method, prefix: String, annotate :Option[IR2.Block => String]) : Unit = {
     //    val annot = (b:IR2.Block) => "hello world"
     val graph = new GraphGen(method.cfg, annotate).graph
-    val file = new java.io.PrintStream(new java.io.FileOutputStream("%s.%s.gv".format(baseName, method.id)))
+    val fileName = "%s/%s.%s.gv".format(graphDir, prefix, method.id)
+    val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
     file.print(graph)
   }
 
-  def graph(method: IR2.Method) : Unit  = graph(method, None)
+  def graph(method: IR2.Method, prefix: String) : Unit  = graph(method, prefix, None)
 
-  def graph(program: IR2.Program, annotate :Option[IR2.Block => String]) : Unit = {
-    graph(program.main)
+  def graph(program: IR2.Program, prefix: String, annotate :Option[IR2.Block => String]) : Unit = {
+    graph(program.main, prefix, annotate)
     for (method <- program.methods) {
-      graph(method)
+      graph(method, prefix, annotate)
     }
   }
 
-  def graph(program: IR2.Program) : Unit = graph(program, None)
+  def graph(program: IR2.Program, prefix: String) : Unit = graph(program, prefix, None)
 }

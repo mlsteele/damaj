@@ -224,14 +224,12 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        Grapher.baseName = "tmp/raw"
-        Grapher.graph(ir2)
+        Grapher.graph(ir2, "raw")
       }
       ir2
     }.map { ir2 =>
       val condensed = Condense.transform(ir2)
-      Grapher.baseName = "tmp/%s.%s".format(fileName, "condensed")
-      Grapher.graph(condensed)
+      Grapher.graph(condensed, "condensed")
       condensed
     }.map { ir2 =>
       if (CLI.debug) {
@@ -245,7 +243,6 @@ object Compiler {
           if (CLI.debug) {
             section("Applying %s optimization".format(optName))
           }
-          Grapher.baseName = "tmp/%s.%s".format(fileName, optName)
           tempIR = optFunc(tempIR)
           if (CLI.debug) {
           }
