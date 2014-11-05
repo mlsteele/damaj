@@ -28,17 +28,17 @@ JAVA_CLASSES := $(patsubst %.java, %.class, $(patsubst src/java/%, build/%, $(JA
 
 # Compile a .class file from a .java file
 build/%.class: src/java/%.java
-	@mkdir -p build
+	@mkdir -p build tmp
 	javac -cp $(CLASSPATH) $< -d build
 
 # Generate the .java file for a .g file
 build/src/grammars/%.java: src/grammars/%.g 
-	@mkdir -p build
+	@mkdir -p build tmp
 	java -cp $(CLASSPATH) org.antlr.Tool -o build $< -debug
 
 # Compile a .class file from a ANTLR-generated .java file
 build/grammars/%.class: build/src/grammars/%.java
-	@mkdir -p build
+	@mkdir -p build tmp
 	javac -cp $(CLASSPATH) -d build $<
 
 # Compile all .java files to .class
@@ -48,7 +48,7 @@ java_classes: $(JAVA_CLASSES)
 
 # Compile all scala files together.
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
-	@mkdir -p build
+	@mkdir -p build tmp
 	@echo "===============SCALA COMPILATION==============="
 	@fsc $(SCALAC_FLAGS) -d build $(SCALA_SOURCES)
 	@echo "===========SCALA COMPILATION COMPLETE=========="
