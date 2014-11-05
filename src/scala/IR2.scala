@@ -50,7 +50,13 @@ object IR2 {
   }
   // TODO call should Load
   case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr {
-    override def toString = "%s(%s)".format(id, args.mkString(", "))
+    override def toString = {
+      val argStrings = args.map{ _ match {
+        case Left(StrLiteral(str)) => Escape.escape(Escape.escape(str))
+        case Right(expr) => expr
+      }}
+      "%s(%s)".format(id, argStrings.mkString(", "))
+    }
   }
   case class Return(value: Option[Load]) extends Statement
 
