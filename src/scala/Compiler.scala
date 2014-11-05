@@ -259,7 +259,7 @@ object Compiler {
   def grapher(program: IR2.Program, baseName: String) : Unit = {
     grapher(program.main.cfg, baseName + ".main.gv")
     for (method <- program.methods) {
-      grapher(method.cfg, baseName + method.id + ".gv") 
+      grapher(method.cfg, "%s.%s.%s".format(baseName, method.id, "gv"))
     }
   }
 
