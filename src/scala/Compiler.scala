@@ -25,7 +25,7 @@ object Compiler {
   // This is used by CLI.parse
   type Optimization = (String, IR2.Program => IR2.Program)
   val optimizations:List[Optimization] = List(
-    ("identity", (p:IR2.Program) => p)
+    ("deadcode", DeadCodeElim(_))
   )
 
   var outFile = Console.out

@@ -1,9 +1,9 @@
 package compile
 
-class DeadCodeElim(program: IR2.Program) {
+object DeadCodeElim {
   import IR2._
 
-  def transform(): IR2.Program = {
+  def apply(program: IR2.Program): IR2.Program = {
     val newMethods = program.methods.map(transformMethod _)
     val newMain = transformMethod(program.main)
     return Program(
