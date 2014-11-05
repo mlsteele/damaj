@@ -8,7 +8,9 @@ object IRPrinter {
   import SymbolTable._
 
   def print(ir:IR.ProgramIR): String = {
-    lines(ir.symbols.symbols.map(printFullSymbol))
+    lines(
+      printSymbolsHeader(ir.symbols, "globals")
+      +: ir.symbols.symbols.map(printFullSymbol))
   }
 
   def printFullSymbol(symbol:Symbol): String = symbol match {
@@ -29,27 +31,35 @@ object IRPrinter {
   }
 
   def printMethod(m:MethodSymbol): String =
-    "%s %s(%s) %s".format(printDType(m.returns), m.id, printParams(m.params), printBlock(m.block))
+    "%s %s(%s) %s %s".format(
+      printDType(m.returns),
+      m.id, printParams(m.params),
+      printSymbolsHeader(m.params, "params"),
+      printBlock(m.block))
 
   def printParams(p:SymbolTable): String =
     p.getFields.map(x => "%s %s".format(printDType(x.dtype), x.id)).mkString(", ")
 
   def printBlock(b:Block): String = {
     "{\n%s\n%s\n%s\n}".format(
-      indent(printSymbolsHeader(b.fields)),
+      indent(printSymbolsHeader(b.fields, "locals")),
       indent(
         lines(b.fields.getFields.map(printField))),
           indent(lines(b.stmts.map(printStatement))))
   }
 
-  def printSymbolsHeader(st:SymbolTable): String = {
+  def printSymbolsHeader(st:SymbolTable): String = printSymbolsHeader(st, None)
+  def printSymbolsHeader(st:SymbolTable, hint: String): String = printSymbolsHeader(st, Some(hint))
+
+  def printSymbolsHeader(st: SymbolTable, hint: Option[String]): String = {
+    val hintPostfix = hint.map{h => s" <$h>"}.getOrElse("")
     val id = SlugGenerator.id(st)
     st.parent match {
       case None =>
-        s"SymbolTable($id, parent=None)"
+        s"SymbolTable($id, parent=None)$hintPostfix"
       case Some(parent) =>
         val parentid = SlugGenerator.id(parent)
-        s"SymbolTable($id, parent=$parentid)"
+        s"SymbolTable($id, parent=$parentid)$hintPostfix"
     }
   }
 
