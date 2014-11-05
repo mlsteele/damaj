@@ -29,40 +29,47 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
   // Compute result. This is like a return value.
   val transformed: CFG = transform(cfg)
 
+  private def debug(msg: String): Unit =
+    Console.err.println(s"CSE $msg")
+
   private def transform(cfg: CFG): CFG = {
     cfg.mapBlocks(transform)
   }
 
   private def transform(block: Block): Block = {
+    debug("considering %s".format(block.uuid))
     val statements = block.stmts.flatMap{ stmt =>
       transform(stmt, analysis.inputs(block))
     }
     return Block(statements, block.fields)
   }
 
-  private def transform(stmt: Statement, available: T): List[Statement] = stmt match {
-    case Assignment(left, right) =>
-      // Use stored expression if one is available according to the analysis,
-      // (NOT according to carriers, which doesn't respect non-linear programs)
-      // Otherwise, store computed value in case anyone wants to use it later.
-      val assign = available(right) match {
-        case true =>
-          Assignment(left, carriers.load(right))
-        case false =>
-          carriers.allocate(right)
-          Assignment(carriers.store(right), right)
-      }
+  private def transform(stmt: Statement, available: T): List[Statement] = {
+    debug(s"state $carriers")
+    debug(s"statement $stmt")
+    stmt match {
+      case Assignment(left, right) =>
+        // Use stored expression if one is available according to the analysis,
+        // (NOT according to carriers, which doesn't respect non-linear programs)
+        // Otherwise, store computed value in case anyone wants to use it later.
+        val assign = available(right) match {
+          case true =>
+            Assignment(left, carriers.load(right))
+          case false =>
+            Assignment(carriers.store(right), right)
+        }
 
-      // Recompute and store any available expressions that this assignment could
-      // change the value of.
-      val updates: List[Statement] = dependentExprs(available, left.asStore).map{ dependentExpr =>
-        Assignment(carriers.store(dependentExpr), dependentExpr)
-      }.toList
+        // Recompute and store any available expressions that this assignment could
+        // change the value of.
+        val updates: List[Statement] = dependentExprs(available, left.asStore).map{ dependentExpr =>
+          Assignment(carriers.store(dependentExpr), dependentExpr)
+        }.toList
 
-      assign +: updates
-    case _ =>
-      // Leave all other types of assignment alone.
-      List(stmt)
+        assign +: updates
+      case _ =>
+        // Leave all other types of assignment alone.
+        List(stmt)
+    }
   }
 
   // Extract the expressions that depend on a field.
@@ -82,19 +89,27 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
   private class Carriers(val tempVarGen: TempVarGen) {
     private var map = Map[Expr, FieldSymbol]()
 
+    // Get the carrier var for an expression.
+    // Allocate a spot if we haven't seen this yet.
+    // This must do the allocation because the blocks might
+    // be processed in any order.
+    def of(expr: Expr): FieldSymbol = map.get(expr) match {
+      case Some(carrier) => carrier
+      case None          => allocate(expr)
+    }
+
+    // Get a load for the carried version of an expr.
+    def load (expr: Expr): LoadField = LoadField(of(expr), None)
+    // Get a store for the carrier of an expr.
+    def store(expr: Expr): Store = Store(of(expr), None)
+
     // Introduce a new carrier variable.
-    def allocate(expr: Expr): FieldSymbol = {
+    private def allocate(expr: Expr): FieldSymbol = {
+      debug(s"allocating for $expr")
       assert(!map.contains(expr), s"cannot allocate for same expression twice: $expr")
       val carrier = tempVarGen.newIntVar()
       map += (expr -> carrier)
       carrier
     }
-
-    // Get the carrier var for an expression.
-    // expr must have been previously allocated.
-    def of(expr: Expr): FieldSymbol = map(expr)
-
-    def load (expr: Expr): LoadField = LoadField(of(expr), None)
-    def store(expr: Expr): Store     = Store(of(expr), None)
   }
 }
