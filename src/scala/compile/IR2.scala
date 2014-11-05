@@ -115,7 +115,14 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   /* All blocks reachable from start */
-  val blocks:Set[Block] = traverse(start, Set[Block]())
+  private var blocks:Option[Set[Block]] = None
+  
+  def getBlocks():Set[Block] = blocks match {
+    case None => 
+      blocks = Some(traverse(start, Set[Block]()))
+      blocks.get
+    case Some(s:Set[Block]) => s
+  }
 
   /* Looks up and returns the predecessors of `block` */
   def predecessors(block:Block):Set[Block] = reverseEdges get block match {
@@ -149,7 +156,11 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   /* Find all the blocks 
    * helper for `blocks` and `toString` */
   private def traverse(from: Block, traversed:Set[Block]): Set[Block] = {
-    if (traversed contains from) return Set()
+    println("Traversing from " + from.uuid)
+    if (traversed contains from) {
+      println("  " + from.uuid + " is already traversed")
+      return Set()
+    }
     val newTraversed = traversed + from
 
     val rest: Set[Block] = edges get from match {
@@ -172,7 +183,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     var currentCFG:CFG = this
 
     // More like *potentially* condensable.
-    var condensable:Set[Block] = currentCFG.blocks
+    var condensable:Set[Block] = currentCFG.getBlocks
 
     // we can do more!
     while (!condensable.isEmpty) {
@@ -189,7 +200,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
       }
       // Ok starting from `block` we have condensed fully
       condensed = condensed + block
-      condensable = currentCFG.blocks -- condensed
+      condensable = currentCFG.getBlocks -- condensed
     }
     
     // we're done

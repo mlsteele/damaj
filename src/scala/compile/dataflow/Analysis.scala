@@ -67,7 +67,7 @@ abstract trait Analysis {
    * interpreted as the information known BEFORE the block.
    */
   final def analyze() : AnalysisResult = {
-    val allBlocks:Set[Block] = cfg.blocks
+    val allBlocks:Set[Block] = cfg.getBlocks
 
     // Initialize all outputs to be f(⊥)
     var outputs:Map[Block, T] = allBlocks.map {b:Block =>
