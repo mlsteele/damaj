@@ -5,5 +5,5 @@ then
 fi
 gitroot=$(git rev-parse --show-toplevel)
 scala -classpath $gitroot/build/:$gitroot/vendor/antlr.jar compile.Compiler "$@"
-dot -Tps tmp/graph.gv -o tmp/graph.ps
-
+dot -Tsvg tmp/graph.gv -o tmp/graph.svg
+dot -Tpng tmp/graph.gv -o tmp/graph.png
