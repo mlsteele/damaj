@@ -228,7 +228,7 @@ object Compiler {
         Grapher.graph(ir2, "1-raw")
       }
       ir2
-     }.map { ir2 =>
+     }/*.map { ir2 =>
        section("Condensing")
        val condensed = Condense.transform(ir2)
        if (CLI.debug) {
@@ -250,7 +250,7 @@ object Compiler {
           tempIR = optFunc(tempIR)
       }
       tempIR
-    }.map { ir2 =>
+    }*/.map { ir2 =>
       section("Generating Assembly")
       new AsmGen(ir2).asm
     }.map { asm =>
