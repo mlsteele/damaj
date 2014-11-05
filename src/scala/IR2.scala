@@ -240,10 +240,10 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
             val newEdges = reassignOutEdges(next, newBlock, newInEdges) - block
             newCFG = new CFG(newStartBlock, newEndBlock, newEdges)
             block = newBlock
-          case _ => 
+          case _ =>  // Next has >1 edge in
             return (newCFG, block)
         }
-        case _ => 
+        case _ => // Some(Fork) or None 
           return (newCFG, block)
       }
     }
