@@ -3,7 +3,7 @@ package compile
 object DeadCodeElim {
   import IR2._
 
-  def apply(program: IR2.Program): IR2.Program = {
+  def apply(program: Program): Program = {
     val newMethods = program.methods.map(transformMethod _)
     val newMain = transformMethod(program.main)
     return Program(
@@ -14,9 +14,21 @@ object DeadCodeElim {
   }
 
   def transformMethod(method: Method) : Method = {
-    print("TRANSFORMING %s".format(method.id))
+    print("TRANSFORMING %s\n".format(method.id))
     val results = (new ReachingDefinitions(method.cfg)).analyze()
-    print(results)
+    //val inputs = results.inputs
+    val outputs = results.outputs
+
+    def annotate(b: Block) : String = {
+      val title = "%s outputs\n".format(b.uuid)
+      var contents = ""
+      for (ass <- outputs(b)) {
+        contents += ass.toString + "\n"
+      }
+      return title + contents
+    }
+
+    Grapher.graph(method, "deadcode", Some(annotate(_)))
     return method
   }
 }
