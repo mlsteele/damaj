@@ -1,5 +1,10 @@
 package compile
 
+object Analysis {
+  import IR2._
+  case class AnalysisResult[T](outputs: Map[Block, T], inputs: Map[Block, T])
+}
+
 /**
   * Abstract class reprenting a dataflow analysis.  To implement an
   * analysis, you must define the following methods:
@@ -11,7 +16,8 @@ package compile
   * You must also define the T type, which represents the internal
   * state.
   */
-abstract trait Analysis {
+trait Analysis {
+  import Analysis._
   import IR2._
   /**
     * The type of the internal state.  This is usually a set of some
@@ -19,9 +25,7 @@ abstract trait Analysis {
     * be defined as type T = Set[Statement], representing the
     * statements which actually reach a certain program point.
     */
-  type T; // The datatype of the internal state, usually a set
-
-  case class AnalysisResult(outputs: Map[Block, T], inputs: Map[Block, T])
+  type T // The datatype of the internal state, usually a set
 
   val cfg: CFG
 
@@ -66,7 +70,7 @@ abstract trait Analysis {
    * direction() is Backward, then each value in the map is to be
    * interpreted as the information known BEFORE the block.
    */
-  final def analyze() : AnalysisResult = {
+  final def analyze() : AnalysisResult[T] = {
     val allBlocks:Set[Block] = cfg.getBlocks
 
     // Initialize all outputs to be f(⊥)
@@ -118,7 +122,7 @@ abstract trait Analysis {
       }
     }
 
-    return AnalysisResult(outputs, inputs)
+    return AnalysisResult[T](outputs, inputs)
   }
 
   private def successors(cfg: CFG, block: Block) : Set[Block] = cfg.edges.get(block) match {

@@ -1,5 +1,10 @@
 package compile
 
+object AvailableExpressions {
+  import IR2._
+  type T = Set[Expr]
+}
+
 class AvailableExpressions(override val cfg: CFG) extends Analysis {
   import IR2._
   import ExprDependencies._
