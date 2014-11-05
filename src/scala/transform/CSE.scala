@@ -1,10 +1,21 @@
 package compile
 
+object CommonExpressionElimination extends Transformation {
+  import SymbolTable._
+  import TempVarGen._
+
+  def transform(cfg: CFG): CFG = {
+    val symbols: SymbolTable = cfg.start.fields
+    val tempVarGen = new TempVarGen(symbols)
+    new CSEHelper(cfg, tempVarGen).transformed
+  }
+}
+
 // THIS HAS NEVER BEEN RUN AT ALL. PLEASE REMOVE THIS NOTICE WHEN IT'S BEEN VERIFIED A BIT.
 // Do global subexpression elimination.
 // Example Usage:
-//   val cfg_awesome = new CommonExpressionElimination(cfg_lame, tempVarGen).transformed
-class CommonExpressionElimination(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
+//   val cfg_awesome = new CSEHelper(cfg_lame, tempVarGen).transformed
+class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
   import IR2._
   import TempVarGen._
   import SymbolTable._
@@ -19,10 +30,7 @@ class CommonExpressionElimination(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
   val transformed: CFG = transform(cfg)
 
   private def transform(cfg: CFG): CFG = {
-    // TODO(miles): actually do stuff.
-    // cfg.mapBlocks(transform)
-    transform(cfg.start) // This makes the warnings go away.
-    return cfg
+    cfg.mapBlocks(transform)
   }
 
   private def transform(block: Block): Block = {
