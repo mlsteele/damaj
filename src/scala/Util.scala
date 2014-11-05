@@ -21,7 +21,7 @@ object SlugGenerator {
   }
 
   private def advance() = {
-    nameCounter == names.length match {
+    (nameCounter + 1) == names.length match {
       case true =>
         counter += 1
         nameCounter = 0
