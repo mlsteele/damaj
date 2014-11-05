@@ -226,7 +226,9 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
         case Some(Edge(next)) => newCFG.reverseEdges(next).size match {
           case 1 => // condense `block` and `next`
             // Constraint: `block` and `next` have the same symbol table
-            val newBlock = Block(block.stmts ++ next.stmts,  block.fields)
+            val newSymbols = block.fields.copy
+            newSymbols.addSymbols(next.fields.symbols)
+            val newBlock = Block(block.stmts ++ next.stmts, newSymbols)
             val newStartBlock = (newCFG.start == block) match {
               case true => newBlock
               case _ => newCFG.start
