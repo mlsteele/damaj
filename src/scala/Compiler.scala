@@ -229,30 +229,31 @@ object Compiler {
         Grapher.graph(ir2, "1-raw")
       }
       ir2
-     }.map { ir2 =>
-       if (CLI.debug) section("Condensing")
-       val condensed = Condense.transform(ir2)
-       if (CLI.debug) {
-         Grapher.graph(condensed, "2-condensed")
-       }
-       condensed
-    /*
-     * }.map { ir2 =>
-     *   if (CLI.debug) {
-     *     section("Optimization")
-     *     Console.err.println("Enabled optimizations:")
-     *     enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
-     *   }
-     *   var tempIR = ir2
-     *   for (opt <- enabledOptimizations) opt match {
-     *     case (optName, optFunc) =>
-     *       if (CLI.debug) {
-     *         section("Applying %s optimization".format(optName))
-     *       }
-     *       tempIR = optFunc(tempIR)
-     *   }
-     *   tempIR
-     */
+     /*
+      * }.map { ir2 =>
+      *   if (CLI.debug) section("Condensing")
+      *   val condensed = Condense.transform(ir2)
+      *   if (CLI.debug) {
+      *     Grapher.graph(condensed, "2-condensed")
+      *   }
+      *   condensed
+      */
+    }.map { ir2 =>
+      if (CLI.debug) {
+        section("Optimization")
+        Console.err.println("Enabled optimizations:")
+        enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
+      }
+      var tempIR = ir2
+      for (opt <- enabledOptimizations) opt match {
+        case (optName, optFunc) =>
+          if (CLI.debug) {
+            section("Applying %s optimization".format(optName))
+          }
+          tempIR = optFunc(tempIR)
+          Grapher.graph(tempIR, optName)
+      }
+      tempIR
     }.map { ir2 =>
       if (CLI.debug) section("Generating Assembly")
       new AsmGen(ir2).asm
