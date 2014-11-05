@@ -224,9 +224,13 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        grapher(ir2, "tmp/unoptimized")
+        grapher(ir2, "tmp/raw")
       }
       ir2
+    }.map { ir2 =>
+      val condensed = Condense.transform(ir2)
+      grapher(condensed, "tmp/condensed")
+      condensed
     }.map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
