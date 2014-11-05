@@ -162,17 +162,19 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   }
 
   private def findBlocks(): Set[Block] = {
-    var blocks = Set[Block]()
+    var collector = Set[Block]()
     edges.foreach{
       case (a, Edge(b)) =>
-        blocks += a
-        blocks += b
+        collector += a
+        collector += b
       case (a, Fork(_, b, c)) =>
-        blocks += a
-        blocks += b
-        blocks += c
+        collector += a
+        collector += b
+        collector += c
     }
-    return blocks
+    assert(collector.contains(start), "start not in blocks")
+    assert(collector.contains(end), "end not in blocks")
+    return collector
   }
 
   /* Condense every pair of blocks a->b in `this` where a has one edge out
@@ -279,13 +281,18 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   /* Apply a transform to all blocks and return a new CFG */
   def mapBlocks(func: Block => Block): CFG = {
     // Translation from old blocks to new blocks
-    val bTrans:Map[Block, Block] = blocks.map{b => (b, func(b))}.toMap
-    val newEdges:Map[Block, Transition] = edges.keys.map{oldBlock  =>
-      bTrans(oldBlock) -> (edges(oldBlock) match {
+    val bTrans:Map[Block, Block] = blocks.map{ b =>
+      b -> func(b)
+    }.toMap
+
+    val newEdges:Map[Block, Transition] = edges.keys.map{ oldBlock  =>
+      val target = edges(oldBlock) match {
         case Edge(oldDest) => Edge(bTrans(oldDest))
         case Fork(c, oldTrue, oldFalse) => Fork(c, bTrans(oldTrue), bTrans(oldFalse))
       }
-    )}.toMap
+      bTrans(oldBlock) -> target
+    }.toMap
+
     new CFG(bTrans(start), bTrans(end), newEdges)
   }
   
