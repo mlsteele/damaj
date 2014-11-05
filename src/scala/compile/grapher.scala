@@ -15,7 +15,7 @@ package compile;
 class GraphGen(cfg: CFG){
   
   // take in two nodes, and creates a directed edge from a to b
-  def edgePrint(a: String, b:String): String = s" $a -> $b\n;"
+  def edgePrint(a: String, b:String): String = " \"%s \" -> \" %s \"\n;".format(a,b)
 
   type Pair = (IR2.Block, IR2.Transition) 
   val graph = generateGraph(cfg)
