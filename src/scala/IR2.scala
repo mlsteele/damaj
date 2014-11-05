@@ -34,7 +34,7 @@ object IR2 {
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
   case class Block(stmts: List[Statement], fields: SymbolTable) {
-    lazy val uuid = SlugGenerator.id(this)
+    val uuid = SlugGenerator.id(this)
     override def equals(that:Any):Boolean = that match {
       case that: Block => this eq that
       case _ => false
@@ -142,7 +142,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
 
   /* For each block, the list of predecessors */
-  val reverseEdges:Map[Block, Set[Block]] = edges.keys.map( b => (b, reverseEdgesForBlock(b)) ).toMap
+  lazy val reverseEdges:Map[Block, Set[Block]] = getBlocks.map( b => (b, reverseEdgesForBlock(b)) ).toMap
 
   /* Find predecessors of `block` 
    * helper for reverseEdges */
@@ -180,7 +180,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
    * and b has one edge in. */
   def condense(): CFG = {
     // Warning: this is not very fast and has lots of var's
-
+    println("Starting condensing")
     // Blocks whose sucessor(s) must be a new block
     // i.e. blocks who cannot collapse with their successor(s)
     var condensed:Set[Block] = Set()
@@ -192,44 +192,107 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
     // we can do more!
     while (!condensable.isEmpty) {
-
+      println("%d things are condensable".format(condensable.size))
       // Just to get an arbitrary-ish block
       val block = condensable.head
 
       // condense block as far as possible
-      var newCFG = currentCFG.condenseFromBlock(block)
-      while (newCFG != currentCFG) {
-        // fixed point woo
-        currentCFG = newCFG
-        newCFG = newCFG.condenseFromBlock(block)
-      }
+      val (newCFG, newBlock) = currentCFG.condenseFromBlock(block)
+      //while (newCFG.getBlocks.size != currentCFG.getBlocks.size) {
+        //println("new CFG size: %d".format(newCFG.getBlocks.size))
+        //println("current CFG size: %d".format(currentCFG.getBlocks.size))
+        //// fixed point woo
+        //currentCFG = newCFG
+        //newCFG = newCFG.condenseFromBlock(block)
+      //}
+      
+
       // Ok starting from `block` we have condensed fully
-      condensed = condensed + block
-      condensable = currentCFG.getBlocks -- condensed
+      condensed = condensed + newBlock
+      condensable = newCFG.getBlocks -- condensed
+      currentCFG = newCFG
     }
     
     // we're done
     currentCFG
   }
 
-  /* Attempt to condense `block` and its successor.
+  /* Attempt to condense `block` and its successor repeatedly.
    * If `block` has >1 successor, return `this`
    * If `block`'s successor has >1 edge in, return `this`
    * Otherwise combine them and return a new CFG
+   * Keep condensing until you can't
    *
    * helper for `condense`
    */
-  private def condenseFromBlock(block:Block):CFG = {
-    edges get block match {
-      case Some(Edge(next)) => reverseEdges(next).size match {
-        case 1 => // condense `block` and `next`
-          // Constraint: `block` and `next` have the same symbol table
-          val newStartBlock = Block(block.stmts ++ next.stmts,  block.fields)
-          val newEdgeMap = edges - block
-          new CFG(newStartBlock, end, newEdgeMap)
-        case _ => this
+  private def condenseFromBlock(b:Block):Tuple2[CFG, Block] = {
+    var block = b
+    var newCFG = this
+    println("Start CFG has %d nodes".format(newCFG.getBlocks.size))
+    while(true) {
+      println("Condensing from " + block.uuid)
+      println("newCFG has blocks: " + newCFG.getBlocks.map(_.uuid).mkString(", "))
+      println("newCFG has reverseBlocks: " + newCFG.reverseEdges.keys.map(_.uuid).mkString(", "))
+      newCFG.edges get block match {
+        case Some(Edge(next)) => newCFG.reverseEdges(next).size match {
+          case 1 => // condense `block` and `next`
+            // Constraint: `block` and `next` have the same symbol table
+            println("It has a condensable next block, " + next.uuid)
+            val newBlock = Block(block.stmts ++ next.stmts,  block.fields)
+            println("Made a new block " + newBlock.uuid)
+            val newStartBlock = (newCFG.start == block) match {
+              case true => newBlock
+              case _ => newCFG.start
+            }
+            // My predecessors need to be reassigned by reassignEdges
+            val newInEdges = reassignInEdges(block, newBlock, newCFG)
+            val newEdges = reassignOutEdges(next, newBlock, newInEdges) - block
+            newCFG = new CFG(newStartBlock, end, newEdges)
+            println("newCFG has %d nodes".format(newCFG.getBlocks.size))
+            block = newBlock
+          case _ => 
+            println("Next has more than one edge in")
+            return (newCFG, block)
+        }
+        case _ => 
+          println("It doesn't have a plain edge out")
+          return (newCFG, block)
       }
-      case _ => this
+    }
+    (newCFG, block)
+  }
+
+  /* Helper for `condenseFromBlock`
+   * Returns an edge map based on the current `edges` but edges in to `oldBlock`
+   * become edges into `newBlock`.
+   */
+  private def reassignInEdges(oldBlock:Block, newBlock:Block, cfg:CFG):Map[Block, Transition] = {
+    val edgesToRemove:Set[Block] = cfg.reverseEdges(oldBlock)
+    println("There are %d edges to change from %s to %s".format(edgesToRemove.size, oldBlock.uuid, newBlock.uuid))
+    val edgesToAdd:Map[Block, Transition] = edgesToRemove.map( from => cfg.edges(from) match {
+        case Edge(o) => 
+          println("Translating an edge(" + o.uuid + ")")
+          from -> Edge(newBlock)
+        case Fork(c, l, r) =>
+          println("Translating a Fork(" + l.uuid + ", " + r.uuid + ")")
+          if (l == oldBlock) {
+            from -> Fork(c, newBlock, r)
+          } else {
+            from -> Fork(c, l, newBlock)
+          }
+      }
+    ).toMap
+    (cfg.edges -- edgesToRemove) ++ edgesToAdd
+  }
+
+  private def reassignOutEdges(oldBlock:Block, newBlock:Block, edgemap:Map[Block, Transition]):Map[Block, Transition] = {
+    edgemap.get(oldBlock) match {
+      case None => 
+        println("No out edge from %s to reassign".format(oldBlock.uuid))
+        edgemap
+      case Some(t) => 
+        println("Reassigning an out edge from %s to %s".format(oldBlock.uuid, newBlock.uuid))
+        (edgemap - oldBlock) + (newBlock -> t)
     }
   }
 
