@@ -8,5 +8,4 @@ scala -classpath $gitroot/build/:$gitroot/vendor/antlr.jar compile.Compiler -d "
 for file in `dirname $0`/tmp/*.gv; do
   echo "rendering graph: $file to .svg, .png"
   dot -Tsvg $file -o $file.svg
-  dot -Tpng $file -o $file.png
 done
