@@ -229,14 +229,18 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
             val newSymbols = block.fields.copy
             newSymbols.addSymbols(next.fields.symbols)
             val newBlock = Block(block.stmts ++ next.stmts, newSymbols)
-            val newStartBlock = (newCFG.start == block) match {
+             val newStartBlock = (newCFG.start == block) match {
               case true => newBlock
               case _ => newCFG.start
+            }
+            val newEndBlock = (newCFG.end == next) match {
+              case true => newBlock
+              case _ => newCFG.end
             }
             // My predecessors need to be reassigned by reassignEdges
             val newInEdges = reassignInEdges(block, newBlock, newCFG)
             val newEdges = reassignOutEdges(next, newBlock, newInEdges) - block
-            newCFG = new CFG(newStartBlock, end, newEdges)
+            newCFG = new CFG(newStartBlock, newEndBlock, newEdges)
             block = newBlock
           case _ => 
             return (newCFG, block)
