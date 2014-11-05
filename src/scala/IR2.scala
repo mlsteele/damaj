@@ -34,16 +34,13 @@ object IR2 {
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
   case class Block(stmts: List[Statement], fields: SymbolTable) {
-    // unique-ish id for a block
-    val uuid = java.util.UUID.randomUUID.toString.take(5)
+    lazy val uuid = SlugGenerator.id(this)
     override def equals(that:Any):Boolean = that match {
       case that: Block => this eq that
       case _ => false
-  }
-    //override def toString() = "Block %s:".format(uuid)
-
-    override def toString() = "Block %s:\n  %s".format(uuid, 
-     stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
+    }
+    override def toString() = "Block %s:\n  %s".format(uuid,
+      stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
   }
 
   // in IR2, Statements can not contain control flow.
