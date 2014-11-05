@@ -5,7 +5,7 @@ then
 fi
 gitroot=$(git rev-parse --show-toplevel)
 scala -classpath $gitroot/build/:$gitroot/vendor/antlr.jar compile.Compiler -d "$@"
-rm tmp/*.gv.*
+rm -v tmp/*.gv.*
 for file in `dirname $0`/tmp/*.gv; do
   echo "rendering graph: $file to .svg, .png"
   dot -Tsvg $file -o $file.svg
