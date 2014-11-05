@@ -1,5 +1,6 @@
 package compile
 
+// THIS HAS NEVER BEEN RUN AT ALL. PLEASE REMOVE THIS NOTICE WHEN IT'S BEEN VERIFIED A BIT.
 // Do global subexpression elimination.
 // Example Usage:
 //   val cfg_awesome = new CommonExpressionElimination(cfg_lame, tempVarGen).transformed
