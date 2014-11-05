@@ -224,12 +224,14 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        grapher(ir2, "tmp/raw")
+        Grapher.baseName = "tmp/raw"
+        Grapher.graph(ir2)
       }
       ir2
     }.map { ir2 =>
       val condensed = Condense.transform(ir2)
-      grapher(condensed, "tmp/condensed")
+      Grapher.baseName = "tmp/condensed"
+      Grapher.graph(condensed)
       condensed
     }.map { ir2 =>
       if (CLI.debug) {
@@ -253,19 +255,4 @@ object Compiler {
       outFile.print(asm)
     }.isDefined
   }
-
-  def grapher(cfg: CFG, fileName: String): Unit ={
-//    val annot = (b:IR2.Block) => "hello world"
-    val graph = new GraphGen(cfg, None).graph
-    val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
-    file.print(graph)
-  }
-
-  def grapher(program: IR2.Program, baseName: String) : Unit = {
-    grapher(program.main.cfg, baseName + ".main.gv")
-    for (method <- program.methods) {
-      grapher(method.cfg, "%s.%s.%s".format(baseName, method.id, "gv"))
-    }
-  }
-
 }

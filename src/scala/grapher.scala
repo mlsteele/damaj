@@ -56,4 +56,25 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
   def file(graph: String): String = {
     s"digraph G{ \nnode [shape=rectangle] \n $graph }"
   }
+
+}
+
+// TODO: i've done some ugly shit here
+
+object Grapher {
+  var baseName = ""
+
+  def graph(method: IR2.Method) {
+    //    val annot = (b:IR2.Block) => "hello world"
+    val graph = new GraphGen(method.cfg, None).graph
+    val file = new java.io.PrintStream(new java.io.FileOutputStream("%s.%s.gv".format(baseName, method.id)))
+    file.print(graph)
+  }
+
+  def graph(program: IR2.Program) : Unit = {
+    graph(program.main)
+    for (method <- program.methods) {
+      graph(method)
+    }
+  }
 }
