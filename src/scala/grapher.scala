@@ -19,18 +19,21 @@ class GraphGen(cfg: CFG){
 
   type Pair = (IR2.Block, IR2.Transition) 
   val graph = generateGraph(cfg)
-  def generateEdges(pair:Pair): String= {
+  def generateEdges(pair:Pair): List[String] = {
     pair match{
-      case (block:IR2.Block , edge: IR2.Edge) => edgePrint(block.toString,edge.to.toString)
+      case (block:IR2.Block , edge: IR2.Edge) =>
+        List(edgePrint(block.toString,edge.to.toString))
       case (block:IR2.Block, fork: IR2.Fork)  =>
-        edgePrint(block.toString, fork.ifTrue.toString)
-        edgePrint(block.toString, fork.ifFalse.toString)
+        List(
+          edgePrint(block.toString, fork.ifTrue.toString),
+          edgePrint(block.toString, fork.ifFalse.toString))
       }
   }
-// CFG has attributes: start, end, and edges (edgemap).
+
+  // CFG has attributes: start, end, and edges (edgemap).
   def generateGraph(cfg: CFG): String= {
     val pairs: List[Pair]= cfg.edges.toList // list of tuples (keys,values) 
-    file(pairs.map(generateEdges).mkString("\n\n"))
+    file(pairs.flatMap(generateEdges).mkString("\n\n"))
   }
   def file(graph: String): String = {
     s"digraph G{ \nnode [shape=rectangle] \n $graph }"
