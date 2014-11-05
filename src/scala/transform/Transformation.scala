@@ -3,6 +3,9 @@ package compile
 trait Transformation {
   import IR2._
 
+  def apply(ir: Program): Program =
+    transform(ir)
+
   def transform(ir: Program): Program =
     Program(
       ir.fields,
