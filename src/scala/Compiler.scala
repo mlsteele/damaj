@@ -230,7 +230,7 @@ object Compiler {
       ir2
     }.map { ir2 =>
       val condensed = Condense.transform(ir2)
-      Grapher.baseName = "tmp/condensed"
+      Grapher.baseName = "tmp/%s.%s".format(fileName, "condensed")
       Grapher.graph(condensed)
       condensed
     }.map { ir2 =>
@@ -245,6 +245,7 @@ object Compiler {
           if (CLI.debug) {
             section("Applying %s optimization".format(optName))
           }
+          Grapher.baseName = "tmp/%s.%s".format(fileName, optName)
           tempIR = optFunc(tempIR)
           if (CLI.debug) {
           }

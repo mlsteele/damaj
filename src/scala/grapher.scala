@@ -64,17 +64,21 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
 object Grapher {
   var baseName = ""
 
-  def graph(method: IR2.Method) {
+  def graph(method: IR2.Method, annotate :Option[IR2.Block => String]) : Unit = {
     //    val annot = (b:IR2.Block) => "hello world"
-    val graph = new GraphGen(method.cfg, None).graph
+    val graph = new GraphGen(method.cfg, annotate).graph
     val file = new java.io.PrintStream(new java.io.FileOutputStream("%s.%s.gv".format(baseName, method.id)))
     file.print(graph)
   }
 
-  def graph(program: IR2.Program) : Unit = {
+  def graph(method: IR2.Method) : Unit  = graph(method, None)
+
+  def graph(program: IR2.Program, annotate :Option[IR2.Block => String]) : Unit = {
     graph(program.main)
     for (method <- program.methods) {
       graph(method)
     }
   }
+
+  def graph(program: IR2.Program) : Unit = graph(program, None)
 }
