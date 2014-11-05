@@ -12,24 +12,39 @@ package compile;
 
 //miles notes: create a function graph( cfg,file_name)
 //that bascially runs GraphGen on the cfg and puts it into file_name
-class GraphGen(cfg: CFG){
+class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
   
   // take in two nodes, and creates a directed edge from a to b
-  def decNode(name:String, shape:String) = " \"%s\" [shape=%s] ".format(name,shape)
+  def nodeShape(name:String, shape:String) = " \"%s\" [shape=%s] ".format(name,shape)
+
+  def nodeColor(name: String, color:String) =" \"%s\" [style=filled,color=%s] ".format(name,color)
+
   def edgePrint(a: String, b:String): String = " \"%s\" -> \"%s\";".format(a,b)
+
   def conditionPrint(cond: String, t: String, f: String):String =
     " \"%s\" -> \"%s\";\n \"%s\" -> \"%s\";".format(cond,t,cond,f) 
+
   type Pair = (IR2.Block, IR2.Transition) 
   val graph = generateGraph(cfg)
+
   def generateEdges(pair:Pair): List[String] = {
-    pair match{
+    val edges = pair match{
       case (block:IR2.Block , edge: IR2.Edge) =>
         List(edgePrint(block.toString,edge.to.toString))
       case (block:IR2.Block, fork: IR2.Fork)  =>
-        List(decNode(fork.condition.toString,"circle"),
+        List(nodeShape(fork.condition.toString,"circle"),
           conditionPrint(fork.condition.toString,fork.ifTrue.toString,fork.ifFalse.toString),
           edgePrint(block.toString, fork.condition.toString))
       }
+    val block = pair._1
+    val annotation = annotate match {
+      case Some(func) => List(
+        nodeColor(func(block), "yellow"),
+        edgePrint(block.toString, func(block))
+      )
+      case None       => List()
+    }
+    return edges ++ annotation
   }
 
   // CFG has attributes: start, end, and edges (edgemap).
@@ -37,6 +52,7 @@ class GraphGen(cfg: CFG){
     val pairs: List[Pair]= cfg.edges.toList // list of tuples (keys,values) 
     file(pairs.flatMap(generateEdges).mkString("\n\n"))
   }
+
   def file(graph: String): String = {
     s"digraph G{ \nnode [shape=rectangle] \n $graph }"
   }

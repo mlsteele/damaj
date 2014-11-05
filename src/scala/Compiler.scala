@@ -255,9 +255,10 @@ object Compiler {
   }
 
   def grapher(cfg: CFG, fileName: String): Unit ={
-      val graph = new GraphGen(cfg).graph
-      val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
-      file.print(graph)
+//    val annot = (b:IR2.Block) => "hello world"
+    val graph = new GraphGen(cfg, None).graph
+    val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
+    file.print(graph)
   }
 
   def grapher(program: IR2.Program, baseName: String) : Unit = {
