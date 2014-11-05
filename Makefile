@@ -49,9 +49,6 @@ java_classes: $(JAVA_CLASSES)
 # Compile all scala files together.
 scala_classes: $(JAVA_CLASSES) $(ANTLR_CLASSES)
 	@mkdir -p build tmp
-	@echo "Removing old graphs..."
-	rm -rf tmp/*.gv
-	rm -rf tmp/*.svg
 	@echo "===============SCALA COMPILATION==============="
 	@fsc $(SCALAC_FLAGS) -d build $(SCALA_SOURCES)
 	@echo "===========SCALA COMPILATION COMPLETE=========="
