@@ -223,14 +223,14 @@ object Compiler {
     val simplify = simplification_passes.reduce(_ andThen _)
 
     ir1.map(simplify).map{ ir1 =>
-      section("IR1 -> IR2")
+      if (CLI.debug) section("IR1 -> IR2")
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
         Grapher.graph(ir2, "1-raw")
       }
       ir2
      }.map { ir2 =>
-       section("Condensing")
+       if (CLI.debug) section("Condensing")
        val condensed = Condense.transform(ir2)
        if (CLI.debug) {
          Grapher.graph(condensed, "2-condensed")
@@ -254,10 +254,10 @@ object Compiler {
      *   tempIR
      */
     }.map { ir2 =>
-      section("Generating Assembly")
+      if (CLI.debug) section("Generating Assembly")
       new AsmGen(ir2).asm
     }.map { asm =>
-      section("Writing to output")
+      if (CLI.debug) section("Writing to output")
       outFile.print(asm)
     }.isDefined
   }
