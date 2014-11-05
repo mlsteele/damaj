@@ -109,7 +109,7 @@ trait Analysis {
       workSet = workSet - block
       // Calculate the inputs from all the nodes brancing to this one
       val blockInputs: Set[T] = prev(block).map(outputs(_))
-      val combinedInput: T = blockInputs.reduce(merge _)
+      val combinedInput: T = blockInputs.fold(bottom())(merge _)
       inputs += (block -> combinedInput)
       // Retrieve the previous value of the transfer function
       val prevOutput: T = outputs(block)
