@@ -224,7 +224,7 @@ object Compiler {
     ir1.map(simplify).map{ ir1 =>
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        grapher(ir2.main.cfg, "tmp/graph.gv")
+        grapher(ir2, "tmp/unoptimized")
       }
       ir2
     }.map { ir2 =>
@@ -233,17 +233,34 @@ object Compiler {
         Console.err.println("Enabled optimizations:")
         enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
       }
+      var tempIR = ir2
+      for (opt <- enabledOptimizations) opt match {
+        case (optName, optFunc) => 
+          if (CLI.debug) {
+            section("Applying %s optimization".format(optName))
+          }
+          tempIR = optFunc(tempIR)
+          if (CLI.debug) {
+          }
+      }
       ir2
     }.map { ir2 =>
       val asm = new AsmGen(ir2).asm
       outFile.print(asm)
     }.isDefined
   }
+
   def grapher(cfg: CFG, fileName: String): Unit ={
       val graph = new GraphGen(cfg).graph
       val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
       file.print(graph)
   }
 
+  def grapher(program: IR2.Program, baseName: String) : Unit = {
+    grapher(program.main.cfg, baseName + ".main.gv")
+    for (method <- program.methods) {
+      grapher(method.cfg, baseName + method.id + ".gv") 
+    }
+  }
 
 }
