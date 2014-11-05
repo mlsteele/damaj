@@ -163,6 +163,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
   private def findBlocks(): Set[Block] = {
     var collector = Set[Block]()
+    collector += start
+    collector += end
     edges.foreach{
       case (a, Edge(b)) =>
         collector += a
