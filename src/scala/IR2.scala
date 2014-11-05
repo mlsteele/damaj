@@ -51,8 +51,10 @@ object IR2 {
   // TODO call should Load
   case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr {
     override def toString = {
+      def esc2(str: String): String = Escape.escape(Escape.escape(str))
+      val q = Escape.escape('"')
       val argStrings = args.map{ _ match {
-        case Left(StrLiteral(str)) => Escape.escape(Escape.escape(str))
+        case Left(StrLiteral(str)) => q + esc2(str) + q
         case Right(expr) => expr
       }}
       "%s(%s)".format(id, argStrings.mkString(", "))
