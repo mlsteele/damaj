@@ -13,7 +13,11 @@ package compile;
 //miles notes: create a function graph( cfg,file_name)
 //that bascially runs GraphGen on the cfg and puts it into file_name
 class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
-  
+
+  type Pair = (IR2.Block, IR2.Transition)
+
+  val graph: String = generateGraph(cfg)
+
   // take in two nodes, and creates a directed edge from a to b
   def nodeShape(name:String, shape:String) = " \"%s\" [shape=%s] ".format(name,shape)
 
@@ -21,17 +25,16 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
 
   def edgePrint(a: String, b:String): String = " \"%s\" -> \"%s\";".format(a,b)
 
+  def nodePrint(a: String): String = " \"%s\";".format(a)
+
   def conditionPrint(cond: String, t: String, f: String):String =
-    " \"%s\" -> \"%s\";\n \"%s\" -> \"%s\";".format(cond,t,cond,f) 
+    " \"%s\" -> \"%s\";\n \"%s\" -> \"%s\";".format(cond,t,cond,f)
 
-  type Pair = (IR2.Block, IR2.Transition) 
-  val graph: String = generateGraph(cfg)
-
-  def generateEdges(pair:Pair): List[String] = {
+  def generateEdges(pair: Pair): List[String] = {
     val edges = pair match{
-      case (block:IR2.Block , edge: IR2.Edge) =>
+      case (block: IR2.Block, edge: IR2.Edge) =>
         List(edgePrint(block.toString,edge.to.toString))
-      case (block:IR2.Block, fork: IR2.Fork)  =>
+      case (block: IR2.Block, fork: IR2.Fork)  =>
         List(nodeShape(fork.condition.toString,"circle"),
           conditionPrint(fork.condition.toString,fork.ifTrue.toString,fork.ifFalse.toString),
           edgePrint(block.toString, fork.condition.toString))
@@ -49,8 +52,16 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
 
   // CFG has attributes: start, end, and edges (edgemap).
   def generateGraph(cfg: CFG): String= {
-    val pairs: List[Pair]= cfg.edges.toList // list of tuples (keys,values) 
-    file(pairs.flatMap(generateEdges).mkString("\n\n"))
+    val pairs: List[Pair] = cfg.edges.toList // list of tuples (keys,values)
+    // Special case one-node graphs to explicitly display the node.
+    // TODO(miles): support annotation in single-block graphs.
+    pairs.isEmpty match {
+      case true =>
+        assert(cfg.start eq cfg.end, "Weird nodes:\n%s\n%s".format(cfg.start, cfg.end))
+        file(nodePrint(cfg.start.toString))
+      case false =>
+        file(pairs.flatMap(generateEdges).mkString("\n\n"))
+    }
   }
 
   def file(graph: String): String = {
