@@ -19,7 +19,6 @@ object ExprDependencies {
       }
       case BinOp(left, _, right) => Set(left, right)
       case UnaryOp(_, right) => Set(right)
-      case Ternary(cond, left, right) => Set(cond, left, right)
       case LoadField(_, index) => index.map(_.dependencies()).getOrElse(Set())
       case _:LoadLiteral => Set()
     }

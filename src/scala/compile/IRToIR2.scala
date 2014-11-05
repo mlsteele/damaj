@@ -134,8 +134,7 @@ class IR2Builder(program: ProgramIR) {
   def convertExpr(expr: IR.Expr): IR2.Expr = expr match {
     case IR.BinOp(l, op, r) => IR2.BinOp(exprToLoad(l), op, exprToLoad(r))
     case IR.UnaryOp(op, r) => IR2.UnaryOp(op, exprToLoad(r))
-    case IR.Ternary(condition, l, r) =>
-      IR2.Ternary(exprToLoad(condition), exprToLoad(l), exprToLoad(r))
+    case IR.Ternary(condition, l, r) => throw new IR2ConstructionException("Ternary was not preprocessed away")
     case l:IR.LoadField => exprToLoad(expr)
     case l:IR.LoadInt => exprToLoad(expr)
     case l:IR.LoadBool => exprToLoad(expr)

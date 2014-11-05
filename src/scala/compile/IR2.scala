@@ -7,42 +7,89 @@ object IR2 {
 
   // Earlier version constrain all fields to come before methods.
   // The callouts are discarded.
-  case class Program(fields: List[Field], main: Method, methods: List[Method])
+  case class Program(fields: List[Field], main: Method, methods: List[Method]) {
+    override def toString() = "%s\n%s\n%s".format(
+      fields.mkString("\n"),
+      main.toString,
+      methods.mkString("\n\n")
+    )
+  }
 
-  case class Field(id: ID, size: Option[Long])
-  case class Method(id: ID, params: List[Field], symbols: SymbolTable, cfg: CFG, returnType:DType )
+  case class Field(id: ID, size: Option[Long]) {
+    override def toString() = "%s%s".format(id,
+      size match {
+        case Some(l:Long) => "[" + l + "]"
+        case None => ""
+      }
+    )
+  }
+
+  case class Method(id: ID, params: List[Field], symbols: SymbolTable, cfg: CFG, returnType:DType ) {
+    override def toString() = "%s %s(%s) {\n  %s\n  %s}".format(returnType, id,
+      params.mkString(", "),
+      symbols.toString,
+      cfg.toString.split('\n').mkString("\n  "))
+  }
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
   case class Block(stmts: List[Statement], fields: SymbolTable) {
+    // unique-ish id for a block
+    val uuid = java.util.UUID.randomUUID.toString.take(5)
     override def equals(that:Any):Boolean = that match {
       case that: Block => this eq that
       case _ => false
     }
+    override def toString() = "Block %s:\n  %s".format(uuid, 
+      stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
   }
 
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
-  case class Assignment(left: Store, right: Expr) extends Statement
+  case class Assignment(left: Store, right: Expr) extends Statement {
+    override def toString = "%s = %s".format(left, right)
+  }
   // TODO call should Load
-  case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr
+  case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr {
+    override def toString = "%s(%s)".format(id, args.mkString(", "))
+  }
   case class Return(value: Option[Load]) extends Statement
 
   sealed trait Expr
-  case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr
-  case class UnaryOp(op: UnaryOpType, right: Load) extends Expr
-  case class Ternary(condition: Load, left: Load, right: Load) extends Expr
+  case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr {
+    override def toString = "%s %s %s".format(left, op, right)
+  }
+  case class UnaryOp(op: UnaryOpType, right: Load) extends Expr {
+    override def toString = "%s %s".format(op, right)
+  }
 
   sealed trait Load extends Expr
   // hmm, should this have something other than a FieldSymbol?
-  case class LoadField(from: FieldSymbol, index: Option[Load]) extends Load
-  case class LoadLiteral(value: Long) extends Load
+  case class LoadField(from: FieldSymbol, index: Option[Load]) extends Load {
+    override def toString = "%s%s".format(from, index match {
+      case Some(i:Load) => "[" + i + "]"
+      case None => ""
+    })
+  }
+  case class LoadLiteral(value: Long) extends Load {
+    override def toString = value.toString
+  }
 
-  case class Store(to: FieldSymbol, index: Option[Load])
+  case class Store(to: FieldSymbol, index: Option[Load]) {
+    override def toString = "%s%s".format(to, index match {
+      case Some(i:Load) => i
+      case None => ""
+    })
+  }
 
   sealed trait Transition
-  case class Edge(to: Block) extends Transition
-  case class Fork(condition: Load, ifTrue: Block, ifFalse: Block) extends Transition
+  case class Edge(to: Block) extends Transition {
+    override def toString() = "Edge to %s".format(to.uuid)
+  }
+  case class Fork(condition: Load, ifTrue: Block, ifFalse: Block) extends Transition {
+    override def toString() = "Fork condition: %s\nTrue jump: %s\nFalse jump: %s".format(
+      condition, ifTrue, ifFalse)
+  }
 
   type EdgeMap = Map[IR2.Block, IR2.Transition]
 }
@@ -53,7 +100,7 @@ class IR2Printer(ir2: IR2.Program) {
   val print: String = printIR2(ir2)
 
   private def printIR2(ir2: Program): String =
-    "IR2.Program(xx- %s -xx)".format(ir2.main)
+    "IR2.Program(%s)".format(ir2)
     //"IR2(... pretty sweet ir2, wish I knew how to print it ...)"
 }
 
@@ -169,7 +216,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   }
   
   override def toString: String = {
-    "CFG(%s)".format(traverse(start, Set[Block]()))
+    "CFG(\n  %s)".format(
+      blocks.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
   }
 
   /*
