@@ -130,17 +130,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   import IR2._
 
   /* All blocks reachable from start */
-  private var blocks:Option[Set[Block]] = None
+  lazy val blocks:Set[Block] = findBlocks()
   
-  def getBlocks():Set[Block] = blocks match {
-    case None => 
-      Console.err.println("STARTING TRAVERSE")
-      // blocks = Some(traverse(start, Set[Block]()))
-      blocks = Some(traverse2())
-      blocks.get
-    case Some(s:Set[Block]) => s
-  }
-
   /* Looks up and returns the predecessors of `block` */
   def predecessors(block:Block):Set[Block] = reverseEdges get block match {
     case Some(s:Set[Block]) => s
@@ -150,7 +141,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   class CFGIntegrityError(msg: String) extends RuntimeException(msg)
 
   /* For each block, the list of predecessors */
-  lazy val reverseEdges:Map[Block, Set[Block]] = getBlocks.map( b => (b, reverseEdgesForBlock(b)) ).toMap
+  lazy val reverseEdges:Map[Block, Set[Block]] = blocks.map( b => (b, reverseEdgesForBlock(b)) ).toMap
 
   /* Find predecessors of `block` 
    * helper for reverseEdges */
@@ -170,7 +161,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     new CFG(start, rhs.end, newEdges)
   }
 
-  private def traverse2(): Set[Block] = {
+  private def findBlocks(): Set[Block] = {
     var blocks = Set[Block]()
     edges.foreach{
       case (a, Edge(b)) =>
@@ -182,20 +173,6 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
         blocks += c
     }
     return blocks
-  }
-
-  /* Find all the blocks 
-   * helper for `blocks` and `toString` */
-  private def traverse(from: Block, traversed:Set[Block]): Set[Block] = {
-    if (traversed contains from) return Set()
-    val newTraversed = traversed + from
-
-    val rest: Set[Block] = edges get from match {
-      case None => Set()
-      case Some(Edge(next)) => traverse(next, newTraversed)
-      case Some(Fork(_, left, right)) => traverse(left, newTraversed) union traverse(right, newTraversed)
-    }
-    Set(from) union rest
   }
 
   /* Condense every pair of blocks a->b in `this` where a has one edge out
@@ -210,7 +187,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     var currentCFG:CFG = this
 
     // More like *potentially* condensable.
-    var condensable:Set[Block] = currentCFG.getBlocks
+    var condensable:Set[Block] = currentCFG.blocks
 
     // we can do more!
     while (!condensable.isEmpty) {
@@ -222,7 +199,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
       // Ok starting from `block` we have condensed fully
       condensed = condensed + newBlock
-      condensable = newCFG.getBlocks -- condensed
+      condensable = newCFG.blocks -- condensed
       currentCFG = newCFG
     }
     // we're done
@@ -302,7 +279,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   /* Apply a transform to all blocks and return a new CFG */
   def mapBlocks(func: Block => Block): CFG = {
     // Translation from old blocks to new blocks
-    val bTrans:Map[Block, Block] = getBlocks.map{b => (b, func(b))}.toMap
+    val bTrans:Map[Block, Block] = blocks.map{b => (b, func(b))}.toMap
     val newEdges:Map[Block, Transition] = edges.keys.map{oldBlock  =>
       bTrans(oldBlock) -> (edges(oldBlock) match {
         case Edge(oldDest) => Edge(bTrans(oldDest))

@@ -11,7 +11,7 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
 
   type T = Set[Expr]
 
-  private val allExprs:Set[Expr] = cfg.getBlocks.flatMap {
+  private val allExprs:Set[Expr] = cfg.blocks.flatMap {
     _.stmts.flatMap {
       case Assignment(_, right) => List(right)
       case Call(_, args) => args.flatMap {
