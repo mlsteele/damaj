@@ -220,6 +220,19 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
       case _ => this
     }
   }
+
+  /* Apply a transform to all blocks and return a new CFG */
+  def mapBlocks(func: Block => Block): CFG = {
+    // Translation from old blocks to new blocks
+    val bTrans:Map[Block, Block] = getBlocks.map{b => (b, func(b))}.toMap
+    val newEdges:Map[Block, Transition] = edges.keys.map{oldBlock  =>
+      bTrans(oldBlock) -> (edges(oldBlock) match {
+        case Edge(oldDest) => Edge(bTrans(oldDest))
+        case Fork(c, oldTrue, oldFalse) => Fork(c, bTrans(oldTrue), bTrans(oldFalse))
+      }
+    )}.toMap
+    new CFG(bTrans(start), bTrans(end), newEdges)
+  }
   
   override def toString: String = {
     "CFG(\n  %s)".format(
