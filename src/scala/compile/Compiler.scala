@@ -21,8 +21,25 @@ object Compiler {
     DecafScanner.BOOL_LITERAL -> "BOOLEANLITERAL"
   )
 
+  // Maps optimization namse to the actual optimization function
+  // This is used by CLI.parse
+  type Optimization = (String, IR2.Program => IR2.Program)
+  val optimizations:List[Optimization] = List(
+    ("identity", (p:IR2.Program) => p)
+  )
+
   var outFile = Console.out
-  
+
+  def enabledOptimizations() : List[Optimization]= {
+    var opts:List[Optimization] = List()
+    for (i <- CLI.opts.indices) {
+      if (CLI.opts(i)) {
+        opts = opts :+ optimizations(i)
+      }
+    }
+    return opts
+  }
+
   def section(string: String) = {
     Console.err.println("="*40)
     Console.err.println(string)
@@ -30,7 +47,7 @@ object Compiler {
   }
 
   def main(args: Array[String]): Unit = {
-    CLI.parse(args, Array[String]());
+    CLI.parse(args, optimizations.map(_._1).toArray);
     outFile = Option(CLI.outfile) match {
       case None => Console.out
       case Some(file) => new java.io.PrintStream(new java.io.FileOutputStream(file))
@@ -210,7 +227,14 @@ object Compiler {
         grapher(ir2.main.cfg, "tmp/graph.gv")
       }
       ir2
-    }.map{ ir2 =>
+    }.map { ir2 =>
+      if (CLI.debug) {
+        section("Optimization")
+        Console.err.println("Enabled optimizations:")
+        enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
+      }
+      ir2
+    }.map { ir2 =>
       val asm = new AsmGen(ir2).asm
       outFile.print(asm)
     }.isDefined
