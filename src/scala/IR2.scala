@@ -39,6 +39,7 @@ object IR2 {
       case that: Block => this eq that
       case _ => false
     }
+    override def hashCode = 31 * uuid.hashCode
     override def toString() = {
       val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
       val symbolsString = IRPrinter.printSymbolsHeader(fields)
@@ -225,7 +226,6 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
       condensable = newCFG.getBlocks -- condensed
       currentCFG = newCFG
     }
-    
     // we're done
     currentCFG
   }
