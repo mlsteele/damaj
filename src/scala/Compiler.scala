@@ -227,11 +227,12 @@ object Compiler {
         Grapher.graph(ir2, "raw")
       }
       ir2
-    }.map { ir2 =>
-      val condensed = Condense.transform(ir2)
-      Grapher.graph(condensed, "condensed")
-      condensed
-    }.map { ir2 =>
+    }// .map { ir2 =>
+    //   val condensed = Condense.transform(ir2)
+    //   Grapher.graph(condensed, "condensed")
+    //   condensed
+    // }
+      .map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
         Console.err.println("Enabled optimizations:")
@@ -247,7 +248,7 @@ object Compiler {
           if (CLI.debug) {
           }
       }
-      ir2
+      tempIR
     }.map { ir2 =>
       val asm = new AsmGen(ir2).asm
       outFile.print(asm)
