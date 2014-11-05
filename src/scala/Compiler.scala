@@ -222,17 +222,20 @@ object Compiler {
     val simplify = simplification_passes.reduce(_ andThen _)
 
     ir1.map(simplify).map{ ir1 =>
+      section("IR1 -> IR2")
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        Grapher.graph(ir2, "raw")
+        Grapher.graph(ir2, "1-raw")
       }
       ir2
-    }// .map { ir2 =>
-    //   val condensed = Condense.transform(ir2)
-    //   Grapher.graph(condensed, "condensed")
-    //   condensed
-    // }
-      .map { ir2 =>
+    }.map { ir2 =>
+      section("Condensing")
+      val condensed = Condense.transform(ir2)
+      if (CLI.debug) {
+        Grapher.graph(condensed, "2-condensed")
+      }
+      condensed
+    }.map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
         Console.err.println("Enabled optimizations:")
@@ -245,12 +248,13 @@ object Compiler {
             section("Applying %s optimization".format(optName))
           }
           tempIR = optFunc(tempIR)
-          if (CLI.debug) {
-          }
       }
       tempIR
     }.map { ir2 =>
-      val asm = new AsmGen(ir2).asm
+      section("Generating Assembly")
+      new AsmGen(ir2).asm
+    }.map { asm =>
+      section("Writing to output")
       outFile.print(asm)
     }.isDefined
   }
