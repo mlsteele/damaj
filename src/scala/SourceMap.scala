@@ -73,37 +73,3 @@ class SourceMap(filepath: String, code: String) {
 
   def lines(strs: List[String]): String = if (!strs.nonEmpty) "" else strs.mkString("\n")
 }
-
-// TODO mutable?
-class IdentityMap[K,V] {
-  import java.util.IdentityHashMap
-  import collection.JavaConversions._
-
-  private val store = new IdentityHashMap[K,V]
-
-  def get(k: K): Option[V] = Option(store.get(k))
-
-  def apply(k: K): Option[V] = get(k)
-
-  def put(k: K, v: V): Unit = {
-    store.put(k, v)
-    return ()
-  }
-
-  def putAll(m: IdentityMap[K,V]): Unit = store.putAll(m.store)
-
-  def contains(k: K): Boolean = store.containsKey(k)
-
-  def keys: Set[K] = store.keySet().toSet
-
-  def values: Set[V] = store.values().toSet
-
-  def ++(other: IdentityMap[K,V]): IdentityMap[K,V] = {
-    val newMap = new IdentityMap[K,V]()
-    newMap.putAll(this)
-    newMap.putAll(other)
-    newMap
-  }
-
-  override def toString = store.toString
-}
