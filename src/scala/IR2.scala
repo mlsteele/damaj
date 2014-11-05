@@ -156,11 +156,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   /* Find all the blocks 
    * helper for `blocks` and `toString` */
   private def traverse(from: Block, traversed:Set[Block]): Set[Block] = {
-    println("Traversing from " + from.uuid)
-    if (traversed contains from) {
-      println("  " + from.uuid + " is already traversed")
-      return Set()
-    }
+    if (traversed contains from) return Set()
     val newTraversed = traversed + from
 
     val rest: Set[Block] = edges get from match {
