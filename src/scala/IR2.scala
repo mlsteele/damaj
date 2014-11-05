@@ -222,7 +222,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
    *
    * helper for `condense`
    */
-  private def condenseFromBlock(b:Block):Tuple2[CFG, Block] = {
+  private def condenseFromBlock(b: Block): Tuple2[CFG, Block] = {
     var block = b
     var newCFG = this
     while(true) {
@@ -230,9 +230,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
         case Some(Edge(next)) => newCFG.reverseEdges(next).size match {
           case 1 => // condense `block` and `next`
             // Constraint: `block` and `next` have the same symbol table
-            val newSymbols = block.fields.copy
-            newSymbols.addSymbols(next.fields.symbols)
-            val newBlock = Block(block.stmts ++ next.stmts, newSymbols)
+            assert(block.fields == next.fields)
+            val newBlock = Block(block.stmts ++ next.stmts, block.fields)
              val newStartBlock = (newCFG.start == block) match {
               case true => newBlock
               case _ => newCFG.start
@@ -337,12 +336,13 @@ object CFGFactory {
     new CFG(block, block, Map[IR2.Block, IR2.Transition]())
   }
 
-  def nopBlock: Block = IR2.Block(List(), new SymbolTable())
-  def dummy: CFG = {
-    val b = nopBlock
+  def nopBlock(st: SymbolTable): Block = IR2.Block(List(), st)
+
+  def dummy(st: SymbolTable): CFG = {
+    val b = nopBlock(st)
     new CFG(b, b, Map[IR2.Block, IR2.Transition]())
   }
 
-  def chain(cfgs: TraversableOnce[CFG]): CFG =
-    cfgs.fold(dummy)(_ ++ _)
+  def chain(cfgs: TraversableOnce[CFG], st: SymbolTable): CFG =
+    cfgs.fold(dummy(st))(_ ++ _)
 }
