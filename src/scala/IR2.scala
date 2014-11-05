@@ -58,7 +58,13 @@ object IR2 {
       "%s(%s)".format(id, argStrings.mkString(", "))
     }
   }
-  case class Return(value: Option[Load]) extends Statement
+
+  case class Return(value: Option[Load]) extends Statement {
+    override def toString = value match {
+      case Some(value) => s"return $value"
+      case None => "return"
+    }
+  }
 
   sealed trait Expr
   case class BinOp(left: Load, op: BinOpType, right: Load) extends Expr {
