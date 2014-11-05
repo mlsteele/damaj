@@ -15,9 +15,9 @@ trait Transformation {
   def transform(m: Method): Method =
     Method(m.id,
       m.params,
-      m.symbols,
+      m.locals,
       transform(m.cfg),
       m.returnType)
 
-  def transform(cfg: CFG): CFG
+  def transform(cfg: CFG): CFG = cfg
 }

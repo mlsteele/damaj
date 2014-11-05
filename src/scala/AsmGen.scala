@@ -10,6 +10,8 @@ class AsmGen(ir2: IR2.Program) {
   import SymbolTable._
   import IR2._
 
+  type ST = SymbolTable
+
   // Registers used for passing arguments to functions.
   val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
   val argregc = argregs.length
@@ -75,13 +77,12 @@ class AsmGen(ir2: IR2.Program) {
     file(bss, text, data)
   }
 
-// insert returns at the end of the method
-// if control reaches here something went wrong
-// if method should return a value, we go to a exit handler
-// if method shouldn't return a value, we return so we can go back to the caller
-
+  // insert returns at the end of the method
+  // if control reaches here something went wrong
+  // if method should return a value, we go to a exit handler
+  // if method shouldn't return a value, we return so we can go back to the caller
   def generateMethod(m: Method): String = {
-    val numLocals = m.symbols.size()
+    val numLocals = m.locals.size()
     // ABI requires even number of locals.. or something.
     val evenNumLocals = numLocals + (numLocals % 2)
 
@@ -90,40 +91,38 @@ class AsmGen(ir2: IR2.Program) {
       case DTVoid => "" // cool, no return needed
       case _ => jmp("._exit2")
     }
-    val body = generateCFG(m.cfg, m.id + "_end") \ controlCheck
+    val body = generateCFG(m.cfg, m.locals, m.id + "_end") \ controlCheck
     return method(m.id, evenNumLocals, body)
   }
 
   // Generate assembly for a CFG.
-  def generateCFG(cfg: CFG, returnTo: String): String =
-    generateCFG(cfg.start, cfg, returnTo)
+  def generateCFG(cfg: CFG, symbols: ST, returnTo: String): String =
+    generateCFG(cfg.start, cfg, symbols, returnTo)
 
   // Helper for generateCFG recursion.
-  def generateCFG(b: Block, cfg: CFG, returnTo: String): String = {
-    val blockAsm = generateBlock(b, returnTo)
+  def generateCFG(b: Block, cfg: CFG, symbols: ST, returnTo: String): String = {
+    val blockAsm = generateBlock(b, symbols, returnTo)
     val next = cfg.edges.get(b) match {
       case None => ""
       case Some(Edge(next)) =>
         assembledLabels.get(next) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(next, cfg, returnTo)
+          case None => generateCFG(next, cfg, symbols, returnTo)
         }
       case Some(Fork(condition, ifTrue, ifFalse)) =>
         val trueAsm = assembledLabels.get(ifTrue) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(ifTrue, cfg, returnTo)
+          case None => generateCFG(ifTrue, cfg, symbols, returnTo)
         }
         val falseLabel = labelGenerator.nextLabel("false")
         val falseAsm = assembledLabels.get(ifFalse) match {
           case Some(label) => - jmp(label)
-          case None => generateCFG(ifFalse, cfg, returnTo)
+          case None => generateCFG(ifFalse, cfg, symbols, returnTo)
         }
         val joinLabel = labelGenerator.nextLabel("join")
-        // TODO(miles): check condition
-        // TODO(miles): this doesn't work at all. I'm on it.
         val setup = condition match {
           case load: LoadField =>
-            val whereload = whereVar(load, b.fields)
+            val whereload = whereVar(load, symbols)
             whereload.setup \
             - cmp(0 $, whereload.asmloc)
           case LoadLiteral(v) =>
@@ -144,22 +143,22 @@ class AsmGen(ir2: IR2.Program) {
     next
   }
 
-  def generateBlock(b: Block, returnTo: String): String = {
+  def generateBlock(b: Block, symbols: ST, returnTo: String): String = {
     assert(assembledLabels.get(b).isDefined == false)
-    val blockAsm = b.stmts.map(stmt => generateStatement(stmt, b.fields, returnTo)).mkString("\n")
+    val blockAsm = b.stmts.map(stmt => generateStatement(stmt, symbols, returnTo)).mkString("\n")
     val label = labelGenerator.nextLabel("block")
     assembledLabels += (b -> label)
     labl(label) \
     - blockAsm
   }
 
-  def generateStatement(stmt: Statement, symbols: SymbolTable, returnTo: String): String = stmt match {
+  def generateStatement(stmt: Statement, symbols: ST, returnTo: String): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
     case ir: Assignment => generateAssignment(ir, symbols)
     case ir: Return => generateReturn(ir, symbols, returnTo)
   }
 
-  def generateAssignment(ir: Assignment, symbols: SymbolTable): String = (ir.left, ir.right) match {
+  def generateAssignment(ir: Assignment, symbols: ST): String = (ir.left, ir.right) match {
     case (store, LoadLiteral(v)) =>
       val wherestore = whereVar(store, symbols)
       wherestore.setup \
@@ -263,7 +262,7 @@ class AsmGen(ir2: IR2.Program) {
     case _ => throw new AsmNotImplemented(ir.toString)
   }
 
-  def generateCall(ir: Call, symbols: SymbolTable): String = {
+  def generateCall(ir: Call, symbols: ST): String = {
     val argMovs: String = ir.args
       .zipWithIndex
       .map(Function.tupled(generateCallArg(_,_,symbols)))
@@ -282,7 +281,7 @@ class AsmGen(ir2: IR2.Program) {
     "POP_ALL"
   }
 
-  def generateReturn(ir: Return, symbols: SymbolTable, returnTo: String): String = ir.value match {
+  def generateReturn(ir: Return, symbols: ST, returnTo: String): String = ir.value match {
     case Some(LoadLiteral(v)) =>
       mov(v $, rax) ? "set return value to %s".format(v) \
       jmp(returnTo)
@@ -296,7 +295,7 @@ class AsmGen(ir2: IR2.Program) {
     case _ => throw new RuntimeException("That return wasn't flattened enough!")
   }
 
-  def generateCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: SymbolTable): String = {
+  def generateCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: ST): String = {
     arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) =>
@@ -331,7 +330,7 @@ class AsmGen(ir2: IR2.Program) {
   // Get the location of a symbol
   // Could clobber reg_arridx!
   // for example: "-32(%rbp)", "$coolglobal+8"
-  def whereVar(id: ID, arrIdx: Option[Load], symbols: SymbolTable): WhereVar = {
+  def whereVar(id: ID, arrIdx: Option[Load], symbols: ST): WhereVar = {
     // Optionally put the array index into reg_arridx.
     val setup = arrIdx match {
       case Some(LoadField(from, None)) =>
@@ -394,10 +393,10 @@ class AsmGen(ir2: IR2.Program) {
     WhereVar(setup, asmLocation)
   }
 
-  def whereVar(load: LoadField, symbols: SymbolTable): WhereVar =
+  def whereVar(load: LoadField, symbols: ST): WhereVar =
     whereVar(load.from.id, load.index, symbols)
 
-  def whereVar(store: Store, symbols: SymbolTable): WhereVar =
+  def whereVar(store: Store, symbols: ST): WhereVar =
     whereVar(store.to.id, store.index, symbols)
 
   def commentLoad(load: LoadField): String = load.index match {

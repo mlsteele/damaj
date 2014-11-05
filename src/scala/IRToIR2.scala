@@ -45,15 +45,13 @@ class IR2Builder(program: ProgramIR) {
 
   def convertField(field: FieldSymbol): IR2.Field = Field(field.id, field.size)
   
-  def convertMethod(method: MethodSymbol): IR2.Method = IR2.Method(
-    method.id,
-    method.params.symbols.flatMap( _ match {
-      case f:FieldSymbol => Some(convertField(f))
-      case _ => None
-    }),
-    method.block.fields,
-    convertBlock(method.block, Context(None, None, None)),
-  method.returns)
+  def convertMethod(method: MethodSymbol): IR2.Method =
+    IR2.Method(
+      method.id,
+      method.params,
+      method.block.fields,
+      convertBlock(method.block, Context(None, None, None)),
+      method.returns)
 
   def convertBlock(block: IR.Block, ctx: Context): CFG = {
     val newCtx = Context(Some(block.fields), ctx.continueTo, ctx.breakTo)
@@ -67,7 +65,7 @@ class IR2Builder(program: ProgramIR) {
         val startCFG = CFGFactory.chain(
           pre.map(x => convertStatement(x, ctx)), ctx.symbols.get)
         val thenCFG = convertBlock(thenb, ctx)
-        val endBlock = CFGFactory.nopBlock(ctx.symbols.get)
+        val endBlock = CFGFactory.nopBlock()
         val commonEdges = startCFG.edges ++ thenCFG.edges + (thenCFG.end -> Edge(endBlock))
         val edges = commonEdges ++ (elseb match {
           case Some(b) =>
@@ -87,35 +85,35 @@ class IR2Builder(program: ProgramIR) {
         assert(max == None, "While didn't preprocess out max!")
         val startCFG = CFGFactory.chain(
           pre.map(x => convertStatement(x, ctx)), ctx.symbols.get)
-        val endBlock = CFGFactory.nopBlock(ctx.symbols.get)
+        val endBlock = CFGFactory.nopBlock()
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges +
             (startCFG.end -> Fork(exprToLoad(condition), blockCFG.start, endBlock)) +
             (blockCFG.end -> Edge(startCFG.start))
         new CFG(startCFG.start, endBlock, edges)
       case IR.MethodCall(s, args) =>
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), ctx.symbols.get)
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
       case IR.CalloutCall(s, args)=> 
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)), ctx.symbols.get)
+        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
       case IR.Assignment(left, right) =>
         CFGFactory.fromStatement(
-          IR2.Assignment(convertStore(left), convertExpr(right)), ctx.symbols.get)
+          IR2.Assignment(convertStore(left), convertExpr(right)))
       case _:IR.Break =>
-        val nop = CFGFactory.nopBlock(ctx.symbols.get)
+        val nop = CFGFactory.nopBlock()
         // Hackity Hackity Hack
         // This does not return a well-formed CFG because break is a special snowflake.
         // TODO(jessk) make this not hacky.
-        val nop2 = CFGFactory.nopBlock(ctx.symbols.get)
+        val nop2 = CFGFactory.nopBlock()
         val edges = Map[IR2.Block, IR2.Transition](nop -> Edge(ctx.breakTo.get))
         new CFG(nop, nop2, edges)
       case _:IR.Continue =>
-        val nop = CFGFactory.nopBlock(ctx.symbols.get)
-        val nop2 = CFGFactory.nopBlock(ctx.symbols.get)
+        val nop = CFGFactory.nopBlock()
+        val nop2 = CFGFactory.nopBlock()
         // WHY can't you use the arrow syntax on this constructor???
         val edges = Map[IR2.Block, IR2.Transition]((nop, Edge(ctx.continueTo.get)))
         new CFG(nop, nop2, edges)
       case IR.Return(e) =>
-        CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)), ctx.symbols.get)
+        CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)))
   }
 
   def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Expr] = arg match {

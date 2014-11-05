@@ -15,6 +15,7 @@ object IR2 {
     )
   }
 
+  // TODO(miles): what is this? Get rid of it probably..
   case class Field(id: ID, size: Option[Long]) {
     override def toString() = "%s%s".format(id,
       size match {
@@ -24,16 +25,16 @@ object IR2 {
     )
   }
 
-  case class Method(id: ID, params: List[Field], symbols: SymbolTable, cfg: CFG, returnType:DType ) {
-    override def toString() = "%s %s(%s) {\n  %s\n  %s}".format(returnType, id,
-      params.mkString(", "),
-      symbols.toString,
+  // symbols is the parameter symbol table.
+  case class Method(id: ID, params: SymbolTable, locals: SymbolTable, cfg: CFG, returnType:DType ) {
+    override def toString() = "%s %s (%s) {\n  %s\n  %s}".format(returnType, id,
+      params.toString,
       cfg.toString.split('\n').mkString("\n  "))
   }
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
-  case class Block(stmts: List[Statement], fields: SymbolTable) {
+  case class Block(stmts: List[Statement]) {
     val uuid = SlugGenerator.id(this)
     override def equals(that:Any):Boolean = that match {
       case that: Block => this eq that
@@ -42,9 +43,7 @@ object IR2 {
     override def hashCode = 31 * uuid.hashCode
     override def toString() = {
       val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
-      val symbolsString = IRPrinter.printSymbolsHeader(fields)
-      "Block %s\n%s\n  %s".format(uuid,
-        symbolsString, stmtString)
+      "Block %s\n  %s".format(uuid, stmtString)
     }
   }
 
@@ -246,9 +245,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
         case Some(Edge(next)) => newCFG.reverseEdges(next).size match {
           case 1 => // condense `block` and `next`
             // Constraint: `block` and `next` have the same symbol table
-            assert(block.fields == next.fields)
-            val newBlock = Block(block.stmts ++ next.stmts, block.fields)
-             val newStartBlock = (newCFG.start == block) match {
+            val newBlock = Block(block.stmts ++ next.stmts)
+            val newStartBlock = (newCFG.start == block) match {
               case true => newBlock
               case _ => newCFG.start
             }
@@ -347,15 +345,15 @@ object CFGFactory {
   import IR2._
   import SymbolTable._
 
-  def fromStatement(stmt: IR2.Statement, fields: SymbolTable): CFG = {
-    val block = Block(List(stmt), fields)
+  def fromStatement(stmt: IR2.Statement): CFG = {
+    val block = Block(List(stmt))
     new CFG(block, block, Map[IR2.Block, IR2.Transition]())
   }
 
-  def nopBlock(st: SymbolTable): Block = IR2.Block(List(), st)
+  def nopBlock(): Block = IR2.Block(List())
 
   def dummy(st: SymbolTable): CFG = {
-    val b = nopBlock(st)
+    val b = nopBlock()
     new CFG(b, b, Map[IR2.Block, IR2.Transition]())
   }
 

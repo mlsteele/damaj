@@ -1,12 +1,17 @@
 package compile
 
 object CommonExpressionElimination extends Transformation {
-  import SymbolTable._
+  import IR2._
   import TempVarGen._
 
-  def transform(cfg: CFG): CFG = {
-    val symbols: SymbolTable = cfg.start.fields
-    val tempVarGen = new TempVarGen(symbols)
+  override def transform(m: Method): Method =
+    Method(m.id,
+      m.params,
+      m.locals,
+      transform(m.cfg, new TempVarGen(m.locals)),
+      m.returnType)
+
+  def transform(cfg: CFG, tempVarGen: TempVarGen): CFG = {
     new CSEHelper(cfg, tempVarGen).transformed
   }
 }
@@ -41,7 +46,7 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
     val statements = block.stmts.flatMap{ stmt =>
       transform(stmt, analysis.inputs(block))
     }
-    return Block(statements, block.fields)
+    return Block(statements)
   }
 
   private def transform(stmt: Statement, available: T): List[Statement] = {
