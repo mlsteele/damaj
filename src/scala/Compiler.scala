@@ -228,15 +228,13 @@ object Compiler {
         Grapher.graph(ir2, "1-raw")
       }
       ir2
-    /*
-     * }.map { ir2 =>
-     *   section("Condensing")
-     *   val condensed = Condense.transform(ir2)
-     *   if (CLI.debug) {
-     *     Grapher.graph(condensed, "2-condensed")
-     *   }
-     *   condensed
-     */
+     }.map { ir2 =>
+       section("Condensing")
+       val condensed = Condense.transform(ir2)
+       if (CLI.debug) {
+         Grapher.graph(condensed, "2-condensed")
+       }
+       condensed
     }.map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
