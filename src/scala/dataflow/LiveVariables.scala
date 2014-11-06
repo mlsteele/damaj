@@ -6,7 +6,7 @@ package compile
   * analyze() returns a mapping from Blocks to the variables needed
   * BEFORE the block executes.
   */
-class LiveVariables(override val cfg: CFG) extends Analysis {
+class LiveVariables(override val method: IR2.Method) extends Analysis {
   import IR2._
   import ExprDependencies._
 

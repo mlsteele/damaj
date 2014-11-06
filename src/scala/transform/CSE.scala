@@ -26,7 +26,7 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
   import AvailableExpressions.T
   type AnalysisResult = Analysis.AnalysisResult[T]
 
-  private val analysis: AnalysisResult = new AvailableExpressions(method.cfg).analyze()
+  private val analysis: AnalysisResult = new AvailableExpressions(method).analyze()
   Grapher.graph(method, "availexprs", Some(annotateGraph(_)))
 
   private val carriers = new Carriers(tempVarGen)

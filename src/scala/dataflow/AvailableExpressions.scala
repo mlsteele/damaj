@@ -5,7 +5,7 @@ object AvailableExpressions {
   type T = Set[Expr]
 }
 
-class AvailableExpressions(override val cfg: CFG) extends Analysis {
+class AvailableExpressions(override val method: IR2.Method) extends Analysis {
   import IR2._
   import ExprDependencies._
 
@@ -39,14 +39,26 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
         val load = LoadField(to, index)
         // GEN expr
         if (isPure(right)) { avail = avail + right }
+        else { avail = expungeGlobals(avail) }
+        
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
       }
-      case Call(_, args) => args.foreach {
-        case Left(_) =>
-        case Right(e) => if(isPure(e)) { avail = avail + e }
+      case c:Call => 
+        // Treat the call as an expression
+        if(isPure(c)) { avail = avail + c }
+        else { avail = expungeGlobals(avail) }
+        // Also get its args
+        c.args.foreach {
+          case Left(_) => // String, ignore
+          case Right(e) => // Expr
+            if(isPure(e)) { avail = avail + e }
+            else { avail = expungeGlobals(avail) }
+        }
+      case Return(ret) => ret.foreach{ e => 
+        if(isPure(e)) { avail = avail + e }
+        else { avail = expungeGlobals(avail) }
       }
-      case Return(ret) => ret.foreach{e => if(isPure(e)) { avail = avail + e }}
     }
     return avail
   }
@@ -56,5 +68,13 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
   private def isPure(e:Expr):Boolean = e match {
     case c:Call => false
     case _ => true
+  }
+
+  private def expungeGlobals(avail: Set[Expr]):Set[Expr] = {
+    var newAvail: Set[Expr] = avail
+    method.locals.globalTable.getFields.map{ global =>
+      newAvail = newAvail.filter{ !_.dependencies().contains(LoadField(global, None)) }
+    }
+    newAvail
   }
 }

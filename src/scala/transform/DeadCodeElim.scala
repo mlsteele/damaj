@@ -14,7 +14,7 @@ object DeadCodeElim {
   }
 
   def transformMethod(method: Method) : Method = {
-    val results = (new LiveVariables(method.cfg)).analyze()
+    val results = (new LiveVariables(method)).analyze()
     val liveAfter = results.inputs
     val liveBefore = results.outputs
 

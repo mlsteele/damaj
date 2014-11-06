@@ -27,7 +27,8 @@ trait Analysis {
     */
   type T // The datatype of the internal state, usually a set
 
-  val cfg: CFG
+  val method: Method
+  val cfg: CFG = method.cfg
 
   /*
    * The member representing nothing, a default state.  For any

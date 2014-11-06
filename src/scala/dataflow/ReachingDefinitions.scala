@@ -4,7 +4,7 @@ package compile
  * After each block, this analysis returns the set of assignments that
  * reach (were not overwritten) after that block's execution.
  */
-class ReachingDefinitions(override val cfg: CFG) extends Analysis {
+class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
   import IR2._
 
   type T = Set[Assignment]
