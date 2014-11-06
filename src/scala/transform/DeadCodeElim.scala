@@ -35,8 +35,9 @@ object DeadCodeElim {
         // variable, but we can't eliminate the call, because it might
         // have side-effects
         case ass@Assignment(Store(to, index), call:Call) => {
-          val variable = LoadField(to, None)
-          (liveAfter(b) contains variable) match {
+          val variable = LoadField(to, index)
+          // Don't kill the statement if it's an array assignment
+          (liveAfter(b) contains variable) || index.nonEmpty match {
             case true => List(ass)
             case false => List(call)
           }
@@ -44,7 +45,8 @@ object DeadCodeElim {
         // If an assignment assigns to a dead var, no point in keeping it
         case ass@Assignment(Store(to, index), _) => {
           val variable = LoadField(to, index)
-            (liveAfter(b) contains variable) match {
+          // Don't kill the statement if it's an array assignment
+            (liveAfter(b) contains variable) || index.nonEmpty match {
             case true => List(ass)
             case false => List()
           }
