@@ -111,16 +111,6 @@ object IR2 {
   type EdgeMap = Map[IR2.Block, IR2.Transition]
 }
 
-class IR2Printer(ir2: IR2.Program) {
-  import IR2._
-
-  val print: String = printIR2(ir2)
-
-  private def printIR2(ir2: Program): String =
-    "IR2.Program(%s)".format(ir2)
-    //"IR2(... pretty sweet ir2, wish I knew how to print it ...)"
-}
-
 // A CFG is a digraph where the nodes are IR2.Blocks and the edges are IR2.Transitions.
 // There is a single entry point and a single exit point, marked as start and end.
 // So a control flow of a -> b -> c may look like (pseudocode)
