@@ -39,15 +39,17 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
           conditionPrint(fork.condition.toString,fork.ifTrue.toString,fork.ifFalse.toString),
           edgePrint(block.toString, fork.condition.toString))
       }
-    val block = pair._1
-    val annotation = annotate match {
+    return edges
+  }
+
+  def annotateBlock(block: IR2.Block) : List[String] = {
+    annotate match {
       case Some(func) => List(
         nodeColor(func(block), "yellow"),
         edgePrint(block.toString, func(block))
       )
       case None       => List()
     }
-    return edges ++ annotation
   }
 
   // CFG has attributes: start, end, and edges (edgemap).
@@ -55,13 +57,14 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
     val pairs: List[Pair] = cfg.edges.toList // list of tuples (keys,values)
     // Special case one-node graphs to explicitly display the node.
     // TODO(miles): support annotation in single-block graphs.
-    pairs.isEmpty match {
+    val edges = pairs.isEmpty match {
       case true =>
-        assert(cfg.start eq cfg.end, "Weird nodes:\n%s\n%s".format(cfg.start, cfg.end))
-        file(nodePrint(cfg.start.toString))
+        nodePrint(cfg.start.toString)
       case false =>
-        file(pairs.flatMap(generateEdges).mkString("\n\n"))
+        pairs.flatMap(generateEdges).mkString("\n\n")
     }
+    val annotations = cfg.blocks.toList.flatMap(annotateBlock).mkString("\n\n")
+    return file(edges ++ annotations)
   }
 
   def file(graph: String): String = {
