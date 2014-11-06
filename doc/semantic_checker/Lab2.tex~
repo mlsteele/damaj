@@ -1,0 +1,156 @@
+% Created 2014-11-06 Thu 02:26
+\documentclass[11pt]{article}
+\usepackage[AUTO]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\providecommand{\alert}[1]{\textbf{#1}}
+
+\title{Lab2}
+\author{jessk}
+\date{\today}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs Org-mode version 7.9.3f}}
+
+\begin{document}
+
+\maketitle
+
+\setcounter{tocdepth}{3}
+\tableofcontents
+\vspace*{1cm}
+\section{Building \& Running}
+\label{sec-1}
+
+  Steps to build and run our DAMAJ Decaf Compiler.
+  
+  These instructions assume you are running on Athena.
+  
+  Clone the repository or otherwise obtain a copy of the code.
+
+  Run \verb~add -f scala~. use \verb~scala -version~ to make sure that scala is using version 2.11.2.
+  We use \verb~fsc~ to compile scala a little faster. If you happen to have any trouble because of weird
+  fsc version conflicts, please try killing your fsc server (find it with \verb~ps aux | grep fsc~).
+  Don't set any env variables like \verb~SCALA_HOME~ as this could force you to use the wrong version
+  of scala.
+  
+  Once you have the right version of scala run \verb~make~ or \verb~build.sh~ to compile the project.
+  If you have trouble with this or later steps, try `make clean` to reset the build files.
+  
+  Now you should be able to run the compiler using run.sh.
+  For example:
+  \verb~./run.sh -t inter --debug tests/semantics/illegal/illegal-01.dcf~
+  \verb~./run.sh -t inter --debug tests/semantics/legal/legal-01.dcf~
+  
+\section{Data Structures}
+\label{sec-2}
+\subsection{Symbols}
+\label{sec-2-1}
+
+   Relevant files: \verb~scala/compile/SymbolTable.scala~
+   Symbol is a base class that represents any kind of object that can be stored in a symbol table.
+   All symbols have an \verb~id: ID~ member, which is the name of the symbol.
+\subsubsection{FieldSymbol}
+\label{sec-2-1-1}
+
+    A field symbol represents a variable (a non-method and non-callout).
+    Fields have the following members:
+\begin{itemize}
+\item \verb~dType:DType~: The type of the variable if its scalar, or the type of each element, if the field is an array
+\item \verb~size:Option[Long]~: If the variable is a scalar, this is None. Otherwise it is the length of the array
+\end{itemize}
+\subsubsection{CalloutSymbol}
+\label{sec-2-1-2}
+
+    Callouts only store their id.
+\subsubsection{MethodSymbol}
+\label{sec-2-1-3}
+
+    This represents a method declaration
+    Methods have the following members:
+\begin{itemize}
+\item \verb~params: SymbolTable~: The symbol table that any nested scopes should use as their parent. This symbol table contains the method's arguments.
+\item \verb~returns:DType~: The return type of the method.
+\end{itemize}
+\subsection{SymbolTable}
+\label{sec-2-2}
+
+   Relevant files: \verb~scala/compile/SymbolTable.scala~
+   \verb~SymbolTable~ represent scopes.
+   Symbol tables store two things: a list of all of the variables in their scope,
+   and a parent the parent scope.
+   Symbol tables support the following operations:
+\begin{itemize}
+\item \verb~addSymbol(symbol: Symbol) : Option[Conflict]~ Attempts to add a symbol to the table. If another symbol with the same name exists in the current scope, a \verb~Conflict~ will be returned. The \verb~Conflict~ object keeps track of the first symbol found, and the duplicate second symbol.
+\item \verb~addSymbol(symbols: List[Symbol]) : List[Conflict]~ Calls \verb~addSymbol~ on each symbol, returning a list of all the conflicts encountered.
+\item \verb~lookupSymbol(id: ID) : Option[Symbol]~ Attempts to find a symbol by name in the current scope. This method will also attempt to look in its ancestor's scopes if the symbol was not found in the local scope.
+\end{itemize}
+\subsection{Intermediate Representation}
+\label{sec-2-3}
+
+   Relevant files: \verb~scala/compile/IR.scala~
+   The semantic checker phase of the compiler converts the parse tree into an IR.
+   The IR has the following types:
+\begin{itemize}
+\item \verb~ProgramIR(symbols: SymbolTable)~ Represents a valid DECAF program.
+\item \verb~Block(stmst: List[Statement], fields: SymbolTable)~ A list of statements, and the symbol table associated with that scope
+\end{itemize}
+\subsubsection{Statement Types}
+\label{sec-2-3-1}
+
+    These types represent all of the possible DECAF statements
+\begin{itemize}
+\item \verb~Assignment(left: Store, right: Expr)~
+\item \verb~MethodCall(method: MethodSymbol, args: List[Either[StrLiteral, Expr]])~
+\item \verb~CalloutCall(callout: CalloutSymbol, args: List[Either[StrLiteral, Expr]])~
+\item \verb~If(condition: Expr, thenb: Block, elseb: Option[Block])~
+\item \verb~For(id: ID, start: Expr, iter: Expr, thenb: Block)~
+\item \verb~While(condition: Expr, block: Block, max: Option[Long])~
+\item \verb~Return(expr: Option[Expr])~
+\item \verb~Break~
+\item \verb~Continue~
+\end{itemize}
+   
+\subsubsection{Expression Types}
+\label{sec-2-3-2}
+
+    These types represent all of the possible DECAF expressions
+\begin{itemize}
+\item \verb~BinOp(left: Expr, op: String, right: Expr)~
+\item \verb~UnaryOp(op: String, right: Expr)~
+\item \verb~Ternary(condition: Expr, left: Expr, right: Expr)~
+\end{itemize}
+\begin{itemize}
+
+\item Load Types\\
+\label{sec-2-3-2-1}%
+Loads are a sub-type of expression.
+\begin{itemize}
+\item \verb~LoadField(from: FieldSymbol, index: Option[Expr])~ Represents loading a value from a variable or array location
+\item \verb~LoadLiteral(inner: CommonLiteral)~ Represents a constant
+\item \verb~Store(to: FieldSymbol, index: Option[Expr])~ Represents saving to a variable or array location
+\end{itemize}
+
+\end{itemize} % ends low level
+\section{Semantic Checking}
+\label{sec-3}
+
+  Relevant files: \verb~scala/compile/ASTToIR.scala~
+  The class \verb~IRBuilder~ takes an AST as an argument, and walks down the tree.
+  As it traverses the tree, it calls a variety of \verb~convert~ methods, such as \verb~convertAssignment~, which convert AST types into their corresponding IR types, while doing semantic checks.
+  Any of these methods can fail, which will cause add an error to a shared error list, and will propogate its failure up the tree.
+
+\end{document}
