@@ -37,9 +37,10 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
       // Any expressions used by a statement are made available
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
+        // GEN expr
         avail = avail + right
-        // Remove any expressions that depended on the variable being assigned to
-        avail = avail.filter {e => ! (e.dependencies() contains load)}
+        // KILL any expressions that depended on the variable being assigned
+        avail = avail.filter{ ! _.dependencies().contains(load) }
       }
       case Call(_, args) => args.foreach {
         case Left(_) =>
