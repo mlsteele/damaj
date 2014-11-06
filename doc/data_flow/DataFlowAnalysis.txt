@@ -70,7 +70,8 @@
   temp variable will end up deleting it right before it is evaluated. This is because the condition of forks
   are not actually part of any block.
 
-  In assignment statements, the destination of the assignment is no longer considered live.
+  In assignment statements, the destination of the assignment is no longer considered live (unless it is
+  also in the right side of the assignment expression).
 
 ** Reachable
   Used in: Unreachable Code Elimination
@@ -103,15 +104,34 @@ with a general framework of the analysis algorithm, and src/scala/dataflow/Avai
 lableExpressions.scala fills in the missing holes that make CSE unique from the
 other dataflow algorithms. 
 
+  Here is an example of CSE optimization. Please note that the blocks were given names for debugging 
+  purposes, and that circular nodes are forking conditions.
+
+  Before: 
+
+  #+ATTR_LaTeX: width=0.4\textwidth
+  [[./before_cse.png]]
+  
+  After CSE:
+
+  #+ATTR_LaTeX: width=0.4\textwidth
+  [[./after_cse.png]]
+
+  Notice that CSE temps are generated for the expressions ~0~, ~a+b~, and ~c+d~, and also that ~c+d~
+  appropriately is available for the last statement after it became available in each input branch. 
+
 ** Unreachable Code Elimination
-    Unreachable code elimination, located in src/scala/transform/UnreachableCodeElim.scala, deletes portions of code which can never be reached. It consumes the Reachable analysis. Any block code deemed unreachable by Reachable is turned into a nop block with no statements. The nop blocks are cleaned up in a later pass by the Condenser.
+    Unreachable code elimination, located in ~src/scala/transform/UnreachableCodeElim.scala~, 
+    deletes portions of code which can never be reached. It consumes the Reachable analysis. Any 
+    block code deemed unreachable by Reachable is turned into a nop block with no statements. The 
+    nop blocks are cleaned up in a later pass by the Condenser.
 
     Here is an example of UCE at work. Note that the blocks after the return in the if are not cleared because they could occur, but the blocks after the definitive return are cleared.
 
 ** Dead Code Elimination
   If there is an assignment to a dead variable, it is first checked for whether it is a method call. 
   If it is, it is converted simply to a method call without an assignment. Otherwise, the assignment
-  to a dead variable is removed completely.
+  to a dead variable is removed completely. 
 
   Here is an example of before and after Dead Code Elimination runs. Please note that the blocks were
   given names for debugging purposes, and that circular nodes are forking conditions.
@@ -140,5 +160,13 @@ other dataflow algorithms.
    First, make sure you have the `graphviz` package installed on your computer, which provides the program
    `dot`. Then, you can run `graph.sh` with the code. `graph.sh` takes all the same arguments that you can
    pass in to `run.sh`, so for example you could pass in only one optimization. It will generate a graph
-   before and after each optimization pass. The last pass will condense blocks into more reasonable basic
-   blocks.
+   before and after each optimization pass, as well as generating annotated graphs for each analysis. 
+   The last pass will condense blocks into more reasonable basic blocks.
+
+   The graphs will be output in the `tmp` folder. 
+
+   Try running:
+
+   `./graph.sh -O all tests/dataflow/input/cse-01.dcf`
+
+   And check out the output graphs!
