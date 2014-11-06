@@ -9,7 +9,7 @@ object Uncondense extends Transformation {
     for (block <- cfg.blocks) {
       // Check if the block multiple statements
       block.stmts match {
-        case (first :: rest) if (rest.length > 1) => {
+        case (first :: rest) if (rest.length >= 1) => {
           val firstBlock = Block(List(first))
           val secondBlock = Block(rest)
 
@@ -20,7 +20,11 @@ object Uncondense extends Transformation {
           val newEdges = (newInEdges ++ newOutEdges - block) +
             (firstBlock -> Edge(secondBlock)) 
 
-          val newCFG = (new CFG(cfg.start, cfg.end, newEdges))
+          // If the start or end blocks were replaced, make sure to deal with it
+          val newCFG = new CFG(
+            if (block == cfg.start) firstBlock else cfg.start,
+            if (block == cfg.end) secondBlock else cfg.start,
+            newEdges)
           val newMethod = Method(
             method.id,
             method.params,
