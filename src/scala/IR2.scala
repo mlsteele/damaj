@@ -84,7 +84,7 @@ object IR2 {
   // hmm, should this have something other than a FieldSymbol?
   case class LoadField(from: FieldSymbol, index: Option[Load]) extends Load {
     override def toString = "%s%s".format(from.id, index match {
-      case Some(i:Load) => "[" + i + "]"
+      case Some(i:Load) => Escape.escape("[") + i + Escape.escape("]")
       case None => ""
     })
   }
