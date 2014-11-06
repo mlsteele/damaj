@@ -98,8 +98,12 @@
   
 
 * CFG visualization
+    A visual representation of the cfg we generate is a very useful debugging tool. 
+    Graphiz is a simple and straightforward interface that takes a definition of graph, and
+    produces a svg, pdf,png, or ps file with a visualization of the graph.
+    We installed the dot package to show our directed graph
     To aid in debugging, we implemented a grapher.scala that takes in a CFG,
     and auto generates a string that represents a graph which graphviz can read, and generate an svg of the graph.
     We can set a debug flag that uses grapher.scala to take the cfg in IR2, and output the string into a .gv file which is later run through dot to make an
     image of the CFG.
-
+    This happens whenever we compile code with the debug flag set.
