@@ -7,7 +7,7 @@ object CommonExpressionElimination extends Transformation {
   override def transform(m: Method): Method = {
     val tempVarGen = new TempVarGen(m.locals, "~cse")
     val newCFG = new CSEHelper(m, tempVarGen).transformed
-    return Uncondense(Method(m.id,
+    return (Method(m.id,
       m.params,
       m.locals,
       newCFG,
