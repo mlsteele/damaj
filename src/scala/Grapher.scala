@@ -21,7 +21,7 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
   // take in two nodes, and creates a directed edge from a to b
   def nodeShape(name:String, shape:String) = " \"%s\" [shape=%s] ".format(name,shape)
 
-  def nodeColor(name: String, color:String) =" \"%s\" [style=filled,color=%s] ".format(name,color)
+  def nodeColor(name: String, color:String) =" \"%s\" [style=filled,fillcolor=%s] ".format(name,color)
 
   def edgePrint(a: String, b:String): String = " \"%s\" -> \"%s\";".format(a,b)
 
@@ -45,7 +45,7 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
   def annotateBlock(block: IR2.Block) : List[String] = {
     annotate match {
       case Some(func) => List(
-        nodeColor(func(block), "yellow"),
+        nodeColor(func(block), "lemonchiffon"),
         edgePrint(block.toString, func(block))
       )
       case None       => List()
