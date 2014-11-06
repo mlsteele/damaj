@@ -238,25 +238,18 @@ object Compiler {
       var tempIR = ir2
       for (opt <- enabledOptimizations) opt match {
         case (optName, optFunc) =>
-          if (CLI.debug) {
-            section("Applying %s optimization".format(optName))
-          }
+          if (CLI.debug) section("Applying %s optimization".format(optName))
           tempIR = optFunc(tempIR)
-          Grapher.graph(tempIR, optName)
+          if (CLI.debug) Grapher.graph(tempIR, optName)
       }
       tempIR
     }.map { ir2 =>
       if (CLI.debug) section("Condensation")
       val condensed = Condense.transform(ir2)
-      if (CLI.debug) {
-        Grapher.graph(condensed, "condensed")
-      }
+      if (CLI.debug) Grapher.graph(condensed, "condensed")
       condensed
     }.map { ir2 =>
-      if (CLI.debug) {
-        section("Generating Assembly")
-        Grapher.graph(ir2, "final")
-      }
+      if (CLI.debug) section("Generating Assembly")
       new AsmGen(ir2).asm
     }.map { asm =>
       if (CLI.debug) section("Writing to output")
