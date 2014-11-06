@@ -158,10 +158,8 @@ object Flatten {
           eitherArg match {
             case Right(arg) => {
               // flatten all the args, collecting their dependency statements and temporary vars
-              val (argStatements, argExpr) = arg.flatten(tempGen)
-              val argTempVar = tempGen.newVarLike(argExpr)
-              statements = (statements ++ argStatements) :+
-                Assignment(Store(argTempVar, None), argExpr)
+              val argTempVar = tempGen.newVarLike(arg)
+              statements = statements ++ Assignment(Store(argTempVar, None), arg).flatten(tempGen)
               tempVars = tempVars :+ Right(LoadField(argTempVar, None))
             }
             case Left(str) => {
