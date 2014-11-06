@@ -88,7 +88,8 @@ object Grapher {
 
   def graph(method: IR2.Method, prefix: String, annotate: Option[IR2.Block => String]) : Unit = {
     val fileName = "%s/%s.%s.gv".format(graphDir, prefix, method.id)
-    val graphSrc = new GraphGen(method.cfg, annotate, fileName).graph
+    val title = "%s.%s".format(prefix, method.id)
+    val graphSrc = new GraphGen(method.cfg, annotate, title).graph
     val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
     file.print(graphSrc)
   }
