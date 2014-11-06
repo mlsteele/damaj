@@ -25,11 +25,13 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
     for (stmt <- block.stmts) stmt match {
       // Assignments kill the var on the left
       case Assignment(Store(to, index), right) => {
-        // Add any dependencies from the right hand side
-        live = live ++ right.dependencies()
         // Remove any occurences of this variable from the live vars
         val killedLoad = LoadField(to, index)
         live = live - killedLoad
+
+        // Add any dependencies from the right hand side
+        live = live ++ right.dependencies()
+
       }
       case Call(_, args) => args.foreach {
         case Left(_) =>
