@@ -26,9 +26,11 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
     var live:Set[Load] = previous
     for (stmt <- block.stmts) stmt match {
       // Assignments kill the var on the left
-      case Assignment(Store(to, index), right) => {
+      case Assignment(Store(to, _), right) => {
         // Remove any occurences of this variable from the live vars
-        val killedLoad = LoadField(to, index)
+        // We treat arrays as a single variable, effectively killing the entire array
+        // We also make sure to always treat globals as live
+        val killedLoad = LoadField(to, None)
         if (!( globals contains killedLoad)) {
           live -= killedLoad
         }

@@ -80,6 +80,7 @@ object ExprDependencies {
 
   implicit class BetterExpr(e: Expr) {
     // Set of loads that this expression depends on
+    // We assume that if an expr accesses any element of an array, it depends on the entire array
     def dependencies(): Set[Load] = e match {
       case Call(_, args) =>
         args.toSet.flatMap{ x: Either[StrLiteral, Expr] => x match {
@@ -88,8 +89,8 @@ object ExprDependencies {
         }}
       case BinOp(left, _, right) => Set(left, right)
       case UnaryOp(_, right) => Set(right)
-      case l@LoadField(_, index) =>
-        Set(l) ++ index.map(_.dependencies()).getOrElse(Set())
+      case l@LoadField(to, index) =>
+        Set(LoadField(to, None)) ++ index.map(_.dependencies()).getOrElse(Set())
       case _:LoadLiteral => Set()
     }
   }

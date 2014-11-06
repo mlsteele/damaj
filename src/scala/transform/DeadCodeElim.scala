@@ -35,7 +35,7 @@ object DeadCodeElim {
         // variable, but we can't eliminate the call, because it might
         // have side-effects
         case ass@Assignment(Store(to, index), call:Call) => {
-          val variable = LoadField(to, index)
+          val variable = LoadField(to, None)
           (liveAfter(b) contains variable) match {
             case true => List(ass)
             case false => List(call)
