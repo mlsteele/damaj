@@ -27,17 +27,17 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         // Remove any occurences of this variable from the live vars
         val killedLoad = LoadField(to, index)
-        live = live - killedLoad
+        live -= killedLoad
 
         // Add any dependencies from the right hand side
-        live = live ++ right.dependencies()
+        live ++= right.dependencies()
 
       }
       case Call(_, args) => args.foreach {
         case Left(_) =>
-        case Right(e) => live = live ++ e.dependencies()
+        case Right(e) => live ++= e.dependencies()
       }
-      case Return(ret) => ret.foreach{e => live = live + e}
+      case Return(ret) => ret.foreach{e => live += e}
     }
     // Special edge case: if this block is a child of a fork, the condition var needs
     // to be live

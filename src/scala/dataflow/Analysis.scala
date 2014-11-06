@@ -107,10 +107,10 @@ trait Analysis {
     while (!workSet.isEmpty) {
       // Remove from the work set
       val block = workSet.head
-      workSet = workSet - block
+      workSet -= block
       // Calculate the inputs from all the nodes brancing to this one
       val blockInputs: Set[T] = prev(block).map(outputs(_))
-      val combinedInput: T = blockInputs.fold(bottom())(merge _)
+      val combinedInput: T = blockInputs.fold(bottom)(merge _)
       inputs += (block -> combinedInput)
       // Retrieve the previous value of the transfer function
       val prevOutput: T = outputs(block)
@@ -118,8 +118,8 @@ trait Analysis {
       val newOutput = transfer(inputs(block), block)
       if (newOutput != prevOutput) {
         // If the value has changed, update outputs, and add successors to working set
-        outputs = outputs + ((block, newOutput))
-        workSet = workSet ++ next(block)
+        outputs += (block -> newOutput)
+        workSet ++= next(block)
       }
     }
 

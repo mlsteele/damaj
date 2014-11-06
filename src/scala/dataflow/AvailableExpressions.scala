@@ -38,7 +38,7 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
         // GEN expr
-        if (isPure(right)) { avail = avail + right }
+        if (isPure(right)) { avail += right }
         else { avail = expungeGlobals(avail) }
         
         // KILL any expressions that depended on the variable being assigned
@@ -46,17 +46,17 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
       }
       case c:Call => 
         // Treat the call as an expression
-        if(isPure(c)) { avail = avail + c }
+        if(isPure(c)) { avail += c }
         else { avail = expungeGlobals(avail) }
         // Also get its args
         c.args.foreach {
           case Left(_) => // String, ignore
           case Right(e) => // Expr
-            if(isPure(e)) { avail = avail + e }
+            if(isPure(e)) { avail += e }
             else { avail = expungeGlobals(avail) }
         }
       case Return(ret) => ret.foreach{ e => 
-        if(isPure(e)) { avail = avail + e }
+        if(isPure(e)) { avail += e }
         else { avail = expungeGlobals(avail) }
       }
     }

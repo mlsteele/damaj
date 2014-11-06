@@ -24,7 +24,7 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
         // Kill any assignments with the same store
         reaching = reaching filter { s => s.left != ass.left}
         // Add this assignment to the reaching defs
-        reaching = reaching + ass
+        reaching += ass
       }
       case _:Call => // don't care
       case _:Return => // don't care
