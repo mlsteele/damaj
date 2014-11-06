@@ -4,35 +4,43 @@ object CommonExpressionElimination extends Transformation {
   import IR2._
   import TempVarGen._
 
-  override def transform(m: Method): Method =
+  override def transform(m: Method): Method = {
+    val tempVarGen = new TempVarGen(m.locals, "~cse")
+    val newCFG = new CSEHelper(m, tempVarGen).transformed
     Method(m.id,
       m.params,
       m.locals,
-      transform(m.cfg, new TempVarGen(m.locals, "~cse")),
+      newCFG,
       m.returnType)
-
-  def transform(cfg: CFG, tempVarGen: TempVarGen): CFG = {
-    new CSEHelper(cfg, tempVarGen).transformed
   }
 }
 
-// THIS HAS NEVER BEEN RUN AT ALL. PLEASE REMOVE THIS NOTICE WHEN IT'S BEEN VERIFIED A BIT.
+// Private helper for CommonExpressionElimination
 // Do global subexpression elimination.
 // Example Usage:
 //   val cfg_awesome = new CSEHelper(cfg_lame, tempVarGen).transformed
-class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
+class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
   import IR2._
   import TempVarGen._
   import SymbolTable._
   import AvailableExpressions.T
   type AnalysisResult = Analysis.AnalysisResult[T]
 
-  private val analysis: AnalysisResult= new AvailableExpressions(cfg).analyze()
+  private val analysis: AnalysisResult = new AvailableExpressions(method.cfg).analyze()
+  Grapher.graph(method, "availexprs", Some(annotateGraph(_)))
 
   private val carriers = new Carriers(tempVarGen)
 
   // Compute result. This is like a return value.
-  val transformed: CFG = transform(cfg)
+  val transformed: CFG = transform(method.cfg)
+
+  private def annotateGraph(b: Block) : String = {
+    val title = "%s outputs\n".format(b.uuid)
+    val contents = analysis.outputs(b).map{ expr =>
+      expr.toString
+    }.mkString(", ")
+    return s"$title\n{$contents}"
+  }
 
   private def debug(msg: String): Unit =
     Console.err.println(s"CSE $msg")
@@ -124,7 +132,10 @@ class CSEHelper(cfg: CFG, tempVarGen: TempVarGen.TempVarGen) {
     }
 
     override def toString: String = {
-      map.toString
+      val els = map.map{
+        case (k,v) => s"k -> %s".format(v.id)
+      }.toList
+      "{%s}".format(els.mkString(", "))
     }
   }
 }
