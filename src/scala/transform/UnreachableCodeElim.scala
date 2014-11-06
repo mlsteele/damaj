@@ -9,7 +9,7 @@ object UnreachableCodeElim extends Transformation {
   import IR2._
 
   override def transform(method: Method) : Method = {
-    val results = (new Reachable(method.cfg)).analyze()
+    val results = (new Reachable(method)).analyze()
     val reachableBefore = results.inputs
     val reachableAfter = results.outputs
 

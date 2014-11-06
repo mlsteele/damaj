@@ -4,7 +4,7 @@ package compile
   * Analyzes which statements are reachable.  The outputs represent
   * whether statements after a given block are reachable
   */
-class Reachable(override val cfg: CFG) extends Analysis {
+class Reachable(override val method: IR2.Method) extends Analysis {
   import IR2._
 
   type T = Boolean
