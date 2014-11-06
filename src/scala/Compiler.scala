@@ -26,7 +26,7 @@ object Compiler {
   type Optimization = (String, IR2.Program => IR2.Program)
   val optimizations:List[Optimization] = List(
     ("cse", CommonExpressionElimination(_)),
-    ("deadcode", DeadCodeElim(_)),
+    // ("deadcode", DeadCodeElim(_)),
     ("unreachable", UnreachableCodeElim(_))
   )
 
