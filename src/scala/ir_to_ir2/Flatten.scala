@@ -92,6 +92,7 @@ object Flatten {
         return (statements, finalExpr)
       }
 
+      case expr@BinOp(left, op, right) if (left.isSimpleLoad && right.isSimpleLoad) => (List(), expr)
       case BinOp(left, op, right) => {
         // Assume both sides are complex. Optimizer will clean this up
         // Flatten the leftside and generate a temporary var for the left side of the expression
