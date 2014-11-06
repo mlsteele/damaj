@@ -9,7 +9,7 @@ object Uncondense extends Transformation {
     for (block <- cfg.blocks) {
       // Check if the block multiple statements
       block.stmts match {
-        case (first :: rest) if (rest.length >= 1) => {
+        case (first :: rest) if (rest.length > 1) => {
           val firstBlock = Block(List(first))
           val secondBlock = Block(rest)
 
