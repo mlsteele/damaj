@@ -149,7 +149,7 @@ class IR2Builder(program: ProgramIR) {
       case true => IR2.LoadLiteral(1)
       case false => IR2.LoadLiteral(0)
     }
-    case _ => throw new IR2ConstructionException("That expr should be a load!")
+    case _ => throw new IR2ConstructionException("That expr should be a load! %s".format(expr))
   }
 
   def convertOptionExprToLoad(oexpr: Option[IR.Expr]): Option[IR2.Load] = oexpr match {

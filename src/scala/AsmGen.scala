@@ -187,7 +187,7 @@ class AsmGen(ir2: IR2.Program) {
       opinstr \
       wherestore.setup \
       mov(reg_transfer, wherestore.asmloc)
-    case (store, BinOp(left: LoadField, op, right: LoadField)) =>
+    case (store, BinOp(left: Load, op, right: Load)) =>
       val wherestore = whereVar(store, symbols)
       val whereleft = whereVar(left, symbols)
       val whereright = whereVar(right, symbols)
@@ -399,12 +399,26 @@ class AsmGen(ir2: IR2.Program) {
   def whereVar(store: Store, symbols: ST): WhereVar =
     whereVar(store.to.id, store.index, symbols)
 
+  def whereVar(load: Load, symbols: ST): WhereVar = load match {
+    case load:LoadField   => whereVar(load, symbols)
+    case load:LoadLiteral => WhereVar("nop", load.value $)
+  }
+
   def commentLoad(load: LoadField): String = load.index match {
     case None => load.from.id
     case Some(LoadLiteral(index)) =>
       "%s[%s]".format(load.from.id, index)
     case Some(LoadField(index, _)) =>
       "%s[%s]".format(load.from.id, index.id)
+  }
+
+  def commentLoad(load: Load): String = load match {
+    case load@LoadField(_, None) => load.from.id
+    case load@LoadField(_, Some(LoadLiteral(index))) =>
+      "%s[%s]".format(load.from.id, index)
+    case load@LoadField(_, Some(LoadField(index, _))) =>
+      "%s[%s]".format(load.from.id, index.id)
+    case load@LoadLiteral(v) => s"$v"
   }
 
   def commentStore(store: Store): String = store.to.size match {

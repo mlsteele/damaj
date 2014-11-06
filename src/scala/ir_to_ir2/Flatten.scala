@@ -70,6 +70,7 @@ object Flatten {
       * final expr: (t2 + d)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+      // case expr if expr.isSimpleLoad() => List(expr)
       case LoadField(from, Some(index)) => {
         // Flatten the index
         val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
@@ -269,6 +270,7 @@ object Flatten {
       // Convert a while loop with a limit to one without a limit, by adding a temporary counter variable
       case While(_, _, _, Some(limit)) => assert(false, "Unelaborated limited while loop encountered."); List()
       case Return(None) => List(Return(None))
+      case r@Return(Some(expr)) if expr.isSimpleLoad() => List(r)
       case Return(Some(expr)) => {
         val (exprStmts, finalExpr) = expr.flatten(tempGen)
         val tempVar = tempGen.newVarLike(finalExpr)
