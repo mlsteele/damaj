@@ -42,8 +42,8 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
     return s"$title\n{$contents}"
   }
 
-  private def debug(msg: String): Unit =
-    Console.err.println(s"CSE $msg")
+  private def debug(msg: String): Unit = ()
+    // Console.err.println(s"CSE $msg")
 
   private def transform(cfg: CFG): CFG = {
     cfg.mapBlocks(transform)
