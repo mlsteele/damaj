@@ -35,7 +35,7 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
   val transformed: CFG = transform(method.cfg)
 
   private def annotateGraph(b: Block) : String = {
-    val title = "%s outputs\n".format(b.uuid)
+    val title = "%s Output".format(b.uuid)
     val contents = analysis.outputs(b).map{ expr =>
       expr.toString
     }.mkString(", ")
