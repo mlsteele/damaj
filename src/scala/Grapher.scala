@@ -12,7 +12,7 @@ package compile;
 
 //miles notes: create a function graph( cfg,file_name)
 //that bascially runs GraphGen on the cfg and puts it into file_name
-class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
+class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
 
   type Pair = (IR2.Block, IR2.Transition)
 
@@ -68,7 +68,8 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String]){
   }
 
   def file(graph: String): String = {
-    s"digraph G{ \nnode [shape=rectangle] \n $graph }"
+    val titleNode = "\"%s\" [shape=tripleoctagon]".format(title)
+    s"digraph G{ \nnode [shape=rectangle] \n $titleNode \n $graph }"
   }
 
 }
@@ -86,8 +87,8 @@ object Grapher {
   def graph(method: IR2.Method, prefix: String): Unit = graph(method, prefix, None)
 
   def graph(method: IR2.Method, prefix: String, annotate: Option[IR2.Block => String]) : Unit = {
-    val graphSrc = new GraphGen(method.cfg, annotate).graph
     val fileName = "%s/%s.%s.gv".format(graphDir, prefix, method.id)
+    val graphSrc = new GraphGen(method.cfg, annotate, fileName).graph
     val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
     file.print(graphSrc)
   }
