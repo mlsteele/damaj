@@ -25,8 +25,9 @@ object Compiler {
   // This is used by CLI.parse
   type Optimization = (String, IR2.Program => IR2.Program)
   val optimizations:List[Optimization] = List(
+    ("cse", CommonExpressionElimination(_)),
     ("deadcode", DeadCodeElim(_)),
-    ("cse", CommonExpressionElimination(_))
+    ("unreachable", UnreachableCodeElim(_))
   )
 
   var outFile = Console.out
