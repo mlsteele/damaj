@@ -30,14 +30,27 @@ object DeadCodeElim {
     Grapher.graph(method, "deadcode.live", Some(annotate(_)))
 
     val newCFG = method.cfg.mapBlocks { b =>
-      b.stmts.filter{
-        case Assignment(Store(to, index), _) => {
+      b.stmts.flatMap {
+        // If an assignment contains a call, we can eliminate the
+        // variable, but we can't eliminate the call, because it might
+        // have side-effects
+        case ass@Assignment(Store(to, index), call:Call) => {
           val variable = LoadField(to, index)
-          // If this variable is not live after this block, there is no point in keeping this assignment
-           liveAfter(b) contains variable
+          (liveAfter(b) contains variable) match {
+            case true => List(ass)
+            case false => List(call)
+          }
         }
-        case c:Call => true
-        case r:Return => true
+        // If an assignment assigns to a dead var, no point in keeping it
+        case ass@Assignment(Store(to, index), _) => {
+          val variable = LoadField(to, index)
+            (liveAfter(b) contains variable) match {
+            case true => List(ass)
+            case false => List()
+          }
+        }
+        case c:Call => List(c)
+        case r:Return => List(r)
       }
     }
 
