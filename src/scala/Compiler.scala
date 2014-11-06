@@ -229,15 +229,6 @@ object Compiler {
         Grapher.graph(ir2, "1-raw")
       }
       ir2
-     /*
-      * }.map { ir2 =>
-      *   if (CLI.debug) section("Condensing")
-      *   val condensed = Condense.transform(ir2)
-      *   if (CLI.debug) {
-      *     Grapher.graph(condensed, "2-condensed")
-      *   }
-      *   condensed
-      */
     }.map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
@@ -255,7 +246,17 @@ object Compiler {
       }
       tempIR
     }.map { ir2 =>
-      if (CLI.debug) section("Generating Assembly")
+      if (CLI.debug) section("Condensation")
+      val condensed = Condense.transform(ir2)
+      if (CLI.debug) {
+        Grapher.graph(condensed, "condensed")
+      }
+      condensed
+    }.map { ir2 =>
+      if (CLI.debug) {
+        section("Generating Assembly")
+        Grapher.graph(ir2, "final")
+      }
       new AsmGen(ir2).asm
     }.map { asm =>
       if (CLI.debug) section("Writing to output")

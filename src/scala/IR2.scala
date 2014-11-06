@@ -183,7 +183,6 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
    * and b has one edge in. */
   def condense(): CFG = {
     // Warning: this is not very fast and has lots of var's
-    println("Starting condensing")
     // Blocks whose sucessor(s) must be a new block
     // i.e. blocks who cannot collapse with their successor(s)
     var condensed:Set[Block] = Set()

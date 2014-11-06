@@ -20,9 +20,9 @@ object DeadCodeElim {
 
     // Pretty print analysis results
     def annotate(b: Block) : String = {
-      val inputsTitle = "=========\nLIVE BEFORE\n=========\n"
+      val inputsTitle = "===========\nLIVE BEFORE\n===========\n"
       val inputsString = liveBefore(b).mkString("\n") + "\n"
-      val outputsTitle = "=========\nLIVE AFTER\n=========\n"
+      val outputsTitle = "===========\nLIVE AFTER\n===========\n"
       val outputsString = liveAfter(b).mkString("\n")
       return inputsTitle + inputsString + outputsTitle + outputsString
     }
@@ -34,7 +34,7 @@ object DeadCodeElim {
         case Assignment(Store(to, index), _) => {
           val variable = LoadField(to, index)
           // If this variable is not live after this block, there is no point in keeping this assignment
-          liveAfter(b) contains variable
+           liveAfter(b) contains variable
         }
         case c:Call => true
         case r:Return => true
