@@ -1,3 +1,53 @@
+* Building & Running
+  Steps to build and run our DAMAJ Decaf Compiler.
+  
+  These instructions assume you are running on Athena.
+  
+  Clone the repository or otherwise obtain a copy of the code.
+
+  Run ~add -f scala~. use ~scala -version~ to make sure that scala is using version 2.11.2.
+  We use ~fsc~ to compile scala a little faster. If you happen to have any trouble because of weird
+  fsc version conflicts, please try killing your fsc server (find it with ~ps aux | grep fsc~).
+  Don't set any env variables like ~SCALA_HOME~ as this could force you to use the wrong version
+  of scala.
+  
+  Once you have the right version of scala run ~make~ or ~build.sh~ to compile the project.
+  If you have trouble with this or later steps, try `make clean` to reset the build files.
+  
+  Now you should be able to run the compiler using run.sh.
+
+  To enable optimizations you can add ~-O all~.
+
+  For example:
+
+  ~./run.sh --debug tests/codegen/input/01-callout.dcf -O all~
+
+  ~./run.sh --debug tests/codegen/input/04-math2.dcf -o 04-math2.asm~
+
+  Alternatively, you can use ~compile.sh~ to compile and run a program.
+  ~./compile.sh tests/codegen/input/01-callout.dcf~
+  This will assemble the program into ~tmp/out.S~, print the assembly, create an executable at ~tmp/out~,
+  and run the executable, printing its output as well.
+
+* Dataflow Analyses
+  Relevant files: ~src/scala/dataflow/*~
+  
+  There is a trait ~Analysis~ from which all analyses inherit. It uses the worklist algorithm.
+  Every analysis runs a transfer function on each block in a CFG. At this point in the analysis,
+  every block contains at most one statement. Later, we will have analyses that run after condensing
+  basic blocks in the CFG.
+
+** Available Expressions
+  Used in: Common Subexpression Elimination
+
+  Available Expressions is a forward-running algorithm that determines whether
+  
+* Optimizations
+  When all optimizations are enabled, they run in the order presented below.
+
+** Common Subexpression Elimination
+  
+
 * CFG visualization
     To aid in debugging, we implemented a grapher.scala that takes in a CFG,
     and auto generates a string that represents a graph which graphviz can read, and generate an svg of the graph.
