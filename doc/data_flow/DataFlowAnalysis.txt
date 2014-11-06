@@ -106,7 +106,7 @@ other dataflow algorithms.
 ** Unreachable Code Elimination
     Unreachable code elimination, located in src/scala/transform/UnreachableCodeElim.scala, deletes portions of code which can never be reached. It consumes the Reachable analysis. Any block code deemed unreachable by Reachable is turned into a nop block with no statements. The nop blocks are cleaned up in a later pass by the Condenser.
 
-    Here is an example of UCE at work.
+    Here is an example of UCE at work. Note that the blocks after the return in the if are not cleared because they could occur, but the blocks after the definitive return are cleared.
 
 * CFG visualization
     A visual representation of the cfg we generate is a very useful debugging tool. 
