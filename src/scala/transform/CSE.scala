@@ -29,6 +29,7 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
   private val analysis: AnalysisResult = new AvailableExpressions(method).analyze()
   Grapher.graph(method, "availexprs", Some(annotateGraph(_)))
 
+  // Carriers are the 'temps' which carry values around for reuse in CSE.
   private val carriers = new Carriers(tempVarGen)
 
   // Compute result. This is like a return value.
@@ -62,46 +63,43 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
     debug(s"statement $stmt carriers:$carriers")
     stmt match {
       case Assignment(left, right) =>
-        // Use stored expression if one is available according to the analysis,
-        // (NOT according to carriers, which doesn't respect non-linear programs)
-        // Otherwise, store computed value in case anyone wants to use it later.
-        val assigns = available(right) match {
-          case true =>
-            // Load from carrier instead of doing calculation again.
-            List(Assignment(left, carriers.load(right)))
-          case false =>
-            // Store for later and do original assignment.
-            List(Assignment(carriers.store(right), right),
-                 Assignment(left, carriers.load(right)))
+        val se = speedyExpr(right, available)
+        se.setup.toList :+ Assignment(left, se.load)
+      case Call(target, args) =>
+        val setups = args.flatMap{
+          case Left(strlit) => None
+          case Right(expr)  => speedyExpr(expr, available).setup
         }
 
-        // Recompute and store any available expressions that this assignment could
-        // change the value of.
-        val updates: List[Statement] = dependentExprs(available, left.asStore).map{ dependentExpr =>
-          Assignment(carriers.store(dependentExpr), dependentExpr)
-        }.toList
+        val newArgs = args.map{
+          case Left(strlit) => Left(strlit)
+          case Right(expr) => Right(speedyExpr(expr, available).load)
+        }
 
-        assigns ++ updates
-      case Return(Some(expr)) if available(expr) =>
-        // Use stored expression if available.
-        List(Return(Some(carriers.load(expr))))
-      case _ =>
-        // Leave all other types of assignment alone.
-        List(stmt)
+        setups :+ Call(target, newArgs)
+      case Return(Some(expr)) =>
+        val se = speedyExpr(expr, available)
+        se.setup.toList :+ Return(Some(se.load))
+      case r@Return(None) => List(r)
     }
   }
 
-  // Extract the expressions that depend on a field.
-  private def dependentExprs(exprs: Set[Expr], load: Load): Set[Expr] = {
-    import ExprDependencies._
-    exprs.filter(_.dependencies()(load))
-  }
+  // Represents a variable which might be accessed through a carrier.
+  // setup might include an assignment to save the value into a carrier for later.
+  // setup must happen right before expr is valid.
+  case class SpeedyExpr(setup: Option[Statement], load: LoadField)
 
-  implicit class EnhancedStore(store: Store) {
-    def asStore: Load = store match {
-      case Store(to, None) => LoadField(to, None)
-      // Arrays not supported.
-    }
+  // Use stored expression if one is available according to the analysis,
+  // (NOT according to carriers, which doesn't respect non-linear programs)
+  // Otherwise, store computed value in case anyone wants to use it later.
+  private def speedyExpr(expr: Expr, available: T): SpeedyExpr = available(expr) match {
+    case true =>
+      // Load from carrier instead of doing calculation again.
+      SpeedyExpr(None, carriers.load(expr))
+    case false =>
+      // Store for later and do original assignment.
+      val setup = Assignment(carriers.store(expr), expr)
+      SpeedyExpr(Some(setup), carriers.load(expr))
   }
 
   // Helper that keeps track of which vars hold which exprs.
