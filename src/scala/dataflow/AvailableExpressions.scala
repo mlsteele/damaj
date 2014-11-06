@@ -38,16 +38,23 @@ class AvailableExpressions(override val cfg: CFG) extends Analysis {
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
         // GEN expr
-        avail = avail + right
+        if (isPure(right)) { avail = avail + right }
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
       }
       case Call(_, args) => args.foreach {
         case Left(_) =>
-        case Right(e) => avail = avail + e
+        case Right(e) => if(isPure(e)) { avail = avail + e }
       }
-      case Return(ret) => ret.foreach{e => avail = avail + e}
+      case Return(ret) => ret.foreach{e => if(isPure(e)) { avail = avail + e }}
     }
     return avail
+  }
+
+  /* Is this expression pure i.e. safe to cache?
+   * TODO actually evaluate purity of calls */
+  private def isPure(e:Expr):Boolean = e match {
+    case c:Call => false
+    case _ => true
   }
 }
