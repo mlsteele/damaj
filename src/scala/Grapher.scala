@@ -28,7 +28,7 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
   def nodePrint(a: String): String = " \"%s\";".format(a)
 
   def conditionPrint(cond: String, t: String, f: String):String =
-    " \"%s\" -> \"%s\";\n \"%s\" -> \"%s\";".format(cond,t,cond,f)
+    " \"%s\" -> \"%s\" [label=\"T\"];\n \"%s\" -> \"%s\" [label=\"F\"];".format(cond,t,cond,f)
 
   def generateEdges(pair: Pair): List[String] = {
     val edges = pair match{
