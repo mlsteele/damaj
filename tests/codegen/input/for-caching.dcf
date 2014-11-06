@@ -1,0 +1,18 @@
+callout printf;
+
+int expr1() {
+    printf("This should happen only once!\n");
+    return 0;
+}
+
+int expr2() {
+    printf("Also, this should happen only once!\n");
+    return 5;
+}
+
+void main() {
+    int i;
+    for (i = expr1(), expr2()) {
+        // Do nothing
+    }
+}
