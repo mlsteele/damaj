@@ -1,4 +1,4 @@
-% Created 2014-11-06 Thu 02:35
+% Created 2014-11-06 Thu 02:39
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -139,7 +139,14 @@
 \subsection{Common Subexpression Elimination}
 \label{sec-3-1}
 
-  
+    src/scala/transform/CSE.scala imports from AvailableExpressions. The 
+result of the analysis is stored in val analysis which is the result of runningAvailableExpressions.analysis on the desired method. AvailableExpressions over-
+rides methods in src/scala/dataflow/Analysis.scala, such as: bottom is set to 
+allExprs,initial to empty set, direction to forward etc. Analysis provides CSE 
+with a general framework of the analysis algorithm, and src/scala/dataflow/Avai
+lableExpressions.scala fills in the missing holes that make CSE unique from the
+other dataflow algorithms. 
+     
 \subsection{Dead Code Elimination}
 \label{sec-3-2}
 
@@ -147,7 +154,8 @@
   If it is, it is converted simply to a method call without an assignment. Otherwise, the assignment
   to a dead variable is removed completely.
 
-  Here is an example of before and after Dead Code Elimination runs:
+  Here is an example of before and after Dead Code Elimination runs. Please note that the blocks were
+  given names for debugging purposes, and that circular nodes are forking conditions.
 
   Before: 
 
@@ -156,12 +164,19 @@
   After dead code elimination:
 
   \includegraphics[width=0.4\textwidth]{./after_deadcode_example.png}
+
+  Notice that the dead statements have been removed (the now-empty blocks will be removed in a later step).
 \section{CFG visualization}
 \label{sec-4}
 
+    A visual representation of the cfg we generate is a very useful debugging tool. 
+    Graphiz is a simple and straightforward interface that takes a definition of graph, and
+    produces a svg, pdf,png, or ps file with a visualization of the graph.
+    We installed the dot package to show our directed graph
     To aid in debugging, we implemented a grapher.scala that takes in a CFG,
     and auto generates a string that represents a graph which graphviz can read, and generate an svg of the graph.
     We can set a debug flag that uses grapher.scala to take the cfg in IR2, and output the string into a .gv file which is later run through dot to make an
     image of the CFG.
+    This happens whenever we compile code with the debug flag set.
 
 \end{document}
