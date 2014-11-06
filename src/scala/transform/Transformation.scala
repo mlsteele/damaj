@@ -6,6 +6,9 @@ trait Transformation {
   def apply(ir: Program): Program =
     transform(ir)
 
+  def apply(m: Method): Method =
+    transform(m)
+
   def transform(ir: Program): Program =
     Program(
       ir.fields,
