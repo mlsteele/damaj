@@ -95,7 +95,14 @@
   When all optimizations are enabled, they run in the order presented below.
 
 ** Common Subexpression Elimination
-  
+    src/scala/transform/CSE.scala imports from AvailableExpressions. The 
+result of the analysis is stored in val analysis which is the result of runningAvailableExpressions.analysis on the desired method. AvailableExpressions over-
+rides methods in src/scala/dataflow/Analysis.scala, such as: bottom is set to 
+allExprs,initial to empty set, direction to forward etc. Analysis provides CSE 
+with a general framework of the analysis algorithm, and src/scala/dataflow/Avai
+lableExpressions.scala fills in the missing holes that make CSE unique from the
+other dataflow algorithms. 
+     
 
 * CFG visualization
     A visual representation of the cfg we generate is a very useful debugging tool. 
