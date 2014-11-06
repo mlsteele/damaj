@@ -1,0 +1,6 @@
+* CFG visualization
+    To aid in debugging, we implemented a grapher.scala that takes in a CFG,
+    and auto generates a string that represents a graph which graphviz can read, and generate an svg of the graph.
+    We can set a debug flag that uses grapher.scala to take the cfg in IR2, and output the string into a .gv file which is later run through dot to make an
+    image of the CFG.
+
