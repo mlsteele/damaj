@@ -37,6 +37,13 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
       }
       case Return(ret) => ret.foreach{e => live = live + e}
     }
+    // Special edge case: if this block is a child of a fork, the condition var needs
+    // to be live
+    cfg.edges.values.foreach {
+      case Fork(cond, left, right) if (left == block || right == block) =>
+        live += cond
+      case _ => 
+    }
     return live
   }
 }
