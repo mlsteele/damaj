@@ -14,20 +14,19 @@ object DeadCodeElim {
   }
 
   def transformMethod(method: Method) : Method = {
-    print("TRANSFORMING %s\n".format(method.id))
     val results = (new LiveVariables(method.cfg)).analyze()
-    //val inputs = results.inputs
+    val inputs = results.inputs
     val outputs = results.outputs
 
     def annotate(b: Block) : String = {
-      val title = "%s outputs\n".format(b.uuid)
-      val contents = outputs(b).toList.map(v => "%s\n".format(v)).mkString
-      return title + contents
+      val inputsTitle = "=========\nINPUTS\n=========\n"
+      val inputsString = inputs(b).mkString("\n") + "\n"
+      val outputsTitle = "=========\nOUTPUTS\n=========\n"
+      val outputsString = outputs(b).mkString("\n")
+      return inputsTitle + inputsString + outputsTitle + outputsString
     }
 
-    print(results)
-
-    Grapher.graph(method, "deadcode", Some(annotate(_)))
+    Grapher.graph(method, "deadcode.live", Some(annotate(_)))
     return method
   }
 }
