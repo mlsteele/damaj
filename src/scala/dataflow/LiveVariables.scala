@@ -12,9 +12,11 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
 
   type T = Set[Load]
 
+  val globals = method.locals.globalTable.getFields.map( LoadField(_, None))
+
   def initial() = bottom()
 
-  def bottom() = Set()
+  def bottom() = globals.toSet
 
   def direction() = Backward
 
@@ -27,7 +29,9 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         // Remove any occurences of this variable from the live vars
         val killedLoad = LoadField(to, index)
-        live -= killedLoad
+        if (!( globals contains killedLoad)) {
+          live -= killedLoad
+        }
 
         // Add any dependencies from the right hand side
         live ++= right.dependencies()
