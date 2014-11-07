@@ -46,8 +46,6 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
           case _ if isPure(right) => avail += right
           case _                  => avail = expungeGlobals(avail)
         }
- //       if (isPure(right)) { avail += right }
-//      else { avail = expungeGlobals(avail) }
         
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
