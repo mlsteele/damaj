@@ -25,20 +25,33 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
   def transfer(previous: T, block: Block) : T = {
     var live:Set[Load] = previous
     for (stmt <- block.stmts) stmt match {
-      // Assignments kill the var on the left
-      case Assignment(Store(to, _), right) => {
+      // y = x; kills y, generates x
+      case Assignment(Store(to, None), right) => {
         // Remove any occurences of this variable from the live vars
-        // We treat arrays as a single variable, effectively killing the entire array
-        // We also make sure to always treat globals as live
         val killedLoad = LoadField(to, None)
-        if (!( globals contains killedLoad)) {
-          live -= killedLoad
-        }
+        live -= killedLoad
 
         // Add any dependencies from the right hand side
         live ++= right.dependencies()
 
       }
+      // y[constant] = x; kills y[constant], generates x
+      case Assignment(Store(to, Some(LoadLiteral(i))), right) => {
+        val killedLoad = LoadField(to, Some(LoadLiteral(i)))
+        live -= killedLoad
+
+        live ++= right.dependencies()
+      }
+
+      // y[i] = x; kills all of y, generates x, i
+      case Assignment(Store(to, Some(indexVar)), right) => {
+        val killedLoads = (0L to (to.size.get - 1)) map {i => LoadField(to, Some(LoadLiteral(i)))}
+        live --= killedLoads
+
+        live ++= right.dependencies()
+        live += indexVar
+      }
+
       case Call(_, args) => args.foreach {
         case Left(_) =>
         case Right(e) => live ++= e.dependencies()
@@ -52,6 +65,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
         live += cond
       case _ => 
     }
-    return live
+    // make sure to keep globals alive
+    return live ++ globals.toSet 
   }
 }
