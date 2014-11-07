@@ -301,8 +301,7 @@ class AsmGen(ir2: IR2.Program) {
       case Left(StrLiteral(value)) =>
         mov(strings.put(value) $, whereArg(argi)) ? s"stage callout arg #$argi"
       case Right(LoadLiteral(v)) =>
-        throw new AsmNotImplemented()
-        // mov(v $, argregs(argi)) ? s"stage callout arg #$argi"
+        mov(v $, whereArg(argi)) ? s"stage callout arg #$argi"
       case Right(load: LoadField) =>
         val whereload = whereVar(load, symbols)
         val whereargi = whereArg(argi)
