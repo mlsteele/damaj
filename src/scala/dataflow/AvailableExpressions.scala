@@ -38,8 +38,16 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
         // GEN expr
-        if (isPure(right)) { avail += right }
-        else { avail = expungeGlobals(avail) }
+        right match {
+          // No point in making a literal available
+          case _:LoadLiteral      => 
+          // No point in making a scalar available
+          case LoadField(_, None) => 
+          case _ if isPure(right) => avail += right
+          case _                  => avail = expungeGlobals(avail)
+        }
+ //       if (isPure(right)) { avail += right }
+//      else { avail = expungeGlobals(avail) }
         
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
