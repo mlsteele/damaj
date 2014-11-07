@@ -235,17 +235,17 @@ class IRBuilder(input: AST.ProgramAST) {
         }
     }
     case IR.UnaryOp(o,r) => o match {
-      case Not() =>
+      case Not =>
         if (typeOfExpr(r) != DTBool) {
           addError(expr, "Operator ! requires a boolean operand"); None
         } else {
           Some(expr)
         }
-      case Length() => r match {
+      case Length => r match {
         case IR.LoadField(fs, Some(idx)) => Some(expr)
         case _ => addError(expr, "Operator @ requires an array operand"); None
       }
-      case Negative() => typeOfExpr(r) match {
+      case Negative => typeOfExpr(r) match {
         case DTInt =>
           Some(expr)
         case _ =>

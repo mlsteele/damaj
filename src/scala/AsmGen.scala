@@ -175,11 +175,11 @@ class AsmGen(ir2: IR2.Program) {
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(right, symbols)
       val opinstr = op match {
-        case _:Negative =>
+        case Negative =>
           neg(reg_transfer) ? "negate"
-        case _:Not =>
+        case Not =>
           xor(1 $, reg_transfer) ? "not"
-        case _:Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
+        case Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
       }
       comment("%s <- (%s %s)".format(commentStore(store), op, commentLoad(right))) \
       whereload.setup \
@@ -193,52 +193,52 @@ class AsmGen(ir2: IR2.Program) {
       val whereright = whereVar(right, symbols)
       // Do (reg_opresult op reg_transfer) and store answer in reg_opresult
       val opinstr: String = op match {
-        case _:Add =>
+        case Add =>
           add(reg_transfer, reg_opresult)
-        case _:Subtract =>
+        case Subtract =>
           sub(reg_transfer, reg_opresult)
-        case _:Multiply =>
+        case Multiply =>
           imul(reg_transfer, reg_opresult)
-        case _:Divide =>
+        case Divide =>
           // Uses auxillary reg_divquo and reg_divrem
           mov(reg_opresult, reg_divquo) \
           cqto \ // sign extend rax into rdx:rax
           idiv(reg_transfer) \
           mov(reg_divquo, reg_opresult)
-        case _:Mod =>
+        case Mod =>
           // Uses auxillary reg_divquo and reg_divrem
           mov(reg_opresult, reg_divquo) \
           cqto \ // sign extend rax into rdx:rax
           idiv(reg_transfer) \
           mov(reg_divrem, reg_opresult)
-        case _:LessThan =>
+        case LessThan =>
           // All comparisons use reg_flagtarget
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setl(reg_flagtarget)
-        case _:GreaterThan =>
+        case GreaterThan =>
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setg(reg_flagtarget)
-        case _:LessThanEqual =>
+        case LessThanEqual =>
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setle(reg_flagtarget)
-        case _:GreaterThanEqual =>
+        case GreaterThanEqual =>
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setge(reg_flagtarget)
-        case _:Equals =>
+        case Equals =>
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           sete(reg_flagtarget)
-        case _:NotEquals =>
+        case NotEquals =>
           cmp(reg_transfer, reg_opresult) \
           mov(0 $, reg_opresult) \
           setne(reg_flagtarget)
-        case _:And =>
+        case And =>
           and(reg_transfer, reg_opresult)
-        case _:Or =>
+        case Or =>
           or(reg_transfer, reg_opresult)
       }
       // Load left into reg_opresult

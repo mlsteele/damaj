@@ -29,7 +29,7 @@ object Desugar {
   implicit class DesugaredExpr (expr: Expr) {
     def desugar(parent: SymbolTable, tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case _:Load => (List(), expr)
-      case BinOp(left, And(), right) => {
+      case BinOp(left, And, right) => {
         /*
          * a && b gets desugared to:
          * bool temp;
@@ -45,13 +45,13 @@ object Desugar {
         val elseStmt = Assignment(Store(tempVar, None), right)
         val ifStmt = If(
           List(),
-          UnaryOp(Not(), left),
+          UnaryOp(Not, left),
           Block(List(thenStmt), new SymbolTable(parent)),
           Some(Block(List(elseStmt), new SymbolTable(parent)))
         );
         return (ifStmt.desugar(parent, tempGen), LoadField(tempVar, None))
       }
-      case BinOp(left, Or(), right) => {
+      case BinOp(left, Or, right) => {
         /*
          * a || b gets desugared to:
          * bool temp;
@@ -189,7 +189,7 @@ object Desugar {
           val (startPrepare, startExpr) = start.desugar(parent, tempGen)
           // Subtract 1 because we move the incrementer to the beginning of the loop.
           val startAssign = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None),
-            BinOp(startExpr, Subtract(), LoadInt(1)))
+            BinOp(startExpr, Subtract, LoadInt(1)))
 
           // Generates statements needed to re-calculate ending expression each loop
           val (maxPrepare, maxExpr) = iter.desugar(parent, tempGen)
@@ -202,10 +202,10 @@ object Desugar {
 
           // While (loopVar < maxCache)
           val condExpr = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None),
-            LessThan(), LoadField(maxCache, None))
+            LessThan, LoadField(maxCache, None))
 
           // Generate statement to increment the loop var
-          val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add(), LoadInt(1))
+          val varPlusOne = BinOp(LoadField(loopVar.asInstanceOf[FieldSymbol], None), Add, LoadInt(1))
           val incrementLoopVar = Assignment(Store(loopVar.asInstanceOf[FieldSymbol], None), varPlusOne)
 
           // The original statements of the while loop
@@ -237,18 +237,18 @@ object Desugar {
         val counterInc = Assignment(
           Store(counterVar, None),
           BinOp(LoadField(counterVar, None),
-            Add(),
+            Add,
             LoadInt(1))
         )
         val counterCondition = BinOp(
           LoadField(counterVar, None),
-          LessThan(),
+          LessThan,
           LoadInt(limit)
         )
         val blockStmts = block.stmts :+ counterInc
         return counterInit :: While(
           preStmts,
-          BinOp(counterCondition, And(), cond),
+          BinOp(counterCondition, And, cond),
           // TODO(miles): Should thenb.fields actually be a new child symboltable? Like in and/or shortcircuiting.
           Block(blockStmts, block.fields),
           None).desugar(parent, tempGen)

@@ -24,25 +24,25 @@ object IRShared {
   }
 
   sealed trait ArithmeticBinOp extends BinOpType
-  case class Add()              extends ArithmeticBinOp
-  case class Subtract()         extends ArithmeticBinOp
-  case class Multiply()         extends ArithmeticBinOp
-  case class Divide()           extends ArithmeticBinOp
-  case class Mod()              extends ArithmeticBinOp
+  case object Add              extends ArithmeticBinOp
+  case object Subtract         extends ArithmeticBinOp
+  case object Multiply         extends ArithmeticBinOp
+  case object Divide           extends ArithmeticBinOp
+  case object Mod              extends ArithmeticBinOp
 
   sealed trait RelationalBinOp extends BinOpType
-  case class LessThan()         extends RelationalBinOp
-  case class GreaterThan()      extends RelationalBinOp
-  case class LessThanEqual()    extends RelationalBinOp
-  case class GreaterThanEqual() extends RelationalBinOp
+  case object LessThan         extends RelationalBinOp
+  case object GreaterThan      extends RelationalBinOp
+  case object LessThanEqual    extends RelationalBinOp
+  case object GreaterThanEqual extends RelationalBinOp
 
   sealed trait EqualityBinOp extends BinOpType
-  case class Equals()           extends EqualityBinOp
-  case class NotEquals()        extends EqualityBinOp
+  case object Equals           extends EqualityBinOp
+  case object NotEquals        extends EqualityBinOp
 
   sealed trait BooleanBinOp extends BinOpType
-  case class And()              extends BooleanBinOp
-  case class Or()               extends BooleanBinOp
+  case object And              extends BooleanBinOp
+  case object Or               extends BooleanBinOp
 
   sealed trait UnaryOpType {
     override def toString() : String = unaryOpToStringMap get this match {
@@ -51,9 +51,9 @@ object IRShared {
     }
   }
 
-  case class Not()              extends UnaryOpType
-  case class Negative()         extends UnaryOpType
-  case class Length()           extends UnaryOpType
+  case object Not              extends UnaryOpType
+  case object Negative         extends UnaryOpType
+  case object Length           extends UnaryOpType
 
   /**
     * The type of an expression.
@@ -62,7 +62,7 @@ object IRShared {
   def typeOfExpr(expr: IR.Expr): DType = expr match {
     case b:IR.BinOp => b.op.returnType()
     // op @ always returns an int
-    case IR.UnaryOp(Length(), _) => DTInt
+    case IR.UnaryOp(Length, _) => DTInt
     // the other unary ops do not change the inner type
     case u:IR.UnaryOp => u.op.returnType()
     case IR.Ternary(c, l, r) => typeOfExpr(l)
@@ -75,41 +75,41 @@ object IRShared {
 
   val stringToBinOpMap : Map[String, BinOpType] =
     Map(
-      "+" ->  Add(),
-      "-" -> Subtract(),
-      "*" -> Multiply(),
-      "/" -> Divide(),
-      "%" -> Mod(),
-      "<" -> LessThan(),
-      ">" -> GreaterThan(),
-      "<=" -> LessThanEqual(),
-      ">=" -> GreaterThanEqual(),
-      "==" -> Equals(),
-      "!=" -> NotEquals(),
-      "&&" -> And(),
-      "||" -> Or()
+      "+" ->  Add,
+      "-" -> Subtract,
+      "*" -> Multiply,
+      "/" -> Divide,
+      "%" -> Mod,
+      "<" -> LessThan,
+      ">" -> GreaterThan,
+      "<=" -> LessThanEqual,
+      ">=" -> GreaterThanEqual,
+      "==" -> Equals,
+      "!=" -> NotEquals,
+      "&&" -> And,
+      "||" -> Or
     )
 
   val binToStringOpMap : Map[BinOpType, String] = stringToBinOpMap.map(_.swap)
 
   val stringToUnaryOpMap : Map[String, UnaryOpType] = 
     Map(
-      "-" -> Negative(),
-      "!" -> Not(),
-      "@" -> Length()
+      "-" -> Negative,
+      "!" -> Not,
+      "@" -> Length
     )
 
   val unaryOpToStringMap : Map[UnaryOpType, String] = stringToUnaryOpMap.map(_.swap)
 
   // Converts strings to bin ops
   implicit def StringToBinOp(s: String) : BinOpType = stringToBinOpMap get s match {
-    case None => assert(false, "Failed to convert string to bin op. This shouldn't happen."); Add()
+    case None => assert(false, "Failed to convert string to bin op. This shouldn't happen."); Add
     case Some(b) => b
   }
 
   // Converts strings to unary ops
   implicit def StringToUnaryOp(s: String) : UnaryOpType = stringToUnaryOpMap get s match {
-    case None => assert(false, "Failed to convert string to unary op. This shouldn't happen."); Not()
+    case None => assert(false, "Failed to convert string to unary op. This shouldn't happen."); Not
     case Some(u) => u
   }
 
@@ -136,9 +136,9 @@ object IRShared {
 
   implicit class EnhancedUnaryOp (op: UnaryOpType) {
     def operandType(): DType = op match {
-      case _:Not      => DTBool
-      case _:Negative => DTInt
-      case _:Length   => DTInt
+      case Not      => DTBool
+      case Negative => DTInt
+      case Length   => DTInt
     }
 
     def returnType() : DType = operandType()
