@@ -215,14 +215,9 @@ object Flatten {
         // Anything of the form a[b] = c gets converted to a form similar to:
         // t0 = c
         // a[t1] = t0
-        val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
-        val (rightStmts, finalRightExpr) = right.flatten(tempGen)
-        val tempIndex = tempGen.newIntVar()
-        val tempRight = tempGen.newVarLike(right)
-        return indexStmts ++ rightStmts :+
-          Assignment(Store(tempIndex, None), finalIndexExpr) :+
-          Assignment(Store(tempRight, None), finalRightExpr) :+
-          Assignment(Store(from, Some(LoadField(tempIndex, None))), LoadField(tempRight, None))
+        val (indexStmts, indexVar) = index.flatten(tempGen)
+        val (rightStmts, rightVar) = right.flatten(tempGen)
+        return indexStmts ++ rightStmts :+ Assignment(Store(from, Some(indexVar)), rightVar)
       }
       // Use special flattenCall method, and interpret the result as a statement
       case c:Call => {
