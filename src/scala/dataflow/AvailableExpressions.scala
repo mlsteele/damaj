@@ -53,7 +53,11 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
         }
       case Return(ret) => ret.foreach{ e => avail += e}
     }
-    return expungeGlobals(avail)
+    return expungeGlobals(avail) filter {
+      // make sure to not include any loads, generates unncessary temp vars
+      case _:Load => false
+      case _ => true
+    }
   }
 
   /* Is this call pure i.e. safe to cache?
