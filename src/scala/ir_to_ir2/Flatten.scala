@@ -72,6 +72,7 @@ object Flatten {
     def isSimpleLoad() : Boolean = expr match {
       case l:Load => l match {
         case LoadField(_, None) => true
+        case LoadField(_, Some(_:LoadInt)) => true
         case LoadField(_, Some(_)) => false
         case _:LoadInt   => true
         case _:LoadBool  => true
@@ -173,8 +174,8 @@ object Flatten {
       * are only Loads.
       */
     def isSimple() : Boolean = stmt match {
-      // scalar = array[constant] is simple
-      case Assignment(Store(_, None), LoadField(_, Some(_:LoadInt))) => true
+      // scalar = array[load] is simple
+      case Assignment(Store(_, None), LoadField(_, Some(_:Load))) => true
       case Assignment(Store(_, None), right) => right.isSimple() // Simple scalar access
       case Assignment(Store(_, Some(index)), right) => index.isSimpleLoad() && right.isSimpleLoad()
 
