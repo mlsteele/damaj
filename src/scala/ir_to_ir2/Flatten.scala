@@ -23,7 +23,7 @@ object Flatten {
     return program
   }
 
-  implicit class EnhancedLoad(load: Load) {
+  private implicit class EnhancedLoad(load: Load) {
     // Gets the type of a load
     def dtype(): DType = load match {
       case LoadField(from, _) => from.dtype
@@ -32,7 +32,7 @@ object Flatten {
     }
   }
 
-  implicit class MaybeSimpleExpr (expr: Expr) {
+  private implicit class MaybeSimpleExpr (expr: Expr) {
     def isSimpleLoad() : Boolean = expr match {
       case l:Load => l match {
         case LoadField(_, None) => true
@@ -57,7 +57,7 @@ object Flatten {
         case Left(_) => true
         case Right(e) => e.isSimple()
       })
-      case l:Load => true
+      case l:Load => l.isSimpleLoad()
     }
 
     /**
@@ -70,7 +70,8 @@ object Flatten {
       * final expr: (t2 + d)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
-      // case expr if expr.isSimpleLoad() => List(expr)
+      // No need to simplify constant-index access
+      case LoadField(_, Some(_:LoadInt)) => (List(), expr)
       case LoadField(from, Some(index)) => {
         // Flatten the index
         val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
@@ -81,7 +82,11 @@ object Flatten {
         )
       }
 
+        // No need to flatten a scalar load
       case l:Load => (List(),l)
+
+        // No need to flatten a unary op on a simple load
+      case u@UnaryOp(_, e) if e.isSimpleLoad => (List(), u)
 
       case UnaryOp(op, e) => {
         // Flatten the operand, and assign it to a temporary var
@@ -92,44 +97,38 @@ object Flatten {
         return (statements, finalExpr)
       }
 
-      case expr@BinOp(left, op, right) if (left.isSimpleLoad && right.isSimpleLoad) => (List(), expr)
       case BinOp(left, op, right) => {
-        // Assume both sides are complex. Optimizer will clean this up
-        // Flatten the leftside and generate a temporary var for the left side of the expression
-        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-        val leftTempVar = tempGen.newVar(typeOfExpr(left))
+        val (leftStatements, finalLeftExpr) = left.flatten(tempGen) match {
+          // Left is already a simple load
+          case (Nil, _:Load) => (Nil, left)
+          // Flatten the leftside and generate a temporary var for the left side of the expression
+          case (stmts, leftExpr) => {
+            val leftTempVar = tempGen.newVar(typeOfExpr(left))
+            val leftAssign = Assignment(Store(leftTempVar, None), leftExpr)
+            (stmts :+ leftAssign, LoadField(leftTempVar, None))
+          }
+        }
 
-        // Flatten the right and generate a temporary var for the right side of the expression
-        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-        val rightTempVar = tempGen.newVar(typeOfExpr(right))
-
-        val statements = (leftStatements ++ rightStatements) :+
-          Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-          Assignment(Store(rightTempVar, None), finalRightExpr)
+        val (rightStatements, finalRightExpr) = right.flatten(tempGen) match {
+          // Right is already a simple load
+          case (Nil, _:Load) => (Nil, right)
+          // Flatten the right side and generate a temporary var for the right side of the expression
+          case (stmts, rightExpr) => {
+            val rightTempVar = tempGen.newVar(typeOfExpr(right))
+            val rightAssign = Assignment(Store(rightTempVar, None), rightExpr)
+            (stmts :+ rightAssign, LoadField(rightTempVar, None))
+          }
+        }
 
         return (
-          statements,
-          BinOp(LoadField(leftTempVar, None), op, LoadField(rightTempVar, None))
+          leftStatements ++ rightStatements,
+          BinOp(finalLeftExpr, op, finalRightExpr)
         )
       }
 
-      case Ternary(cond, left, right) => {
-        val (condStatements, finalCondExpr) = cond.flatten(tempGen)
-        val condTempVar = tempGen.newVar(typeOfExpr(finalCondExpr))
-
-        val (leftStatements, finalLeftExpr) = left.flatten(tempGen)
-        val leftTempVar = tempGen.newVar(typeOfExpr(finalLeftExpr))
-
-        val (rightStatements, finalRightExpr) = right.flatten(tempGen)
-        val rightTempVar = tempGen.newVar(typeOfExpr(finalRightExpr))
-
-        val statements = (condStatements ++ leftStatements ++ rightStatements) :+
-          Assignment(Store(condTempVar, None), finalCondExpr) :+
-          Assignment(Store(leftTempVar, None), finalLeftExpr) :+
-          Assignment(Store(rightTempVar, None), finalRightExpr)
-
-        val finalExpr = Ternary(LoadField(condTempVar, None), LoadField(leftTempVar, None), LoadField(rightTempVar, None))
-        return (statements, finalExpr)
+      case _:Ternary => {
+        assert(false, "Flatten should never get a Ternary op.");
+        return (List(), expr)
       }
 
       case MethodCall(symbol, args) => {
@@ -181,6 +180,8 @@ object Flatten {
       * are only Loads.
       */
     def isSimple() : Boolean = stmt match {
+      // scalar = array[constant] is simple
+      case Assignment(Store(_, None), LoadField(_, Some(_:LoadInt))) => true
       case Assignment(Store(_, None), right) => right.isSimple() // Simple scalar access
       case Assignment(Store(_, Some(index)), right) => index.isSimpleLoad() && right.isSimpleLoad()
 
@@ -282,13 +283,13 @@ object Flatten {
     }
   }
 
-  implicit class MaybeSimpleBlock (var block: Block) {
+  private implicit class MaybeSimpleBlock (var block: Block) {
     def flatten() : Block = {
       val tempGen = new TempVarGen(block.fields)
       val newStmts = block.stmts.flatMap(_.flatten(tempGen))
       return Block(newStmts, block.fields)
     }
 
-    def isSimple() : Boolean = all(block.stmts.map(_.isSimple()))
+    def isSimple() : Boolean = all(block.stmts.map { _.isSimple() })
   }
 }
