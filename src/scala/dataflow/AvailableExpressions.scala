@@ -38,43 +38,27 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
         // GEN expr
-        right match {
-          // No point in making a literal available
-          case _:LoadLiteral      => 
-          // No point in making a scalar available
-          case LoadField(_, None) => 
-          case _ if isPure(right) => avail += right
-          case _                  => avail = expungeGlobals(avail)
-        }
-        
+        avail += right
+
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
       }
       case c:Call => 
-        // Treat the call as an expression
-        if(isPure(c)) { avail += c }
-        else { avail = expungeGlobals(avail) }
-        // Also get its args
+        // If the call has no side-effects, it can be an available expressio
+        if (isPure(c)) { avail += c }
+        // Also make its args available
         c.args.foreach {
           case Left(_) => // String, ignore
-          case Right(e) => // Expr
-            if(isPure(e)) { avail += e }
-            else { avail = expungeGlobals(avail) }
+          case Right(e) =>  avail += e
         }
-      case Return(ret) => ret.foreach{ e => 
-        if(isPure(e)) { avail += e }
-        else { avail = expungeGlobals(avail) }
-      }
+      case Return(ret) => ret.foreach{ e => avail += e}
     }
-    return avail
+    return expungeGlobals(avail)
   }
 
-  /* Is this expression pure i.e. safe to cache?
+  /* Is this call pure i.e. safe to cache?
    * TODO actually evaluate purity of calls */
-  private def isPure(e:Expr):Boolean = e match {
-    case c:Call => false
-    case _ => true
-  }
+  private def isPure(c:Call):Boolean = false
 
   private def expungeGlobals(avail: Set[Expr]):Set[Expr] = {
     var newAvail: Set[Expr] = avail
