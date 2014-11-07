@@ -114,42 +114,38 @@ object Desugar {
       }
       case MethodCall(symbol, args) => {
         var statements: List[Statement] = List()
-        var tempVars: List[Expr] = List()
+        var newArgs: List[Expr] = List()
         for (eitherArg <- args) {
           // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
           eitherArg.map (arg => {
             // desugar all the args, collecting their dependency statements and temporary vars
             val (argStatements, argExpr) = arg.desugar(parent, tempGen)
-            val argTempVar = tempGen.newVarLike(argExpr)
-            statements = (statements ++ argStatements) :+
-              Assignment(Store(argTempVar, None), argExpr)
-              tempVars = tempVars :+ LoadField(argTempVar, None)
+            statements ++= argStatements
+            newArgs :+= argExpr
           })
         }
         // Make a new method call using the temporary vars as the args
-        val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
+        val finalExpr = MethodCall(symbol, newArgs.map(Right(_)))
         return (statements, finalExpr)
       }
       case CalloutCall(symbol, args) => {
         var statements: List[Statement] = List()
-        var tempVars: List[Either[StrLiteral, Expr]] = List()
+        var newArgs: List[Either[StrLiteral, Expr]] = List()
         for (eitherArg <- args) {
           eitherArg match {
             case Right(arg) => {
               // desugar all the args, collecting their dependency statements and temporary vars
               val (argStatements, argExpr) = arg.desugar(parent, tempGen)
-              val argTempVar = tempGen.newVarLike(argExpr)
-              statements = (statements ++ argStatements) :+
-                Assignment(Store(argTempVar, None), argExpr)
-              tempVars = tempVars :+ Right(LoadField(argTempVar, None))
+              statements ++= argStatements
+              newArgs :+= Right(argExpr)
             }
             case Left(str) => {
-              tempVars = tempVars :+ Left(str)
+              newArgs :+= Left(str)
             }
           }
         }
         // Make a new callout call using the temporary vars as the args
-        val finalExpr = CalloutCall(symbol, tempVars)
+        val finalExpr = CalloutCall(symbol, newArgs)
         return (statements, finalExpr)
       }
     }
