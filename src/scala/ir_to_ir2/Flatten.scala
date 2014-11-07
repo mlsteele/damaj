@@ -167,7 +167,7 @@ object Flatten {
     }
   }
 
-  implicit class MaybeSimpleStatement(stmt: Statement) {
+  private implicit class MaybeSimpleStatement(stmt: Statement) {
     /**
       * Determines whether a statement is simple.
       * This means that any arguments or operands to a statement

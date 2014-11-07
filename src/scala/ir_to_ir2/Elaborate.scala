@@ -35,7 +35,7 @@ object Elaborate {
     case _ => List()
   }
 
-  implicit class ElaboratedMethodSymbol(method: MethodSymbol) {
+  private implicit class ElaboratedMethodSymbol(method: MethodSymbol) {
     // Modifies void methods into methods that return int 0.
     def elaborate(): Unit = {
       val isVoidMain = (method.id == "main") && (method.returns == DTVoid)
@@ -49,7 +49,7 @@ object Elaborate {
     }
   }
 
-  implicit class ElaboratedBlock(block: Block) {
+  private implicit class ElaboratedBlock(block: Block) {
     def elaborate(): Block = {
       val newStmts = block.fields.symbols.flatMap(initVar)
       return Block(
@@ -67,7 +67,7 @@ object Elaborate {
     }
   }
 
-  implicit class ElaboratedStatement(stmt: Statement) {
+  private implicit class ElaboratedStatement(stmt: Statement) {
     def elaborate(): Statement = stmt match {
       case a:Assignment => a
       case c:Call => c

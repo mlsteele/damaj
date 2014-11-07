@@ -26,7 +26,7 @@ object Desugar {
     return program
   }
 
-  implicit class DesugaredExpr (expr: Expr) {
+  private implicit class DesugaredExpr (expr: Expr) {
     def desugar(parent: SymbolTable, tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
       case _:Load => (List(), expr)
       case BinOp(left, And, right) => {
@@ -151,7 +151,7 @@ object Desugar {
     }
   }
 
-  implicit class DesugaredStatement(stmt: Statement) {
+  private implicit class DesugaredStatement(stmt: Statement) {
     def desugar(parent: SymbolTable, tempGen: TempVarGen) : List[Statement] = stmt match {
       case Assignment(left, right) => {
         val (stmts, finalExpr) = right.desugar(parent, tempGen)
@@ -259,7 +259,7 @@ object Desugar {
     }
   }
 
-  implicit class DesugaredBlock(var block: Block) {
+  private implicit class DesugaredBlock(var block: Block) {
     def desugar(tempGen: TempVarGen) : Block = {
       val newStmts = block.stmts.flatMap(_.desugar(block.fields, tempGen))
       return Block(newStmts, block.fields)
