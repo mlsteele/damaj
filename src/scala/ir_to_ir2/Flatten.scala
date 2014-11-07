@@ -63,112 +63,104 @@ object Flatten {
     /**
       * Takes an expression, and generates a list of statements and
       * temporary variable assignments that are needed to generate the
-      * expression, if the expression is not simple.  For example,
+      * expression, and a load containing the temporary variable the final output is in.
       * (z = a + b + c + d) will be translated into the following statements
       * and final expr:
-      * statements = [t1 = a + b, t2 = t1 + c]
-      * final expr: (t2 + d)
+      * statements = [t1 = a + b, t2 = t1 + c, t3 = t2 + d]
+      * final load: (t3)
       */
-    def flatten(tempGen: TempVarGen) : (List[Statement], Expr) = expr match {
+    def flatten(tempGen: TempVarGen) : (List[Statement], Load) = expr match {
       // No need to simplify constant-index access
-      case LoadField(_, Some(_:LoadInt)) => (List(), expr)
-      case LoadField(from, Some(index)) => {
+      case load@LoadField(_, Some(_:LoadInt)) => (List(), load)
+      case load@LoadField(from, Some(index)) => {
         // Flatten the index
-        val (indexStmts, finalIndexExpr) = index.flatten(tempGen)
-        val indexTempVar = tempGen.newIntVar()
+        val (indexStmts, indexLoad) = index.flatten(tempGen)
+        val tempVar = tempGen.newVarLike(load)
+        // temp = array[index_temp]
+        val tempAssign = Assignment(tempVar, LoadField(from, Some(indexLoad)))
         return (
-          indexStmts :+ Assignment(Store(indexTempVar, None), finalIndexExpr),
-          LoadField(from, Some(LoadField(indexTempVar, None)))
+          indexStmts :+ tempAssign,
+          tempVar
         )
       }
 
         // No need to flatten a scalar load
       case l:Load => (List(),l)
 
-        // No need to flatten a unary op on a simple load
-      case u@UnaryOp(_, e) if e.isSimpleLoad => (List(), u)
-
       case UnaryOp(op, e) => {
         // Flatten the operand, and assign it to a temporary var
-        val (operandStatements, operandExpr) = e.flatten(tempGen)
-        val tempVar = tempGen.newVar(op.operandType())
-        val statements = operandStatements :+ Assignment(Store(tempVar, None), operandExpr)
-        val finalExpr = UnaryOp(op, LoadField(tempVar, None))
-        return (statements, finalExpr)
+        val (operandStatements, operandVar) = e.flatten(tempGen)
+        //val tempVar = tempGen.newVar(op.operandType())
+        val tempVar = tempGen.newVar(op.returnType)
+        val tempAssign = Assignment(tempVar, UnaryOp(op, operandVar))
+        return (
+          operandStatements :+ tempAssign,
+          tempVar
+        )
       }
 
       case BinOp(left, op, right) => {
-        val (leftStatements, finalLeftExpr) = left.flatten(tempGen) match {
-          // Left is already a simple load
-          case (Nil, _:Load) => (Nil, left)
-          // Flatten the leftside and generate a temporary var for the left side of the expression
-          case (stmts, leftExpr) => {
-            val leftTempVar = tempGen.newVar(typeOfExpr(left))
-            val leftAssign = Assignment(Store(leftTempVar, None), leftExpr)
-            (stmts :+ leftAssign, LoadField(leftTempVar, None))
-          }
-        }
+        val (leftStmts, leftVar) = left.flatten(tempGen)
+        val (rightStmts, rightVar) = right.flatten(tempGen)
 
-        val (rightStatements, finalRightExpr) = right.flatten(tempGen) match {
-          // Right is already a simple load
-          case (Nil, _:Load) => (Nil, right)
-          // Flatten the right side and generate a temporary var for the right side of the expression
-          case (stmts, rightExpr) => {
-            val rightTempVar = tempGen.newVar(typeOfExpr(right))
-            val rightAssign = Assignment(Store(rightTempVar, None), rightExpr)
-            (stmts :+ rightAssign, LoadField(rightTempVar, None))
-          }
-        }
+        val tempVar = tempGen.newVar(op.returnType)
+        val tempAssign = Assignment(tempVar, BinOp(leftVar, op, rightVar))
 
         return (
-          leftStatements ++ rightStatements,
-          BinOp(finalLeftExpr, op, finalRightExpr)
+          leftStmts ++ rightStmts :+ tempAssign,
+          tempVar
         )
       }
 
       case _:Ternary => {
         assert(false, "Flatten should never get a Ternary op.");
-        return (List(), expr)
+        return (List(), LoadInt(0))
       }
 
       case MethodCall(symbol, args) => {
         var statements: List[Statement] = List()
-        var tempVars: List[Expr] = List()
+        var newArgs: List[Load] = List()
         for (eitherArg <- args) {
           // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
           eitherArg.map (arg => {
             // flatten all the args, collecting their dependency statements and temporary vars
-            val (argStatements, argExpr) = arg.flatten(tempGen)
-            val argTempVar = tempGen.newVarLike(argExpr)
-            statements = (statements ++ argStatements) :+
-              Assignment(Store(argTempVar, None), argExpr)
-            tempVars = tempVars :+ LoadField(argTempVar, None)
+            val (argStatements, argVar) = arg.flatten(tempGen)
+            statements ++= argStatements
+            newArgs :+= argVar
           })
         }
-        // Make a new method call using the temporary vars as the args
-        val finalExpr = MethodCall(symbol, tempVars.map(Right(_)))
-        return (statements, finalExpr)
+        // Make a new method call using the flattened vars as the args
+        val tempVar = tempGen.newVar(symbol.returns)
+        val tempAssign = Assignment(tempVar, MethodCall(symbol, newArgs.map(Right(_))))
+        return (
+          statements :+ tempAssign,
+          tempVar
+        )
       }
 
       case CalloutCall(symbol, args) => {
         var statements: List[Statement] = List()
-        var tempVars: List[Either[StrLiteral, Expr]] = List()
+        var newArgs: List[Either[StrLiteral, Expr]] = List()
         for (eitherArg <- args) {
           eitherArg match {
             case Right(arg) => {
               // flatten all the args, collecting their dependency statements and temporary vars
-              val argTempVar = tempGen.newVarLike(arg)
-              statements = statements ++ Assignment(Store(argTempVar, None), arg).flatten(tempGen)
-              tempVars = tempVars :+ Right(LoadField(argTempVar, None))
+              val (argStatements, argVar) = arg.flatten(tempGen)
+              statements ++= argStatements
+              newArgs :+= Right(argVar)
             }
             case Left(str) => {
-              tempVars = tempVars :+ Left(str)
+              newArgs :+= Left(str)
             }
           }
         }
         // Make a new callout call using the temporary vars as the args
-        val finalExpr = CalloutCall(symbol, tempVars)
-        return (statements, finalExpr)
+        val tempVar = tempGen.newIntVar()
+        val tempAssign = Assignment(tempVar, CalloutCall(symbol, newArgs))
+        return (
+          statements :+ tempAssign,
+          tempVar
+        )
       }
     }
   }
@@ -292,4 +284,8 @@ object Flatten {
 
     def isSimple() : Boolean = all(block.stmts.map { _.isSimple() })
   }
+
+  private implicit def fieldToStore(field: FieldSymbol) : Store = Store(field, None)
+
+  private implicit def fieldToLoad(field: FieldSymbol) : Load = LoadField(field, None)
 }
