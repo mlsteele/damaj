@@ -23,12 +23,48 @@ object Flatten {
     return program
   }
 
-  private implicit class EnhancedLoad(load: Load) {
-    // Gets the type of a load
-    def dtype(): DType = load match {
-      case LoadField(from, _) => from.dtype
-      case LoadInt(_)         => DTInt
-      case LoadBool(_)        => DTBool
+  // Calls need to be handled specially, because they are both statements and exprs
+  private implicit class FlatCall (call: Call) {
+    def flattenCall(tempGen: TempVarGen): (List[Statement], Call) = call match {
+      case MethodCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var newArgs: List[Load] = List()
+        for (eitherArg <- args) {
+          // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
+          eitherArg.map (arg => {
+            // flatten all the args, collecting their dependency statements and temporary vars
+            val (argStatements, argVar) = arg.flatten(tempGen)
+            statements ++= argStatements
+            newArgs :+= argVar
+          })
+        }
+        return (
+          statements,
+          MethodCall(symbol, newArgs.map(Right(_)))
+        )
+      }
+
+      case CalloutCall(symbol, args) => {
+        var statements: List[Statement] = List()
+        var newArgs: List[Either[StrLiteral, Expr]] = List()
+        for (eitherArg <- args) {
+          eitherArg match {
+            case Right(arg) => {
+              // flatten all the args, collecting their dependency statements and temporary vars
+              val (argStatements, argVar) = arg.flatten(tempGen)
+              statements ++= argStatements
+              newArgs :+= Right(argVar)
+            }
+            case Left(str) => {
+              newArgs :+= Left(str)
+            }
+          }
+        }
+        return (
+          statements,
+          CalloutCall(symbol, newArgs)
+        )
+      }
     }
   }
 
@@ -117,48 +153,13 @@ object Flatten {
         return (List(), LoadInt(0))
       }
 
-      case MethodCall(symbol, args) => {
-        var statements: List[Statement] = List()
-        var newArgs: List[Load] = List()
-        for (eitherArg <- args) {
-          // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
-          eitherArg.map (arg => {
-            // flatten all the args, collecting their dependency statements and temporary vars
-            val (argStatements, argVar) = arg.flatten(tempGen)
-            statements ++= argStatements
-            newArgs :+= argVar
-          })
-        }
-        // Make a new method call using the flattened vars as the args
-        val tempVar = tempGen.newVar(symbol.returns)
-        val tempAssign = Assignment(tempVar, MethodCall(symbol, newArgs.map(Right(_))))
+      case c:Call => {
+        // Use special flattenCall method, and interpret the return type as an expr
+        val (stmts, newCall) = c.flattenCall(tempGen)
+        val tempVar = tempGen.newVarLike(newCall)
+        val tempAssign = Assignment(tempVar, newCall)
         return (
-          statements :+ tempAssign,
-          tempVar
-        )
-      }
-
-      case CalloutCall(symbol, args) => {
-        var statements: List[Statement] = List()
-        var newArgs: List[Either[StrLiteral, Expr]] = List()
-        for (eitherArg <- args) {
-          eitherArg match {
-            case Right(arg) => {
-              // flatten all the args, collecting their dependency statements and temporary vars
-              val (argStatements, argVar) = arg.flatten(tempGen)
-              statements ++= argStatements
-              newArgs :+= Right(argVar)
-            }
-            case Left(str) => {
-              newArgs :+= Left(str)
-            }
-          }
-        }
-        // Make a new callout call using the temporary vars as the args
-        val tempVar = tempGen.newIntVar()
-        val tempAssign = Assignment(tempVar, CalloutCall(symbol, newArgs))
-        return (
-          statements :+ tempAssign,
+          stmts :+ tempAssign,
           tempVar
         )
       }
@@ -222,15 +223,10 @@ object Flatten {
           Assignment(Store(tempRight, None), finalRightExpr) :+
           Assignment(Store(from, Some(LoadField(tempIndex, None))), LoadField(tempRight, None))
       }
-      // MethodCall and CalloutCall have weird casts because they
-      // are both Exprs and Statements
-      case m:MethodCall => {
-        val (stmts, finalExpr) = m.asInstanceOf[Expr].flatten(tempGen)
-        return stmts :+ finalExpr.asInstanceOf[MethodCall]
-      }
-      case c:CalloutCall => {
-        val (stmts, finalExpr) = c.asInstanceOf[Expr].flatten(tempGen)
-        return stmts :+ finalExpr.asInstanceOf[CalloutCall]
+      // Use special flattenCall method, and interpret the result as a statement
+      case c:Call => {
+        val (stmts, newCall) = c.flattenCall(tempGen)
+        return stmts :+ newCall
       }
       case If(preStmts, cond, thenb, elseb) => {
         val (condStmts, condExpr) = cond.flatten(tempGen)
