@@ -80,18 +80,32 @@ object ExprDependencies {
 
   implicit class BetterExpr(e: Expr) {
     // Set of loads that this expression depends on
-    // We assume that if an expr accesses any element of an array, it depends on the entire array
     def dependencies(): Set[Load] = e match {
       case Call(_, args) =>
         args.toSet.flatMap{ x: Either[StrLiteral, Expr] => x match {
           case Left(str) => List()
-          case Right(subE) => subE.dependencies().toList
+          case Right(subE) => subE.dependencies.toList
         }}
-      case BinOp(left, _, right) => Set(left, right)
-      case UnaryOp(_, right) => Set(right)
-      case l@LoadField(to, index) =>
-        Set(LoadField(to, None)) ++ index.map(_.dependencies()).getOrElse(Set())
+      case BinOp(left, _, right) => (left.dependencies ++ right.dependencies).toSet
+      case UnaryOp(_, right) => right.dependencies.toSet
+
+      // Constant array access only depends on a single array location
+      case load@LoadField(_, Some(_:LoadLiteral)) => Set(load)
+
+        // Variable array access depends on the index variable, and the entirety of the array
+      case load@LoadField(field, Some(indexLoad:LoadField)) => {
+        //indexLoad.dependencies ++ (0 to field.size.get - 1) map {
+        val allLocs = (0L to (field.size.get - 1)) map {i => LoadField(field, Some(LoadLiteral(i)))}
+        indexLoad.dependencies ++ allLocs
+      }
+
+        // Scalar vars depend on themselves
+      case load@LoadField(_, None) => Set(load)
+
+        // Literals don't have dependencies
       case _:LoadLiteral => Set()
     }
   }
 }
+
+object lol{}
