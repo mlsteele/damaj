@@ -38,7 +38,9 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
       case Assignment(Store(to, index), right) => {
         val load = LoadField(to, index)
         // GEN expr
-        avail += right
+        if (isPure(right)) {
+          avail += right
+        }
 
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
@@ -51,7 +53,7 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
           case Left(_) => // String, ignore
           case Right(e) =>  avail += e
         }
-      case Return(ret) => ret.foreach{ e => avail += e}
+      case Return(ret) => ret.foreach{ e => if (isPure(e)) {avail += e}}
     }
     return expungeGlobals(avail) filter {
       // make sure to not include any loads, generates unncessary temp vars
@@ -62,7 +64,10 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
 
   /* Is this call pure i.e. safe to cache?
    * TODO actually evaluate purity of calls */
-  private def isPure(c:Call):Boolean = false
+  private def isPure(e:Expr):Boolean = e match {
+    case c:Call => false
+    case _ => true
+  }
 
   private def expungeGlobals(avail: Set[Expr]):Set[Expr] = {
     var newAvail: Set[Expr] = avail
