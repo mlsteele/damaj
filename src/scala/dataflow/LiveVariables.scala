@@ -9,14 +9,19 @@ package compile
 class LiveVariables(override val method: IR2.Method) extends Analysis {
   import IR2._
   import ExprDependencies._
+  import SymbolTable.FieldSymbol
 
   type T = Set[Load]
 
-  val globals = method.locals.globalTable.getFields.map( LoadField(_, None))
+  // All global variables and all global array locations
+  val globals = method.locals.globalTable.getFields.flatMap {
+    case from@FieldSymbol(_, _, Some(size)) => (0L to (size - 1)) map {i => LoadField(from, Some(LoadLiteral(i)))}
+    case from@FieldSymbol(_, _, None) => List(LoadField(from, None))
+  }
 
   def initial() = bottom()
 
-  def bottom() = globals.toSet
+  def bottom() = Set()
 
   def direction() = Backward
 
