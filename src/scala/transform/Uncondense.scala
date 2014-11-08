@@ -23,7 +23,7 @@ object Uncondense extends Transformation {
           // If the start or end blocks were replaced, make sure to deal with it
           val newCFG = new CFG(
             if (block == cfg.start) firstBlock else cfg.start,
-            if (block == cfg.end) secondBlock else cfg.start,
+            if (block == cfg.end) secondBlock else cfg.end,
             newEdges)
           val newMethod = Method(
             method.id,
