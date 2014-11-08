@@ -1,7 +1,7 @@
 #!/bin/bash
 
 runcompiler() {
-    $(git rev-parse --show-toplevel)/run.sh --opt=all --target=assembly -o $2 $1
+    $(git rev-parse --show-toplevel)/run.sh --target=assembly -o $2 $1
 }
 
 compile() {
@@ -18,7 +18,7 @@ asm="$root/tmp/out.s"
 binary="$root/tmp/out"
 mkdir -p "$root/tmp"
 
-runcompiler "$1" $asm &&\
+runcompiler "$*" $asm &&\
 echo "$asm" &&\
 cat "$asm" &&\
 compile $asm $binary &&\
