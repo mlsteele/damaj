@@ -1,0 +1,9 @@
+callout printf;
+
+void forward_args(int a, int b, int c) {
+    printf("args: %d, %d, %d\n", a, b, c);
+}
+
+void main ( ) {
+    forward_args(1, 2, 3);
+}

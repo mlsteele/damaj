@@ -1,0 +1,9 @@
+callout printf;
+
+void forward_reversed_args(int a, int b, int c) {
+    printf("args: %d, %d, %d\n", c, b, a);
+}
+
+void main ( ) {
+    forward_reversed_args(1, 2, 3);
+}
