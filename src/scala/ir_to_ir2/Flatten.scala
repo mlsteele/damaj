@@ -293,7 +293,6 @@ object Flatten {
 
   private implicit class MaybeSimpleBlock (var block: Block) {
     def flatten() : Block = {
-      println("block symbol table: " + block.fields);
       val tempGen = new TempVarGen(block.fields)
       val newStmts = block.stmts.flatMap(_.flatten(tempGen))
       return Block(newStmts, block.fields)
