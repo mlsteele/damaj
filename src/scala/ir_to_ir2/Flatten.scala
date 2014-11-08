@@ -15,7 +15,9 @@ object Flatten {
    */
   def flatten(program: ProgramIR): ProgramIR = {
     val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
-    methods.map(m => m.block = m.block.flatten())
+    methods.map {m => 
+      m.block = m.block.flatten()
+    }
     for (m <- methods) {
       assert(m.block.isSimple(),
         "Method %s was not correctly simplified!\n%s".format(m.id, printMethod(m)))
@@ -31,12 +33,24 @@ object Flatten {
         var newArgs: List[Load] = List()
         for (eitherArg <- args) {
           // Extract the Rights out of the args, because why the hell can a method take a StringLiteral
-          eitherArg.map (arg => {
+          eitherArg.map {arg =>
             // flatten all the args, collecting their dependency statements and temporary vars
             val (argStatements, argVar) = arg.flatten(tempGen)
             statements ++= argStatements
-            newArgs :+= argVar
-          })
+            // AsmGen cannot handle current function parameters being
+            // passed to a call, so we make a temporary var for all
+            // variables which are a parameter to the current function
+            val methodTable = tempGen.table.methodTable.get
+            argVar match {
+              case LoadField(from, _) if (methodTable.symbols contains from) => {
+                val tempVar:FieldSymbol = tempGen.newVarLike(argVar)
+                val tempAssign = Assignment(tempVar, argVar)
+                statements :+= tempAssign
+                newArgs :+= fieldToLoad(tempVar)
+              }
+              case _ => newArgs :+= argVar
+            }
+          }
         }
         return (
           statements,
@@ -53,7 +67,19 @@ object Flatten {
               // flatten all the args, collecting their dependency statements and temporary vars
               val (argStatements, argVar) = arg.flatten(tempGen)
               statements ++= argStatements
-              newArgs :+= Right(argVar)
+              // AsmGen cannot handle current function parameters being
+              // passed to a call, so we make a temporary var for all
+              // variables which are a parameter to the current function
+              val methodTable = tempGen.table.methodTable.get
+              argVar match {
+                case LoadField(from, _) if (methodTable.symbols contains from) => {
+                  val tempVar:FieldSymbol = tempGen.newVarLike(argVar)
+                  val tempAssign = Assignment(tempVar, argVar)
+                  statements :+= tempAssign
+                  newArgs :+= Right(fieldToLoad(tempVar))
+                }
+                case _ => newArgs :+= Right(argVar)
+              }
             }
             case Left(str) => {
               newArgs :+= Left(str)
@@ -267,6 +293,7 @@ object Flatten {
 
   private implicit class MaybeSimpleBlock (var block: Block) {
     def flatten() : Block = {
+      println("block symbol table: " + block.fields);
       val tempGen = new TempVarGen(block.fields)
       val newStmts = block.stmts.flatMap(_.flatten(tempGen))
       return Block(newStmts, block.fields)
