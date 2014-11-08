@@ -107,8 +107,6 @@ object Flatten {
       * final load: (t3)
       */
     def flatten(tempGen: TempVarGen) : (List[Statement], Load) = expr match {
-      // No need to simplify constant-index access
-      case load@LoadField(_, Some(_:LoadInt)) => (List(), load)
       case load@LoadField(from, Some(index)) => {
         // Flatten the index
         val (indexStmts, indexLoad) = index.flatten(tempGen)
