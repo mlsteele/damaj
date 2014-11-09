@@ -34,19 +34,20 @@ object DeadCodeElim {
         // If an assignment contains a call, we can eliminate the
         // variable, but we can't eliminate the call, because it might
         // have side-effects
-        case ass@Assignment(Store(to, index), call:Call) => {
+        case ass@Assignment(store@Store(to, index), call:Call) => {
           val variable = LoadField(to, index)
-          // Don't kill the statement if it's an array assignment
-          (liveAfter(b) contains variable) || index.nonEmpty match {
+          // Don't kill the assignment if it's needed or has a side effect
+          (liveAfter(b) contains variable) || store.hasSideEffect match {
             case true => List(ass)
+            // Discard the assignment, but still do the function call
             case false => List(call)
           }
         }
         // If an assignment assigns to a dead var, no point in keeping it
-        case ass@Assignment(Store(to, index), _) => {
+        case ass@Assignment(store@Store(to, index), expr:Expr) => {
           val variable = LoadField(to, index)
-          // Don't kill the statement if it's an array assignment
-            (liveAfter(b) contains variable) || index.nonEmpty match {
+          // Don't kill the statement if it might have a side effect
+            (liveAfter(b) contains variable) || expr.hasSideEffect || store.hasSideEffect match {
             case true => List(ass)
             case false => List()
           }
@@ -63,6 +64,25 @@ object DeadCodeElim {
       newCFG,
       method.returnType
     )
+  }
+
+  private implicit class PureStore(s: Store) {
+    def hasSideEffect() : Boolean = s match {
+      case Store(field, Some(LoadLiteral(i))) => (i < 0) || (i >= field.size.get)
+      case Store(field, Some(_)) => true
+      case Store(_, None) => false
+    }
+  }
+
+  private implicit class PureExpr(e: Expr) {
+    def hasSideEffect() : Boolean = e match {
+      case _:Call => true
+      // If the index is out of bounds, then this load has a side-effect
+      case LoadField(field, Some(LoadLiteral(i))) => (i < 0) || (i >= field.size.get)
+      // Can't tell if the index is variable. Assume it has a side-effect
+      case LoadField(field, Some(_)) => true
+      case _ => false
+    }
   }
 
   private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)

@@ -21,7 +21,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
 
   def initial() = bottom()
 
-  def bottom() = Set()
+  def bottom() = globals.toSet
 
   def direction() = Backward
 
@@ -71,6 +71,6 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
       case _ => 
     }
     // make sure to keep globals alive
-    return live ++ globals.toSet 
+    return live ++ globals.toSet
   }
 }
