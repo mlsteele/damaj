@@ -58,15 +58,9 @@ object DeadCodeElim {
       }
     }
 
-    val newLocals = method.locals.copy()
-    val everAlive = liveBefore.values.fold(Set())(_ union _)
-    newLocals.symbols.foreach {
-      case field@FieldSymbol(_, _, None) if (!everAlive.contains(LoadField(field, None))) => newLocals.removeSymbol(field)
-      case _ =>
-    }
     return Method(method.id,
       method.params,
-      newLocals,
+      method.locals,
       newCFG,
       method.returnType
     )
