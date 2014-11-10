@@ -75,11 +75,11 @@ trait Analysis {
     val allBlocks:Set[Block] = cfg.blocks
 
     // Initialize all outputs to be f(⊥)
-    var outputs:Map[Block, T] = allBlocks.map {b:Block =>
+    var outputs:Map[Block, T] = Map().withDefaultValue(bottom) ++ allBlocks.map {b:Block =>
       (b -> transfer(bottom(), b))
     }.toMap
     // Initialize all inputs to be IDKLOL
-    var inputs:Map[Block, T] = Map()
+    var inputs:Map[Block, T] = Map().withDefaultValue(bottom)
 
     // In forward, we choose start as the first block, otherwise choose the end block
     val firstBlock = direction() match {
