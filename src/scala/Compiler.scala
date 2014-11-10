@@ -24,10 +24,36 @@ object Compiler {
   // Maps optimization namse to the actual optimization function
   // This is used by CLI.parse
   type Optimization = (String, IR2.Program => IR2.Program)
+
+  val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
+  val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
+  val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
+
+  def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
+
   val optimizations:List[Optimization] = List(
-    ("cse", CommonExpressionElimination(_)),
-    ("deadcode", DeadCodeElimMulti(_)),
-    ("unreachable", UnreachableCodeElim(_))
+    cse,
+    deadcode,
+    unreachable
+  )
+
+  // Optimizations first run on the raw code
+  val recipePre: List[Optimization] = List(
+    unreachable,
+    deadcode
+  )
+
+  // Optimizations run repeatedly on the code
+  val recipeLoop: List[Optimization] = List(
+    cse,
+    deadcode,
+    unreachable
+  )
+
+  // Optimizations run before passing to the AsmGen
+  val recipePost: List[Optimization] = List(
+    unreachable,
+    deadcode
   )
 
   var outFile = Console.out
@@ -237,11 +263,28 @@ object Compiler {
         enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
       }
       var tempIR = ir2
-      for (opt <- enabledOptimizations) opt match {
+      def applyOpt(opt: Optimization, round: Int = 0) = opt match {
         case (optName, optFunc) =>
-          if (CLI.debug) section("Applying %s optimization".format(optName))
-          tempIR = optFunc(tempIR)
-          if (CLI.debug) Grapher.graph(tempIR, optName)
+          if (enabledOptimizations contains opt) {
+            if (CLI.debug) section("Applying %s optimization round %d".format(optName, round))
+            tempIR = optFunc(tempIR)
+            if (CLI.debug) Grapher.graph(tempIR, optName)
+          }
+      }
+      for (opt <- recipePre) {
+        applyOpt(opt)
+      }
+      section("Initial empty block purge")
+      tempIR = removeEmptyBlocks(tempIR)
+      for (i <- 1 to 3) {
+        for (opt <- recipeLoop) {
+          applyOpt(opt, i)
+        }
+        section("Empty block purge round %d".format(i))
+        tempIR = removeEmptyBlocks(tempIR)
+      }
+      for (opt <- recipePost) {
+        applyOpt(opt)
       }
       tempIR
     }.map { ir2 =>
