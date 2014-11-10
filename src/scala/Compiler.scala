@@ -274,13 +274,13 @@ object Compiler {
       for (opt <- recipePre) {
         applyOpt(opt)
       }
-      section("Initial empty block purge")
+      if (CLI.debug) section("Initial empty block purge")
       tempIR = removeEmptyBlocks(tempIR)
       for (i <- 1 to 3) {
         for (opt <- recipeLoop) {
           applyOpt(opt, i)
         }
-        section("Empty block purge round %d".format(i))
+        if (CLI.debug) section("Empty block purge round %d".format(i))
         tempIR = removeEmptyBlocks(tempIR)
       }
       for (opt <- recipePost) {
