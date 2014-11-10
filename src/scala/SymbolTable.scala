@@ -177,6 +177,12 @@ object SymbolTable {
       }
     }
 
+    def removeSymbol(s: Symbol) = {
+      symbols = symbols filter {
+        _ != s
+      }
+    }
+
     class OffsetCalcInvalid(message: String=null) extends RuntimeException(message)
 
     def varOffset(id: ID) : Offset = lookupSymbolExtra(id) match {

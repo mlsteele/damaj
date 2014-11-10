@@ -2,6 +2,7 @@ package compile
 
 object DeadCodeElim {
   import IR2._
+  import SymbolTable.FieldSymbol
 
   def apply(program: Program, runNumber: Int = 0): Program = {
     val newMethods = program.methods.map(transformMethod(_, runNumber))
@@ -57,7 +58,12 @@ object DeadCodeElim {
       }
     }
 
-    val newLocals = method.locals
+    val newLocals = method.locals.copy()
+    val everAlive = liveBefore.values.fold(Set())(_ union _)
+    newLocals.symbols.foreach {
+      case field@FieldSymbol(_, _, None) if (!everAlive.contains(LoadField(field, None))) => newLocals.removeSymbol(field)
+      case _ =>
+    }
     return Method(method.id,
       method.params,
       newLocals,
