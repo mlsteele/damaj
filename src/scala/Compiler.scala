@@ -26,6 +26,7 @@ object Compiler {
   type Optimization = (String, IR2.Program => IR2.Program)
 
   val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
+  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
 
@@ -33,6 +34,7 @@ object Compiler {
 
   val optimizations:List[Optimization] = List(
     cse,
+    copyprop,
     deadcode,
     unreachable
   )
@@ -46,6 +48,7 @@ object Compiler {
   // Optimizations run repeatedly on the code
   val recipeLoop: List[Optimization] = List(
     cse,
+    copyprop,
     deadcode,
     unreachable
   )
@@ -276,7 +279,7 @@ object Compiler {
       }
       if (CLI.debug) section("Initial empty block purge")
       tempIR = removeEmptyBlocks(tempIR)
-      for (i <- 1 to 1) {
+      for (i <- 1 to 2) {
         for (opt <- recipeLoop) {
           applyOpt(opt, i)
         }
