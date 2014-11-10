@@ -20,29 +20,7 @@ object SymbolTable {
     var returns: DType,
     var block: Block
     ) extends Symbol
-
-  implicit class EnhancedSymbol(s: Symbol) {
-    def isField(): Boolean = s match {
-      case f:FieldSymbol => true
-      case _ => false
-    }
-
-    def isMethod(): Boolean = s match {
-      case m:MethodSymbol => true
-      case _ => false
-    }
-
-    def isCallout(): Boolean = s match {
-      case c:CalloutSymbol => true
-      case _ => false
-    }
-
-    def dtype(): DType = s match {
-      case f:FieldSymbol => f.dtype
-      case m:MethodSymbol => m.returns
-      case c:CalloutSymbol => DTInt
-    }
-  }
+  
 
   // Automatically converts a MethodSymbol to an EnhancedMethodSymbol in order to add a .args method to method symbols
   implicit class EnhancedMethodSymbol(m: MethodSymbol) {

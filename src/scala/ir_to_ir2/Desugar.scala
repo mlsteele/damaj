@@ -17,8 +17,8 @@ object Desugar {
    */
   def desugar(program: ProgramIR): ProgramIR = {
     val globals = program.symbols
-    val methods: List[MethodSymbol] = globals.symbols
-      .filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    val methods: List[MethodSymbol] = globals.getMethods
+
     methods.foreach{ m =>
       val tempGen = new TempVarGen(m.block.fields)
       m.block = m.block.desugar(tempGen)

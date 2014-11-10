@@ -11,7 +11,7 @@ object CombineScopes {
   import FunctionalUtils._
 
   def combineScopes(program: ProgramIR) : ProgramIR = {
-    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    val methods: List[MethodSymbol] = program.symbols.getMethods
     methods.map(m => m.block = combineScopesTopLevel(m.block))
     return program
   }

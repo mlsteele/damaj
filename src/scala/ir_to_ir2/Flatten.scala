@@ -14,7 +14,7 @@ object Flatten {
    * This method mutates the input program, in addition to returning a new one.
    */
   def flatten(program: ProgramIR): ProgramIR = {
-    val methods: List[MethodSymbol] = program.symbols.symbols.filter(_.isMethod()).asInstanceOf[List[MethodSymbol]]
+    val methods: List[MethodSymbol] = program.symbols.getMethods
     methods.map {m => 
       m.block = m.block.flatten()
     }
