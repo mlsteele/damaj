@@ -78,6 +78,8 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
 }
 
 object Grapher {
+  import util.CLI
+
   private val graphDir = "tmp"
 
   private var fileNameCounter: Map[String, Int] = Map().withDefaultValue(0)
@@ -97,10 +99,12 @@ object Grapher {
   def graph(method: IR2.Method, prefix: String): Unit = graph(method, prefix, None)
 
   def graph(method: IR2.Method, prefix: String, annotate: Option[IR2.Block => String]) : Unit = {
-    val fileName = getFileName("%s/%s.%s".format(graphDir, prefix, method.id)) + ".gv"
-    val title = fileName
-    val graphSrc = new GraphGen(method.cfg, annotate, title).graph
-    val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
-    file.print(graphSrc)
+    if (CLI.debug) {
+      val fileName = getFileName("%s/%s.%s".format(graphDir, prefix, method.id)) + ".gv"
+      val title = fileName
+      val graphSrc = new GraphGen(method.cfg, annotate, title).graph
+      val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
+      file.print(graphSrc)
+    }
   }
 }
