@@ -21,10 +21,21 @@ class Reachable(override val method: IR2.Method) extends Analysis {
     // If the parents are unreachable, then any statement afterward is unreachable
     if (previous == false) return false
     // If this block has a return, then any blocks afterwards are unreachable
-    val hasReturn: Boolean = block.stmts.exists {
+    val showStopper: Boolean = block.stmts.exists {
       case _:Return => true
+      case Assignment(store, right) => storeIsInvalid(store) || exprIsInvalid(right)
       case _ => false
     }
-    return !hasReturn
+    return !showStopper
+  }
+
+  def storeIsInvalid(store: Store): Boolean  = store match {
+    case Store(field, Some(LoadLiteral(i))) => (i < 0) || (i >= field.size.get)
+    case _ => false
+  }
+
+  def exprIsInvalid(expr: Expr): Boolean = expr match {
+    case LoadField(field, i) => storeIsInvalid(Store(field, i))
+    case _ => false
   }
 }
