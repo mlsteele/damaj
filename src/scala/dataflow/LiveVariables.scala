@@ -11,7 +11,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
   import ExprDependencies._
   import SymbolTable.FieldSymbol
 
-  type T = Set[Load]
+  type T = Set[LoadField]
 
   // All global variables and all global array locations
   val globals = method.locals.globalTable.getFields.flatMap {
@@ -28,7 +28,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
   def merge(a: T, b: T) : T = a union b
 
   def transfer(previous: T, block: Block) : T = {
-    var live:Set[Load] = previous
+    var live:Set[LoadField] = previous
     for (stmt <- block.stmts) stmt match {
       // y = x; kills y, generates x
       case Assignment(Store(to, None), right) => {
@@ -49,7 +49,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
       }
 
       // y[i] = x; kills all of y, generates x, i
-      case Assignment(Store(to, Some(indexVar)), right) => {
+      case Assignment(Store(to, Some(indexVar:LoadField)), right) => {
         val killedLoads = (0L to (to.size.get - 1)) map {i => LoadField(to, Some(LoadLiteral(i)))}
         live --= killedLoads
 
@@ -61,12 +61,12 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
         case Left(_) =>
         case Right(e) => live ++= e.dependencies()
       }
-      case Return(ret) => ret.foreach{e => live += e}
+      case Return(ret) => ret.foreach{e => live ++= e.dependencies}
     }
     // Special edge case: if this block is a child of a fork, the condition var needs
     // to be live
     cfg.edges.values.foreach {
-      case Fork(cond, left, right) if (left == block || right == block) =>
+      case Fork(cond:LoadField, left, right) if (left == block || right == block) =>
         live += cond
       case _ => 
     }

@@ -80,7 +80,7 @@ object ExprDependencies {
 
   implicit class BetterExpr(e: Expr) {
     // Set of loads that this expression depends on
-    def dependencies(): Set[Load] = e match {
+    def dependencies(): Set[LoadField] = e match {
       case Call(_, args) =>
         args.toSet.flatMap{ x: Either[StrLiteral, Expr] => x match {
           case Left(str) => List()
