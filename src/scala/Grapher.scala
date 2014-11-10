@@ -80,6 +80,13 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
 object Grapher {
   private val graphDir = "tmp"
 
+  private var fileNameCounter: Map[String, Int] = Map().withDefaultValue(0)
+  private def getFileName(fileName: String) : String = {
+    val count = fileNameCounter(fileName)
+    fileNameCounter += fileName -> (count + 1)
+    return "%s-%d".format(fileName, count)
+  }
+
   def graph(program: IR2.Program, prefix: String): Unit = graph(program, prefix, None)
 
   def graph(program: IR2.Program, prefix: String, annotate: Option[IR2.Block => String]): Unit = {
@@ -90,8 +97,8 @@ object Grapher {
   def graph(method: IR2.Method, prefix: String): Unit = graph(method, prefix, None)
 
   def graph(method: IR2.Method, prefix: String, annotate: Option[IR2.Block => String]) : Unit = {
-    val fileName = "%s/%s.%s.gv".format(graphDir, prefix, method.id)
-    val title = "%s.%s".format(prefix, method.id)
+    val fileName = getFileName("%s/%s.%s".format(graphDir, prefix, method.id)) + ".gv"
+    val title = fileName
     val graphSrc = new GraphGen(method.cfg, annotate, title).graph
     val file = new java.io.PrintStream(new java.io.FileOutputStream(fileName))
     file.print(graphSrc)

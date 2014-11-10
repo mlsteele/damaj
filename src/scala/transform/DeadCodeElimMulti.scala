@@ -9,7 +9,7 @@ object DeadCodeElimMulti extends Transformation {
   override def transform(method: Method) : Method = {
     var newMethod = method
     for (i <- 0 to 5) {
-      newMethod = DeadCodeElim.transformMethod(newMethod, i)
+      newMethod = DeadCodeElim.transformMethod(newMethod)
     }
     return newMethod
   }

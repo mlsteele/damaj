@@ -4,9 +4,9 @@ object DeadCodeElim {
   import IR2._
   import SymbolTable.FieldSymbol
 
-  def apply(program: Program, runNumber: Int = 0): Program = {
-    val newMethods = program.methods.map(transformMethod(_, runNumber))
-    val newMain = transformMethod(program.main, runNumber)
+  def apply(program: Program): Program = {
+    val newMethods = program.methods.map(transformMethod _)
+    val newMain = transformMethod(program.main)
     return Program(
       program.fields,
       newMain,
@@ -14,7 +14,7 @@ object DeadCodeElim {
     )
   }
 
-  def transformMethod(method: Method, runNumber: Int) : Method = {
+  def transformMethod(method: Method) : Method = {
     val results = (new LiveVariables(method)).analyze()
     val liveAfter = results.inputs
     val liveBefore = results.outputs
@@ -28,7 +28,7 @@ object DeadCodeElim {
       return inputsTitle + inputsString + outputsTitle + outputsString
     }
 
-    Grapher.graph(method, "deadcode-%d.live".format(runNumber), Some(annotate(_)))
+    Grapher.graph(method, "deadcode.live", Some(annotate(_)))
 
     val newCFG = method.cfg.mapBlocks { b =>
       b.stmts.flatMap {

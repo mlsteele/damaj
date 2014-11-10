@@ -253,7 +253,7 @@ object Compiler {
       if (CLI.debug) section("IR1 -> IR2")
       val ir2 = new IR2Builder(ir1).ir2
       if (CLI.debug) {
-        Grapher.graph(ir2, "1-raw")
+        Grapher.graph(ir2, "raw")
       }
       ir2
     }.map { ir2 =>
@@ -276,7 +276,7 @@ object Compiler {
       }
       if (CLI.debug) section("Initial empty block purge")
       tempIR = removeEmptyBlocks(tempIR)
-      for (i <- 1 to 3) {
+      for (i <- 1 to 1) {
         for (opt <- recipeLoop) {
           applyOpt(opt, i)
         }
