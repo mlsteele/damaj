@@ -171,7 +171,7 @@ class AsmGen(ir2: IR2.Program) {
       mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
       mov(reg_transfer, wherestore.asmloc)
-    case (store, UnaryOp(op, right: LoadField)) =>
+    case (store, UnaryOp(op, right: Load)) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(right, symbols)
       val opinstr = op match {
