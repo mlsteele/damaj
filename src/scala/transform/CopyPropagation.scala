@@ -2,7 +2,7 @@ package compile
 
 object CopyPropagation {
   import IR2._
-  import SymbolTable.FieldSymbol
+  import FunctionalUtils._
 
   def apply(program: Program): Program = {
     val newMethods = program.methods.map(transformMethod _)
@@ -30,9 +30,19 @@ object CopyPropagation {
 
     Grapher.graph(method, "copyprop.reaching", Some(annotate(_)))
 
+    // Use reaching definitions info to replace all loads occuring in statements with earlier-defined loads
     val newCFG = method.cfg.mapBlocks { b =>
-      b.stmts.flatMap {
-        s => List(s)
+      val fcc = followCopyChain(method, reachingBefore(b), _:Load)
+      def fccCallArg(e: Expr) = fcc(e.asInstanceOf[Load])
+      b.stmts.map {
+        case Assignment(store, right) => right match {
+          case load:Load => Assignment(store, fcc(load))
+          case BinOp(left, op, right) => Assignment(store, BinOp(fcc(left), op, fcc(right)))
+          case UnaryOp(op, right) => Assignment(store, UnaryOp(op, fcc(right)))
+          case Call(id, args) => Assignment(store, Call(id, args.map(_.map(fccCallArg))))
+        }
+        case Call(id, args) => Call(id, args.map(_.map(fccCallArg)))
+        case Return(ret) => Return(ret.map(fcc))
       }
     }
 
@@ -46,7 +56,7 @@ object CopyPropagation {
 
   // Follows the trail of reaching definitions to try to replace the
   // given load with an earlier defined variable or constant
-  private def followCopyChain(reachingDefs: Set[Assignment], load: Load) : Load = load match {
+  private def followCopyChain(method: Method, reachingDefs: Set[Assignment], load: Load) : Load = load match {
     // Copy propagation makes no sense on literals
     case _:LoadLiteral => load
     // We're not going to open that can of worms
@@ -62,7 +72,11 @@ object CopyPropagation {
         // Nope, still not gonna open that can of worms
         case LoadField(_, Some(_)) => load
         case constant:LoadLiteral => constant
-        case otherVar:LoadField   => followCopyChain(reachingDefs, otherVar)
+        case otherVar:LoadField   => method.params.lookupSymbolLocal(otherVar.from.id) match {
+          // If the replaced var is a method arg, we can't replace it, because of a quirk in AsmGen
+          case Some(_) => load
+          case None => followCopyChain(method, reachingDefs, otherVar)
+        }
         // Not a load, don't do copy propagation
         case _ => load
       }
