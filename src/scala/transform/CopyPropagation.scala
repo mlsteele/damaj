@@ -44,5 +44,30 @@ object CopyPropagation {
     )
   }
 
+  // Follows the trail of reaching definitions to try to replace the
+  // given load with an earlier defined variable or constant
+  private def followCopyChain(reachingDefs: Set[Assignment], load: Load) : Load = load match {
+    // Copy propagation makes no sense on literals
+    case _:LoadLiteral => load
+    // We're not going to open that can of worms
+    case LoadField(_, Some(_)) => load
+
+    case LoadField(from, None) => {
+      val assignsThis = reachingDefs.filter {ass => ass.left == Store(from, None)}
+      // TODO: if they all assign to the same constant, then we can use that constant
+      // TODO: if they all assign to the same var, that might be okay?
+      if (assignsThis.size != 1) return load
+      // Only proceed if there is a single statement that can possibly assign to this var
+      assignsThis.head.right match {
+        // Nope, still not gonna open that can of worms
+        case LoadField(_, Some(_)) => load
+        case constant:LoadLiteral => constant
+        case otherVar:LoadField   => followCopyChain(reachingDefs, otherVar)
+        // Not a load, don't do copy propagation
+        case _ => load
+      }
+    }
+  }
+
   private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 }
