@@ -1,0 +1,7 @@
+callout printf;
+
+void main ( ) {
+    boolean x;
+    x = !false;
+    printf("%d\n", x);
+}
