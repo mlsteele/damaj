@@ -252,15 +252,16 @@ object Compiler {
     // Combine each individual pass into one large pass
     val simplify = simplification_passes.reduce(_ andThen _)
 
+    ir1.map(simplify).map{ ir1 =>
+      if (CLI.debug) section("IR1 -> IR2")
+      val ir2 = new IR2Builder(ir1).ir2
+      if (CLI.debug) {
+        Grapher.graph(ir2, "raw")
+      }
+      ir2
+    }
     false
-    // ir1.map(simplify).map{ ir1 =>
-    //   if (CLI.debug) section("IR1 -> IR2")
-    //   val ir2 = new IR2Builder(ir1).ir2
-    //   if (CLI.debug) {
-    //     Grapher.graph(ir2, "raw")
-    //   }
-    //   ir2
-    // }.map { ir2 =>
+    //.map { ir2 =>
     //   if (CLI.debug) {
     //     section("Optimization")
     //     Console.err.println("Enabled optimizations:")

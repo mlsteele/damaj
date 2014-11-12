@@ -49,8 +49,8 @@ object IR2 {
 
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
-  case class Assignment(left: FieldSymbol, right: Load) extends Statement {
-    override def toString = "%s = %s".format(left, right)
+  case class Assignment(left: FieldSymbol, right: Expr) extends Statement {
+    override def toString = "%s = %s".format(left.id, right)
   }
 
   case class ArrayAssignment(left: FieldSymbol, index: Load, right: Load) extends Statement {
