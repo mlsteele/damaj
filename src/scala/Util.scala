@@ -74,38 +74,38 @@ class IdentityMap[K,V] {
 /**
   * Utilities for analyzing what variables a expression depends on.
   */
-object ExprDependencies {
-  import IRShared._
-  import IR2._
+// object ExprDependencies {
+//   import IRShared._
+//   import IR2._
 
-  implicit class BetterExpr(e: Expr) {
-    // Set of loads that this expression depends on
-    def dependencies(): Set[LoadField] = e match {
-      case Call(_, args) =>
-        args.toSet.flatMap{ x: Either[StrLiteral, Expr] => x match {
-          case Left(str) => List()
-          case Right(subE) => subE.dependencies.toList
-        }}
-      case BinOp(left, _, right) => (left.dependencies ++ right.dependencies).toSet
-      case UnaryOp(_, right) => right.dependencies.toSet
+//   implicit class BetterExpr(e: Expr) {
+//     // Set of loads that this expression depends on
+//     def dependencies(): Set[LoadField] = e match {
+//       case Call(_, args) =>
+//         args.toSet.flatMap{ x: Either[StrLiteral, Expr] => x match {
+//           case Left(str) => List()
+//           case Right(subE) => subE.dependencies.toList
+//         }}
+//       case BinOp(left, _, right) => (left.dependencies ++ right.dependencies).toSet
+//       case UnaryOp(_, right) => right.dependencies.toSet
 
-      // Constant array access only depends on a single array location
-      case load@LoadField(_, Some(_:LoadLiteral)) => Set(load)
+//       // Constant array access only depends on a single array location
+//       case load@LoadField(_, Some(_:LoadLiteral)) => Set(load)
 
-        // Variable array access depends on the index variable, and the entirety of the array
-      case load@LoadField(field, Some(indexLoad:LoadField)) => {
-        //indexLoad.dependencies ++ (0 to field.size.get - 1) map {
-        val allLocs = (0L to (field.size.get - 1)) map {i => LoadField(field, Some(LoadLiteral(i)))}
-        indexLoad.dependencies ++ allLocs
-      }
+//         // Variable array access depends on the index variable, and the entirety of the array
+//       case load@LoadField(field, Some(indexLoad:LoadField)) => {
+//         //indexLoad.dependencies ++ (0 to field.size.get - 1) map {
+//         val allLocs = (0L to (field.size.get - 1)) map {i => LoadField(field, Some(LoadLiteral(i)))}
+//         indexLoad.dependencies ++ allLocs
+//       }
 
-        // Scalar vars depend on themselves
-      case load@LoadField(_, None) => Set(load)
+//         // Scalar vars depend on themselves
+//       case load@LoadField(_, None) => Set(load)
 
-        // Literals don't have dependencies
-      case _:LoadLiteral => Set()
-    }
-  }
-}
+//         // Literals don't have dependencies
+//       case _:LoadLiteral => Set()
+//     }
+//   }
+// }
 
-object lol{}
+// object lol{}

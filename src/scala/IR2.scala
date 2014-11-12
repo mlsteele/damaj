@@ -49,9 +49,14 @@ object IR2 {
 
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
-  case class Assignment(left: Store, right: Expr) extends Statement {
+  case class Assignment(left: FieldSymbol, right: Load) extends Statement {
     override def toString = "%s = %s".format(left, right)
   }
+
+  case class ArrayAssignment(left: FieldSymbol, index: Load, right: Load) extends Statement {
+    override def toString = "%s[%s] = %s".format(left.id, index, right)
+  }
+
   // TODO call should Load
   case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr {
     override def toString = {
@@ -80,23 +85,17 @@ object IR2 {
     override def toString = "%s %s".format(op, right)
   }
 
-  sealed trait Load extends Expr
-  // hmm, should this have something other than a FieldSymbol?
-  case class LoadField(from: FieldSymbol, index: Option[Load]) extends Load {
-    override def toString = "%s%s".format(from.id, index match {
-      case Some(i:Load) => Escape.escape("[") + i + Escape.escape("]")
-      case None => ""
-    })
-  }
-  case class LoadLiteral(value: Long) extends Load {
-    override def toString = value.toString
+  case class ArrayAccess(left: FieldSymbol, index: Load) extends Expr {
+    override def toString = "%s[%s]".format(left.id, index)
   }
 
-  case class Store(to: FieldSymbol, index: Option[Load]) {
-    override def toString = "%s%s".format(to.id, index match {
-      case Some(i:Load) => i
-      case None => ""
-    })
+  sealed trait Load extends Expr
+  case class LoadField(from: FieldSymbol) extends Load {
+    override def toString = from.id
+  }
+
+  case class LoadLiteral(value: Long) extends Load {
+    override def toString = value.toString
   }
 
   sealed trait Transition
