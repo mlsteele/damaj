@@ -13,11 +13,16 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
 
   def initial() = bottom()
 
-  def bottom() = Set()
+  def bottom() = method.cfg.blocks.flatMap {b =>
+    b.stmts.flatMap {
+      case a:Assignment => List(a)
+      case _ => List()
+    }
+  } toSet
 
   def direction() = Forward
 
-  def merge(a:T, b:T) = a union b
+  def merge(a:T, b:T) = a intersect b
 
   def transfer(previous: T, block: Block) : T = {
     var reaching: Set[Assignment] = previous
