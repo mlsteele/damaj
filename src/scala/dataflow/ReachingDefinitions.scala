@@ -6,6 +6,8 @@ package compile
  */
 class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
   import IR2._
+  import SymbolTable._
+  import ExprDependencies._
 
   type T = Set[Assignment]
 
@@ -23,12 +25,20 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
       case ass@Assignment(_,_) => {
         // Kill any assignments with the same store
         reaching = reaching filter { s => s.left != ass.left}
+        // Kill any assignments whose args were modified by this assignment
+        reaching = reaching filter { s => !(s.right.dependencies contains storeToLoad(ass.left)) }
         // Add this assignment to the reaching defs
         reaching += ass
       }
-      case _:Call => // don't care
+      // If a call happens, assume that all global assigns were killed
+      case _:Call => {
+      }
       case _:Return => // don't care
     }
-    return reaching
+    return reaching filter {s => !isGlobal(s.left.to)}
   }
+
+  private implicit def storeToLoad(store: Store) : LoadField = LoadField(store.to, store.index)
+
+  private def isGlobal(field: FieldSymbol) : Boolean = method.params.globalTable.symbols contains field
 }
