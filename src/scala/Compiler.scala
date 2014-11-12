@@ -259,8 +259,13 @@ object Compiler {
         Grapher.graph(ir2, "raw")
       }
       ir2
-    }
-    false
+    }.map { ir2 =>
+      if (CLI.debug) section("Generating Assembly")
+      new AsmGen(ir2).asm
+    }.map { asm =>
+      if (CLI.debug) section("Writing to output")
+      outFile.print(asm)
+    }.isDefined
     //.map { ir2 =>
     //   if (CLI.debug) {
     //     section("Optimization")
