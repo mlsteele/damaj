@@ -7,11 +7,16 @@ object DeadCodeElimMulti extends Transformation {
   import IR2._
 
   override def transform(method: Method) : Method = {
-    var newMethod = method
-    for (i <- 0 to 5) {
-      newMethod = DeadCodeElim.transformMethod(newMethod)
+    val prevSize = methodSize(method)
+    val newMethod = DeadCodeElim.transformMethod(method)
+    if (methodSize(newMethod) == prevSize)  {
+      return newMethod
     }
-    return newMethod
+    return transform(newMethod)
+  }
+
+  private def methodSize(method: Method) : Int = {
+    method.cfg.blocks.map(_.stmts.length).foldLeft(0)(_ + _)
   }
 
 }

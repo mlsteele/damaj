@@ -34,7 +34,7 @@ object Compiler {
 
   val optimizations:List[Optimization] = List(
     cse,
-    copyprop,
+//    copyprop,
     deadcode,
     unreachable
   )
