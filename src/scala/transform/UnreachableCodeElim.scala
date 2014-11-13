@@ -23,9 +23,21 @@ object UnreachableCodeElim extends Transformation {
 
     Grapher.graph(method, "unreachable.reachable", Some(annotate(_)))
 
-    val newCFG = method.cfg.mapBlocks { b => 
+    val filteredCFG = method.cfg.mapBlocks { b => 
       b.stmts.filter {s => reachableBefore(b)}
     }
+
+    // Convert forks with a constant condition to an edge
+    val newEdges = filteredCFG.edges.mapValues {
+      // Condition is always false, make edge to false branch
+      case Fork(LoadLiteral(0), _, falseBranch) => Edge(falseBranch)
+      // Condition is always true, make edge to true branch
+      case Fork(LoadLiteral(_), trueBranch, _) => Edge(trueBranch)
+      case f:Fork => f
+      case e:Edge => e
+    }
+
+    val newCFG = new CFG(filteredCFG.start, filteredCFG.end, newEdges)
 
     return Method(method.id,
       method.params,

@@ -21,10 +21,10 @@ class Reachable(override val method: IR2.Method) extends Analysis {
     // If the parents are unreachable, then any statement afterward is unreachable
     if (previous == false) return false
     // If this block has a return, then any blocks afterwards are unreachable
-    val showStopper: Boolean = block.stmts.exists {
-      case _:Return => true
-      case _ => false
+    block.stmts.foreach {
+      case _:Return => return false
+      case _ => 
     }
-    return !showStopper
+    return true
   }
 }
