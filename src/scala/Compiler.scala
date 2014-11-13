@@ -26,7 +26,7 @@ object Compiler {
   type Optimization = (String, IR2.Program => IR2.Program)
 
   //val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
-//  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
+  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
 
@@ -34,13 +34,14 @@ object Compiler {
 
   val optimizations:List[Optimization] = List(
   //   cse,
-  //   copyprop,
+    copyprop,
     deadcode,
     unreachable
   )
 
   // Optimizations first run on the raw code
   val recipePre: List[Optimization] = List(
+    copyprop,
     deadcode,
     unreachable
   )
@@ -48,13 +49,14 @@ object Compiler {
   // Optimizations run repeatedly on the code
   val recipeLoop: List[Optimization] = List(
   //   cse,
-  //   copyprop,
+    copyprop,
     deadcode,
     unreachable
   )
 
   // Optimizations run before passing to the AsmGen
   val recipePost: List[Optimization] = List(
+    copyprop,
     unreachable,
     deadcode
   )
@@ -293,7 +295,7 @@ object Compiler {
     }.map { ir2 =>
       if (CLI.debug) section("Condensation")
       val condensed = Condense.transform(ir2)
-      if (CLI.debug) Grapher.graph(condensed, "condensed")
+      if (CLI.debug) Grapher.graph(condensed, "final")
       condensed
     }.map { ir2 =>
       if (CLI.debug) section("Generating Assembly")
