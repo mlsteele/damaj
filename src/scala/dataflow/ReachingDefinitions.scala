@@ -26,6 +26,7 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
         // Add this assignment to the reaching defs
         reaching += ass
       }
+      case _:ArrayAssignment => // TODO: check if this matters or not
       case _:Call => // don't care
       case _:Return => // don't care
     }

@@ -89,23 +89,16 @@ object ExprDependencies {
       case BinOp(left, _, right) => (left.dependencies ++ right.dependencies).toSet
       case UnaryOp(_, right) => right.dependencies.toSet
 
-      // Constant array access only depends on a single array location
-      case load@LoadField(_, Some(_:LoadLiteral)) => Set(load)
+      // Variable array access depends on the index variable
+      case ArrayAccess(field, indexLoad:LoadField) => Set(indexLoad)
 
-        // Variable array access depends on the index variable, and the entirety of the array
-      case load@LoadField(field, Some(indexLoad:LoadField)) => {
-        //indexLoad.dependencies ++ (0 to field.size.get - 1) map {
-        val allLocs = (0L to (field.size.get - 1)) map {i => LoadField(field, Some(LoadLiteral(i)))}
-        indexLoad.dependencies ++ allLocs
-      }
+      case ArrayAccess(_, _:LoadLiteral) => Set()
 
         // Scalar vars depend on themselves
-      case load@LoadField(_, None) => Set(load)
+      case load@LoadField(_) => Set(load)
 
         // Literals don't have dependencies
       case _:LoadLiteral => Set()
     }
   }
 }
-
-object lol{}

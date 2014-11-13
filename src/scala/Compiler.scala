@@ -25,30 +25,30 @@ object Compiler {
   // This is used by CLI.parse
   type Optimization = (String, IR2.Program => IR2.Program)
 
-  val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
-  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
+  //val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
+//  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
 
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
   val optimizations:List[Optimization] = List(
-    cse,
-//    copyprop,
+  //   cse,
+  //   copyprop,
     deadcode,
     unreachable
   )
 
   // Optimizations first run on the raw code
   val recipePre: List[Optimization] = List(
-    unreachable,
-    deadcode
+    deadcode,
+    unreachable
   )
 
   // Optimizations run repeatedly on the code
   val recipeLoop: List[Optimization] = List(
-    cse,
-    copyprop,
+  //   cse,
+  //   copyprop,
     deadcode,
     unreachable
   )
@@ -278,7 +278,7 @@ object Compiler {
         applyOpt(opt)
       }
       if (CLI.debug) section("Initial empty block purge")
-      tempIR = removeEmptyBlocks(tempIR)
+        tempIR = removeEmptyBlocks(tempIR)
       for (i <- 1 to 2) {
         for (opt <- recipeLoop) {
           applyOpt(opt, i)
@@ -302,5 +302,12 @@ object Compiler {
       if (CLI.debug) section("Writing to output")
       outFile.print(asm)
     }.isDefined
+    // }.map { ir2 =>
+    //   if (CLI.debug) section("Generating Assembly")
+    //   new AsmGen(ir2).asm
+    // }.map { asm =>
+    //   if (CLI.debug) section("Writing to output")
+    //   outFile.print(asm)
+    // }.isDefined
   }
 }

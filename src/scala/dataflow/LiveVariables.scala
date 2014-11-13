@@ -15,8 +15,8 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
 
   // All global variables and all global array locations
   val globals = method.locals.globalTable.getFields.flatMap {
-    case from@FieldSymbol(_, _, Some(size)) => (0L to (size - 1)) map {i => LoadField(from, Some(LoadLiteral(i)))}
-    case from@FieldSymbol(_, _, None) => List(LoadField(from, None))
+    case from@FieldSymbol(_, _, None) => List(LoadField(from))
+    case _ => List()
   }
 
   def initial() = bottom()
@@ -31,30 +31,21 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
     var live:Set[LoadField] = previous
     for (stmt <- block.stmts) stmt match {
       // y = x; kills y, generates x
-      case Assignment(Store(to, None), right) => {
+      case Assignment(to, right) => {
         // Remove any occurences of this variable from the live vars
-        val killedLoad = LoadField(to, None)
+        val killedLoad = LoadField(to)
         live -= killedLoad
 
         // Add any dependencies from the right hand side
         live ++= right.dependencies()
 
       }
-      // y[constant] = x; kills y[constant], generates x
-      case Assignment(Store(to, Some(LoadLiteral(i))), right) => {
-        val killedLoad = LoadField(to, Some(LoadLiteral(i)))
-        live -= killedLoad
-
+      case ArrayAssignment(_, index:LoadField, right) => {
+        live ++= index.dependencies()
         live ++= right.dependencies()
       }
-
-      // y[i] = x; kills all of y, generates x, i
-      case Assignment(Store(to, Some(indexVar:LoadField)), right) => {
-        val killedLoads = (0L to (to.size.get - 1)) map {i => LoadField(to, Some(LoadLiteral(i)))}
-        live --= killedLoads
-
+      case ArrayAssignment(_, _:LoadLiteral, right) => {
         live ++= right.dependencies()
-        live += indexVar
       }
 
       case Call(_, args) => args.foreach {

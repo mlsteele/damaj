@@ -23,19 +23,8 @@ class Reachable(override val method: IR2.Method) extends Analysis {
     // If this block has a return, then any blocks afterwards are unreachable
     val showStopper: Boolean = block.stmts.exists {
       case _:Return => true
-      case Assignment(store, right) => storeIsInvalid(store) || exprIsInvalid(right)
       case _ => false
     }
     return !showStopper
-  }
-
-  def storeIsInvalid(store: Store): Boolean  = store match {
-    case Store(field, Some(LoadLiteral(i))) => (i < 0) || (i >= field.size.get)
-    case _ => false
-  }
-
-  def exprIsInvalid(expr: Expr): Boolean = expr match {
-    case LoadField(field, i) => storeIsInvalid(Store(field, i))
-    case _ => false
   }
 }

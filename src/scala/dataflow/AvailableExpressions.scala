@@ -14,6 +14,8 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
   private val allExprs:Set[Expr] = cfg.blocks.flatMap {
     _.stmts.flatMap {
       case Assignment(_, right) => List(right)
+      // TODO: open this can of worms
+      case ArrayAssignment(_, index, _) => List()
       case Call(_, args) => args.flatMap {
         case Left(_) => List()
         case Right(e) => List(e)
@@ -35,16 +37,16 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
     var avail: Set[Expr] = previous
     for (stmt: Statement <- block.stmts) stmt match {
       // Any expressions used by a statement are made available
-      case Assignment(Store(to, index), right) => {
-        val load = LoadField(to, index)
-        // GEN expr
-        if (isPure(right)) {
-          avail += right
-        }
-
+      case Assignment(to, right) => {
+        val load = LoadField(to)
+        if (isPure(right)) { avail += right }
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
       }
+      case ArrayAssignment(to, index, right) => {
+        // TODO: maybe do something?
+      }
+
       case c:Call => 
         // If the call has no side-effects, it can be an available expressio
         if (isPure(c)) { avail += c }
@@ -72,7 +74,7 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
   private def expungeGlobals(avail: Set[Expr]):Set[Expr] = {
     var newAvail: Set[Expr] = avail
     method.locals.globalTable.getFields.map{ global =>
-      newAvail = newAvail.filter{ !_.dependencies().contains(LoadField(global, None)) }
+      newAvail = newAvail.filter{ !_.dependencies().contains(LoadField(global)) }
     }
     newAvail
   }
