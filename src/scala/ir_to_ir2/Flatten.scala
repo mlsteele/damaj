@@ -249,13 +249,11 @@ object Flatten {
         return stmts :+ newCall
       }
       case If(preStmts, cond, thenb, elseb) => {
-        val (condStmts, condExpr) = cond.flatten(tempGen)
-        val condTemp = tempGen.newVar(DTBool)
+        val (condStmts, condVar) = cond.flatten(tempGen)
         val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
-          condStmts :+
-          Assignment(Store(condTemp, None), condExpr)
+          condStmts
         return List(If(newPreStmts,
-          LoadField(condTemp, None),
+          condVar,
           thenb.flatten(),
           elseb.map(_.flatten())
         ))
@@ -263,14 +261,12 @@ object Flatten {
       case _:For => assert(false, "Unelaborated for loop encountered."); List()
       // While loops with no limit are straight forward to convert
       case While(preStmts, cond, block, None) => {
-        val (condStmts, condExpr) = cond.flatten(tempGen)
-        val condTemp = tempGen.newVar(DTBool)
+        val (condStmts, condVar) = cond.flatten(tempGen)
         val newPreStmts = preStmts.flatMap(_.flatten(tempGen)) ++
-          condStmts :+
-          Assignment(Store(condTemp, None), condExpr)
+          condStmts
         return List(While(
           newPreStmts,
-          LoadField(condTemp, None),
+          condVar,
           block.flatten(),
           None
         ))
