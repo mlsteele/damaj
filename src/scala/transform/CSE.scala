@@ -90,20 +90,25 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
   // Represents a variable which might be accessed through a carrier.
   // setup might include an assignment to save the value into a carrier for later.
   // setup must happen right before expr is valid.
-  case class SpeedyExpr(setup: Option[Statement], load: LoadField)
+  case class SpeedyExpr(setup: Option[Statement], load: Load)
 
   // Use stored expression if one is available according to the analysis,
   // (NOT according to carriers, which doesn't respect non-linear programs)
   // Otherwise, store computed value in case anyone wants to use it later.
-  private def speedyExpr(expr: Expr, available: T): SpeedyExpr = available(expr) match {
-    case true =>
-      // Load from carrier instead of doing calculation again.
-      SpeedyExpr(None, carriers.load(expr))
-    case false =>
-      // Store for later and do original assignment.
-      val setup = Assignment(carriers.of(expr), expr)
-      SpeedyExpr(Some(setup), carriers.load(expr))
-  }
+  private def speedyExpr(expr: Expr, available: T): SpeedyExpr =
+    (expr, available(expr)) match {
+      case (expr:Load, _) =>
+        // Don't bother loading Loads from carriers.
+        // That wouldn't be any speedier.
+        SpeedyExpr(None, expr)
+      case (_, true) =>
+        // Load from carrier instead of doing calculation again.
+        SpeedyExpr(None, carriers.load(expr))
+      case (_, false) =>
+        // Store for later and do original assignment.
+        val setup = Assignment(carriers.of(expr), expr)
+        SpeedyExpr(Some(setup), carriers.load(expr))
+    }
 
   // Helper that keeps track of which vars hold which exprs.
   private class Carriers(val tempVarGen: TempVarGen) {
