@@ -25,7 +25,7 @@ object Compiler {
   // This is used by CLI.parse
   type Optimization = (String, IR2.Program => IR2.Program)
 
-  // val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
+  val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
   val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
@@ -33,7 +33,7 @@ object Compiler {
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
   val optimizations:List[Optimization] = List(
-    // cse,
+    cse,
     copyprop,
     deadcode,
     unreachable
@@ -48,7 +48,7 @@ object Compiler {
 
   // Optimizations run repeatedly on the code
   val recipeLoop: List[Optimization] = List(
-    // cse,
+    cse,
     copyprop,
     deadcode,
     unreachable
