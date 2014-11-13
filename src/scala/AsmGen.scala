@@ -159,39 +159,39 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateArrayAssignment(assign: ArrayAssignment, symbols: ST) = assign.right match {
     case LoadLiteral(v) =>
-      val wherestore = whereVar(assign.left.id, Some(assign.index), symbols)
-      wherestore.setup \
-      mov(v $, wherestore.asmloc)
+      val wherefield = whereVar(assign.left.id, Some(assign.index), symbols)
+      wherefield.setup \
+      mov(v $, wherefield.asmloc)
     case load:LoadField =>
-      val wherestore = whereVar(assign.left.id, Some(assign.index), symbols)
+      val wherefield = whereVar(assign.left.id, Some(assign.index), symbols)
       val whereload = whereVar(load, symbols)
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
-      wherestore.setup \
-      mov(reg_transfer, wherestore.asmloc)
+      wherefield.setup \
+      mov(reg_transfer, wherefield.asmloc)
   }
 
   def generateAssignment(ir: Assignment, symbols: ST): String = (ir.left, ir.right) match {
-    case (store, LoadLiteral(v)) =>
-      val wherestore = whereVar(store, symbols)
-      wherestore.setup \
-      mov(v $, wherestore.asmloc)
-    case (store, load: LoadField) =>
-      val wherestore = whereVar(store, symbols)
+    case (field, LoadLiteral(v)) =>
+      val wherefield = whereVar(field, symbols)
+      wherefield.setup \
+      mov(v $, wherefield.asmloc)
+    case (field, load: LoadField) =>
+      val wherefield = whereVar(field, symbols)
       val whereload = whereVar(load, symbols)
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
-      wherestore.setup \
-      mov(reg_transfer, wherestore.asmloc)
-    case (store, ArrayAccess(field, index)) =>
-      val wherestore = whereVar(store, symbols)
-      val whereload = whereVar(field.id, Some(index), symbols)
+      wherefield.setup \
+      mov(reg_transfer, wherefield.asmloc)
+    case (field, ArrayAccess(arrayField, index)) =>
+      val wherefield = whereVar(field, symbols)
+      val whereload = whereVar(arrayField.id, Some(index), symbols)
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
-      wherestore.setup \
-      mov(reg_transfer, wherestore.asmloc)
-    case (store, UnaryOp(op, right: Load)) =>
-      val wherestore = whereVar(store, symbols)
+      wherefield.setup \
+      mov(reg_transfer, wherefield.asmloc)
+    case (field, UnaryOp(op, right: Load)) =>
+      val wherefield = whereVar(field, symbols)
       val whereload = whereVar(right, symbols)
       val opinstr = op match {
         case Negative =>
@@ -203,13 +203,13 @@ class AsmGen(ir2: IR2.Program) {
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       opinstr \
-      wherestore.setup \
-      mov(reg_transfer, wherestore.asmloc)
-    case (store, BinOp(left: Load, op, right: Load)) =>
-      val wherestore = whereVar(store, symbols)
+      wherefield.setup \
+      mov(reg_transfer, wherefield.asmloc)
+    case (field, BinOp(left: Load, op, right: Load)) =>
+      val wherefield = whereVar(field, symbols)
       val whereleft = whereVar(left, symbols)
       val whereright = whereVar(right, symbols)
-      // Do (reg_opresult op reg_transfer) and store answer in reg_opresult
+      // Do (reg_opresult op reg_transfer) and field answer in reg_opresult
       val opinstr: String = op match {
         case Add =>
           add(reg_transfer, reg_opresult)
@@ -268,14 +268,14 @@ class AsmGen(ir2: IR2.Program) {
       whereright.setup \
       mov(whereright.asmloc, reg_transfer) \
       opinstr \
-      wherestore.setup \
-      mov(reg_opresult, wherestore.asmloc)
-    case (store, call:Call) => 
-      val wherestore = whereVar(store, symbols)
-      // wherestore must not modify rax.
+      wherefield.setup \
+      mov(reg_opresult, wherefield.asmloc)
+    case (field, call:Call) => 
+      val wherefield = whereVar(field, symbols)
+      // wherefield must not modify rax.
       generateCall(call, symbols) \
-      wherestore.setup \
-      mov(rax, wherestore.asmloc)
+      wherefield.setup \
+      mov(rax, wherefield.asmloc)
   }
 
   def generateCall(ir: Call, symbols: ST): String = {
