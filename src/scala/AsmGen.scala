@@ -37,8 +37,6 @@ class AsmGen(ir2: IR2.Program) {
   val asm = generateProgram(ir2)
 
   class AsmPreconditionViolated(message: String=null) extends RuntimeException(message)
-  // TODO these notimplemented exceptions should all be gone eventually.
-  class AsmNotImplemented(message: String=null) extends RuntimeException(message)
 
   def generateProgram(ir2: IR2.Program): String = {
     val main = generateMethod(ir2.main)
@@ -278,7 +276,6 @@ class AsmGen(ir2: IR2.Program) {
       generateCall(call, symbols) \
       wherestore.setup \
       mov(rax, wherestore.asmloc)
-    case _ => throw new AsmNotImplemented(ir.toString)
   }
 
   def generateCall(ir: Call, symbols: ST): String = {
@@ -311,7 +308,6 @@ class AsmGen(ir2: IR2.Program) {
       mov(whereload.asmloc, rax) \
       jmp(returnTo)
     case None => jmp(returnTo)
-    case _ => throw new RuntimeException("That return wasn't flattened enough!")
   }
 
   def generateCallArg(arg: Either[StrLiteral, Load], argi: Int, symbols: ST): String = {
@@ -371,7 +367,6 @@ class AsmGen(ir2: IR2.Program) {
         cmp(0 $, reg_arridx) \
         jl("._exit1")
       case None => "nop"
-      case _ => throw new AsmPreconditionViolated("array must be indexed by scalar field")
     }
 
     val offset = symbols.varOffset(id)
