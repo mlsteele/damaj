@@ -43,10 +43,14 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
         // KILL any expressions that depended on the variable being assigned
         avail = avail.filter{ ! _.dependencies().contains(load) }
       }
-      case ArrayAssignment(to, index, right) => {
-        // TODO: maybe do something?
+      case a@ArrayAssignment(to, index, right) => {
+        if (isPure(right)) { avail += right }
+        // Conservatively KILL the whole array.
+        avail = avail.filter{
+          case ArrayAccess(left, _) => LoadField(left) == right
+          case _ => true
+        }
       }
-
       case c:Call => 
         // If the call has no side-effects, it can be an available expressio
         if (isPure(c)) { avail += c }
@@ -57,6 +61,7 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
         }
       case Return(ret) => ret.foreach{ e => if (isPure(e)) {avail += e}}
     }
+
     return expungeGlobals(avail) filter {
       // make sure to not include any loads, generates unncessary temp vars
       case _:Load => false
