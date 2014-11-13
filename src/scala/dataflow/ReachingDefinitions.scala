@@ -18,7 +18,7 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
       case a:Assignment => List(a)
       case _ => List()
     }
-  } toSet
+  }.toSet
 
   def direction() = Forward
 
