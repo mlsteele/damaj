@@ -4,6 +4,8 @@
 # Does NOT build first
 #
 
+set -e # commands which err cause the script to abort
+
 echo "all-tests: skipping scanner tests"
 # tests/scanner/test.sh
 # tests/scanner-hidden/test.sh
