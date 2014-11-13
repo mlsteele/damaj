@@ -27,7 +27,7 @@ object Compiler {
 
   //val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
 //  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
-//  val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
+  val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
 
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
@@ -35,30 +35,29 @@ object Compiler {
   val optimizations:List[Optimization] = List(
   //   cse,
   //   copyprop,
-  //   deadcode,
+    deadcode,
     unreachable
   )
 
   // Optimizations first run on the raw code
   val recipePre: List[Optimization] = List(
+    deadcode,
     unreachable
   )
-  //   deadcode
-  // )
 
   // Optimizations run repeatedly on the code
   val recipeLoop: List[Optimization] = List(
   //   cse,
   //   copyprop,
-  //   deadcode,
+    deadcode,
     unreachable
   )
 
   // Optimizations run before passing to the AsmGen
-  val recipePost: List[Optimization] = List()
-  //   unreachable,
-  //   deadcode
-  // )
+  val recipePost: List[Optimization] = List(
+    unreachable,
+    deadcode
+  )
 
   var outFile = Console.out
 
