@@ -33,7 +33,6 @@ object CopyPropagation {
     // Use reaching definitions info to replace all loads occuring in statements with earlier-defined loads
     val newCFG = method.cfg.mapBlocks { b =>
       val fcc = followCopyChain(method, reachingBefore(b), _:Load)
-      def fccCallArg(e: Expr) = fcc(e.asInstanceOf[Load])
       b.stmts.map {
         case Assignment(field, right) => right match {
           case load:Load                            => Assignment(field, fcc(load))
@@ -41,10 +40,10 @@ object CopyPropagation {
           case BinOp(left, op, right)               => Assignment(field, BinOp(fcc(left), op, fcc(right)))
           case UnaryOp(op, right)                   => Assignment(field, UnaryOp(op, fcc(right)))
             // TODO: only copy args if going to a method call
-          case Call(id, args)                       => Assignment(field, Call(id, args.map(_.map(fccCallArg))))
+          case Call(id, args)                       => Assignment(field, Call(id, args.map(_.map(fcc))))
         }
         case ArrayAssignment(field, index, right) => ArrayAssignment(field, fcc(index), fcc(right))
-        case Call(id, args) => Call(id, args.map(_.map(fccCallArg)))
+        case Call(id, args) => Call(id, args.map(_.map(fcc)))
         case Return(ret) => Return(ret.map(fcc))
       }
     }

@@ -119,9 +119,9 @@ class IR2Builder(program: ProgramIR) {
         CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)))
   }
 
-  def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Expr] = arg match {
+  def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Load] = arg match {
     case Left(s) => Left(s)
-    case Right(s) => Right(convertExpr(s))
+    case Right(s) => Right(exprToLoad(s))
   }
 
   def convertOptionExpr(oexpr: Option[IR.Expr]) = oexpr match {

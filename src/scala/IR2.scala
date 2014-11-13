@@ -57,8 +57,7 @@ object IR2 {
     override def toString = "%s[%s] = %s".format(left.id, index, right)
   }
 
-  // TODO call should Load
-  case class Call(id: ID, args:List[Either[StrLiteral, Expr]]) extends Statement with Expr {
+  case class Call(id: ID, args:List[Either[StrLiteral, Load]]) extends Statement with Expr {
     override def toString = {
       def esc2(str: String): String = Escape.escape(Escape.escape(str))
       val q = Escape.escape('"')

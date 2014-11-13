@@ -314,7 +314,7 @@ class AsmGen(ir2: IR2.Program) {
     case _ => throw new RuntimeException("That return wasn't flattened enough!")
   }
 
-  def generateCallArg(arg: Either[StrLiteral, Expr], argi: Int, symbols: ST): String = {
+  def generateCallArg(arg: Either[StrLiteral, Load], argi: Int, symbols: ST): String = {
     arg match {
       // TODO escaping is probably broken
       case Left(StrLiteral(value)) =>
@@ -327,7 +327,6 @@ class AsmGen(ir2: IR2.Program) {
         whereload.setup \
         mov(whereload.asmloc, reg_transfer) ? s"stage callout arg #$argi" \
         mov(reg_transfer, whereargi)
-      case Right(e: Expr) => throw new AsmNotImplemented(e.toString)
     }
   }
 
