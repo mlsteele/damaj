@@ -31,19 +31,16 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
         // Kill any assignments with the same store
         reaching = reaching filter { s => s.left != ass.left}
         // Kill any assignments whose args were modified by this assignment
-        reaching = reaching filter { s => !(s.right.dependencies contains storeToLoad(ass.left)) }
+        reaching = reaching filter { s => !(s.right.dependencies contains LoadField(ass.left)) }
         // Add this assignment to the reaching defs
         reaching += ass
       }
-      // If a call happens, assume that all global assigns were killed
-      case _:Call => {
-      }
+      case _:ArrayAssignment => // TODO: check if this matters or not
+      case _:Call => // don't care
       case _:Return => // don't care
     }
-    return reaching filter {s => !isGlobal(s.left.to)}
+    return reaching filter {s => !isGlobal(s.left)}
   }
-
-  private implicit def storeToLoad(store: Store) : LoadField = LoadField(store.to, store.index)
 
   private def isGlobal(field: FieldSymbol) : Boolean = method.params.globalTable.symbols contains field
 }

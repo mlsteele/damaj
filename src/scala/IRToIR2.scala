@@ -95,9 +95,12 @@ class IR2Builder(program: ProgramIR) {
         CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
       case IR.CalloutCall(s, args)=> 
         CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
-      case IR.Assignment(left, right) =>
+      case IR.Assignment(Store(to, None), right) => 
         CFGFactory.fromStatement(
-          IR2.Assignment(convertStore(left), convertExpr(right)))
+          IR2.Assignment(to, convertExpr(right)))
+    case IR.Assignment(Store(to, Some(index)), right) =>
+      CFGFactory.fromStatement(
+        IR2.ArrayAssignment(to, exprToLoad(index), exprToLoad(right)))
       case _:IR.Break =>
         val nop = CFGFactory.nopBlock()
         // Hackity Hackity Hack
@@ -121,9 +124,6 @@ class IR2Builder(program: ProgramIR) {
     case Right(s) => Right(convertExpr(s))
   }
 
-  def convertStore(store: IR.Store): IR2.Store = 
-    IR2.Store(store.to, store.index.map(exprToLoad))
-
   def convertOptionExpr(oexpr: Option[IR.Expr]) = oexpr match {
     case Some(e) => Some(convertExpr(e))
     case None => None
@@ -133,7 +133,8 @@ class IR2Builder(program: ProgramIR) {
     case IR.BinOp(l, op, r) => IR2.BinOp(exprToLoad(l), op, exprToLoad(r))
     case IR.UnaryOp(op, r) => IR2.UnaryOp(op, exprToLoad(r))
     case IR.Ternary(condition, l, r) => throw new IR2ConstructionException("Ternary was not preprocessed away")
-    case l:IR.LoadField => exprToLoad(expr)
+    case l@IR.LoadField(field, None) => exprToLoad(l)
+    case l@IR.LoadField(field, Some(index)) => ArrayAccess(field, exprToLoad(index))
     case l:IR.LoadInt => exprToLoad(expr)
     case l:IR.LoadBool => exprToLoad(expr)
     case m:IR.MethodCall => IR2.Call(m.method.id, m.args.map(convertArg))
@@ -143,7 +144,7 @@ class IR2Builder(program: ProgramIR) {
   // IR preprocessing guarantees that some Exprs are only Loads.
   // This asserts and casts an Expr to a Load.
   def exprToLoad(expr: IR.Expr): IR2.Load = expr match {
-    case IR.LoadField(from, index) => IR2.LoadField(from, index.map(exprToLoad))
+    case IR.LoadField(from, None) => IR2.LoadField(from)
     case IR.LoadInt(value) => IR2.LoadLiteral(value)
     case IR.LoadBool(value) => value match {
       case true => IR2.LoadLiteral(1)

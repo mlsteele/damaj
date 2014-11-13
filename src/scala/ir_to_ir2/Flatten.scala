@@ -98,7 +98,7 @@ object Flatten {
     def isSimpleLoad() : Boolean = expr match {
       case l:Load => l match {
         case LoadField(_, None) => true
-        case LoadField(_, Some(_:LoadInt)) => true
+        case LoadField(_, Some(_:LoadInt)) => false
         case LoadField(_, Some(_)) => false
         case _:LoadInt   => true
         case _:LoadBool  => true

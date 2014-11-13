@@ -155,18 +155,39 @@ class AsmGen(ir2: IR2.Program) {
   def generateStatement(stmt: Statement, symbols: ST, returnTo: String): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
     case ir: Assignment => generateAssignment(ir, symbols)
+    case ir: ArrayAssignment => generateArrayAssignment(ir, symbols)
     case ir: Return => generateReturn(ir, symbols, returnTo)
+  }
+
+  def generateArrayAssignment(assign: ArrayAssignment, symbols: ST) = assign.right match {
+    case LoadLiteral(v) =>
+      val wherestore = whereVar(assign.left.id, Some(assign.index), symbols)
+      wherestore.setup \
+      mov(v $, wherestore.asmloc)
+    case load:LoadField =>
+      val wherestore = whereVar(assign.left.id, Some(assign.index), symbols)
+      val whereload = whereVar(load, symbols)
+      whereload.setup \
+      mov(whereload.asmloc, reg_transfer) \
+      wherestore.setup \
+      mov(reg_transfer, wherestore.asmloc)
   }
 
   def generateAssignment(ir: Assignment, symbols: ST): String = (ir.left, ir.right) match {
     case (store, LoadLiteral(v)) =>
       val wherestore = whereVar(store, symbols)
       wherestore.setup \
-      mov(v $, wherestore.asmloc) ? "%s <- %s".format(commentStore(store), v)
+      mov(v $, wherestore.asmloc)
     case (store, load: LoadField) =>
       val wherestore = whereVar(store, symbols)
       val whereload = whereVar(load, symbols)
-      comment("%s <- %s".format(commentStore(store), commentLoad(load))) \
+      whereload.setup \
+      mov(whereload.asmloc, reg_transfer) \
+      wherestore.setup \
+      mov(reg_transfer, wherestore.asmloc)
+    case (store, ArrayAccess(field, index)) =>
+      val wherestore = whereVar(store, symbols)
+      val whereload = whereVar(field.id, Some(index), symbols)
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       wherestore.setup \
@@ -181,7 +202,6 @@ class AsmGen(ir2: IR2.Program) {
           xor(1 $, reg_transfer) ? "not"
         case Length => throw new AsmPreconditionViolated("Op length should not make it to asmgen")
       }
-      comment("%s <- (%s %s)".format(commentStore(store), op, commentLoad(right))) \
       whereload.setup \
       mov(whereload.asmloc, reg_transfer) \
       opinstr \
@@ -245,7 +265,6 @@ class AsmGen(ir2: IR2.Program) {
       // Load right into reg_transfer
       // Operations mostly use reg_opresult and reg_transfer internally.
       // Some operations like idiv use additional registers.
-      comment("%s <- (%s %s %s)".format(commentStore(store), commentLoad(left), op, commentLoad(right))) \
       whereleft.setup \
       mov(whereleft.asmloc, reg_opresult) \
       whereright.setup \
@@ -332,7 +351,7 @@ class AsmGen(ir2: IR2.Program) {
   def whereVar(id: ID, arrIdx: Option[Load], symbols: ST): WhereVar = {
     // Optionally put the array index into reg_arridx.
     val setup = arrIdx match {
-      case Some(LoadField(from, None)) =>
+      case Some(LoadField(from)) =>
         val w = whereVar(from.id, None, symbols)
         val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
         // NOTE: We ignore w.setup here because from is guaranteed to be a scalar.
@@ -393,36 +412,21 @@ class AsmGen(ir2: IR2.Program) {
   }
 
   def whereVar(load: LoadField, symbols: ST): WhereVar =
-    whereVar(load.from.id, load.index, symbols)
+    whereVar(load.from.id, None, symbols)
 
-  def whereVar(store: Store, symbols: ST): WhereVar =
-    whereVar(store.to.id, store.index, symbols)
+  def whereVar(field: FieldSymbol, symbols: ST): WhereVar =
+    whereVar(field.id, None, symbols)
 
   def whereVar(load: Load, symbols: ST): WhereVar = load match {
     case load:LoadField   => whereVar(load, symbols)
     case load:LoadLiteral => WhereVar("nop", load.value $)
   }
 
-  def commentLoad(load: LoadField): String = load.index match {
-    case None => load.from.id
-    case Some(LoadLiteral(index)) =>
-      "%s[%s]".format(load.from.id, index)
-    case Some(LoadField(index, _)) =>
-      "%s[%s]".format(load.from.id, index.id)
-  }
+  def commentLoad(load: LoadField): String = load.from.id
 
   def commentLoad(load: Load): String = load match {
-    case load@LoadField(_, None) => load.from.id
-    case load@LoadField(_, Some(LoadLiteral(index))) =>
-      "%s[%s]".format(load.from.id, index)
-    case load@LoadField(_, Some(LoadField(index, _))) =>
-      "%s[%s]".format(load.from.id, index.id)
+    case load@LoadField(_) => load.from.id
     case load@LoadLiteral(v) => s"$v"
-  }
-
-  def commentStore(store: Store): String = store.to.size match {
-    case None => store.to.id
-    case Some(size) => "%s[_]"
   }
 }
 
