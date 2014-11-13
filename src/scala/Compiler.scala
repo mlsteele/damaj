@@ -28,30 +28,31 @@ object Compiler {
   //val cse         :Optimization =  ("cse", CommonExpressionElimination(_))
 //  val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
 //  val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
-//  val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
+  val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
 
-  //def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
+  def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
-  val optimizations:List[Optimization] = List()
+  val optimizations:List[Optimization] = List(
   //   cse,
   //   copyprop,
   //   deadcode,
-  //   unreachable
-  // )
+    unreachable
+  )
 
   // Optimizations first run on the raw code
-  val recipePre: List[Optimization] = List()
-  //   unreachable,
+  val recipePre: List[Optimization] = List(
+    unreachable
+  )
   //   deadcode
   // )
 
   // Optimizations run repeatedly on the code
-  val recipeLoop: List[Optimization] = List()
+  val recipeLoop: List[Optimization] = List(
   //   cse,
   //   copyprop,
   //   deadcode,
-  //   unreachable
-  // )
+    unreachable
+  )
 
   // Optimizations run before passing to the AsmGen
   val recipePost: List[Optimization] = List()
@@ -260,48 +261,48 @@ object Compiler {
       }
       ir2
     }.map { ir2 =>
+      if (CLI.debug) {
+        section("Optimization")
+        Console.err.println("Enabled optimizations:")
+        enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
+      }
+      var tempIR = ir2
+      def applyOpt(opt: Optimization, round: Int = 0) = opt match {
+        case (optName, optFunc) =>
+          if (enabledOptimizations contains opt) {
+            if (CLI.debug) section("Applying %s optimization round %d".format(optName, round))
+            tempIR = optFunc(tempIR)
+            if (CLI.debug) Grapher.graph(tempIR, optName)
+          }
+      }
+      for (opt <- recipePre) {
+        applyOpt(opt)
+      }
+      if (CLI.debug) section("Initial empty block purge")
+        tempIR = removeEmptyBlocks(tempIR)
+      for (i <- 1 to 2) {
+        for (opt <- recipeLoop) {
+          applyOpt(opt, i)
+        }
+        if (CLI.debug) section("Empty block purge round %d".format(i))
+        tempIR = removeEmptyBlocks(tempIR)
+      }
+      for (opt <- recipePost) {
+        applyOpt(opt)
+      }
+      tempIR
+    }.map { ir2 =>
+      if (CLI.debug) section("Condensation")
+      val condensed = Condense.transform(ir2)
+      if (CLI.debug) Grapher.graph(condensed, "condensed")
+      condensed
+    }.map { ir2 =>
       if (CLI.debug) section("Generating Assembly")
       new AsmGen(ir2).asm
     }.map { asm =>
       if (CLI.debug) section("Writing to output")
       outFile.print(asm)
     }.isDefined
-    //.map { ir2 =>
-    //   if (CLI.debug) {
-    //     section("Optimization")
-    //     Console.err.println("Enabled optimizations:")
-    //     enabledOptimizations.foreach {opt => Console.err.println(opt._1)}
-    //   }
-    //   var tempIR = ir2
-    //   def applyOpt(opt: Optimization, round: Int = 0) = opt match {
-    //     case (optName, optFunc) =>
-    //       if (enabledOptimizations contains opt) {
-    //         if (CLI.debug) section("Applying %s optimization round %d".format(optName, round))
-    //         tempIR = optFunc(tempIR)
-    //         if (CLI.debug) Grapher.graph(tempIR, optName)
-    //       }
-    //   }
-    //   for (opt <- recipePre) {
-    //     applyOpt(opt)
-    //   }
-    //   if (CLI.debug) section("Initial empty block purge")
-    //   tempIR = removeEmptyBlocks(tempIR)
-    //   for (i <- 1 to 2) {
-    //     for (opt <- recipeLoop) {
-    //       applyOpt(opt, i)
-    //     }
-    //     if (CLI.debug) section("Empty block purge round %d".format(i))
-    //     tempIR = removeEmptyBlocks(tempIR)
-    //   }
-    //   for (opt <- recipePost) {
-    //     applyOpt(opt)
-    //   }
-    //   tempIR
-    // }.map { ir2 =>
-    //   if (CLI.debug) section("Condensation")
-    //   val condensed = Condense.transform(ir2)
-    //   if (CLI.debug) Grapher.graph(condensed, "condensed")
-    //   condensed
     // }.map { ir2 =>
     //   if (CLI.debug) section("Generating Assembly")
     //   new AsmGen(ir2).asm
