@@ -30,8 +30,19 @@ object CopyPropagation {
 
     Grapher.graph(method, "copyprop.reaching", Some(annotate(_)))
 
+    val newEdges = method.cfg.edges.mapValues {
+      case f@Fork(cond, left, right) => {
+        // Find the block leading to this fork
+        val prevBlock = method.cfg.edges.find(_._2 == f).get._1
+        val fcc = followCopyChain(method, reachingAfter(prevBlock), _:Load)
+        // Replace the block's condition
+        Fork(fcc(cond), left, right)
+      }
+      case e:Edge => e
+    }
+
     // Use reaching definitions info to replace all loads occuring in statements with earlier-defined loads
-    val newCFG = method.cfg.mapBlocks { b =>
+    val newCFG = (new CFG(method.cfg.start, method.cfg.end, newEdges)).mapBlocks { b =>
       val fcc = followCopyChain(method, reachingBefore(b), _:Load)
       b.stmts.map {
         case Assignment(field, right) => right match {
