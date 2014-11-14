@@ -25,13 +25,8 @@ object UnreachableCodeElim extends Transformation {
 
     Grapher.graph(method, "unreachable.reachable", Some(annotate(_)))
 
-    // Delete all edges coming out of unreachable code
-    val prunedEdges = cfg.edges.filterKeys { b =>
-      reachableBefore(b)
-    }
-
     // Convert forks with a constant condition to an edge
-    val simplifiedForks = prunedEdges.mapValues {
+    val simplifiedForks = cfg.edges.mapValues {
       // Condition is always false, make edge to false branch
       case Fork(LoadLiteral(0), _, falseBranch) => Edge(falseBranch)
       // Condition is always true, make edge to true branch
@@ -40,7 +35,9 @@ object UnreachableCodeElim extends Transformation {
       case e:Edge => e
     }
 
-    val newCFG = new CFG(cfg.start, cfg.end, simplifiedForks)
+    val newCFG = (new CFG(cfg.start, cfg.end, simplifiedForks)).mapBlocks { b =>
+      b.stmts.filter {s => reachableBefore(b)}
+    }
 
     return Method(method.id,
       method.params,
@@ -49,4 +46,6 @@ object UnreachableCodeElim extends Transformation {
       method.returnType
     )
   }
+
+  private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 }
