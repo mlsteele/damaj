@@ -62,6 +62,13 @@ private class Inline(program: IR2.Program) {
       }
     }
 
+    // Replace all edges coming OUT of the original block with an edge coming out of the inlined CFG's end
+    blockToCFG.foreach {case (block, inlinedCFG) => {
+      // retreive the block's original outgoing edge from the original CFG
+      val edge = method.cfg.edges(block)
+      newEdges += inlinedCFG.end -> edge
+    }}
+
     val newCFG = method.cfg
     return Method(
       method.id,
