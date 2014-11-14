@@ -36,6 +36,7 @@ private class Inline(program: IR2.Program) {
           Grapher.graph(method.copy(cfg=inlinedCFG), "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
           blockToCFG += b -> inlinedCFG
         }
+        case _ => 
       }
     }
     val newCFG = method.cfg
@@ -48,25 +49,30 @@ private class Inline(program: IR2.Program) {
     )
   }
 
-  // Returns the CFG to insert in place of the call, and the field containing the return value
+  // Returns the CFG to insert in place of the call
   def inlineCall(call: Call, tempGen: TempVarGen, result: Option[FieldSymbol]) : CFG = {
     val oldFields = call.method.locals.getFields
     var cfg = call.method.cfg
     // For each occurence of a variable in the original method, replace it with a temp
     for (oldField <- oldFields) {
       val newVar = tempGen.newIntVar()
-      cfg = renameVar(oldField, newVar, cfg)
+      cfg = renameVar(oldField, LoadField(newVar), cfg)
+    }
+    // For each method arg referenced in the original cfg, replace it with the load passed to the call
+    for (i <- (0 to call.args.length - 1)) call.args(i) match {
+      case Left(_) => // this shouldn't happen
+      case Right(load) =>
     }
     return cfg
   }
 
-  def renameVar(oldField: FieldSymbol, newField: FieldSymbol, cfg: CFG) : CFG = {
+  def renameVar(oldField: FieldSymbol, newLoad: Load, cfg: CFG) : CFG = {
     def rload(load: Load) : Load = load match {
-      case LoadField(field) if field == oldField => LoadField(newField)
+      case LoadField(field) if field == oldField => newLoad
       case l:Load => l
     }
     def rfield(field: FieldSymbol) : FieldSymbol = field == oldField match {
-      case true => newField
+      case true => newLoad.asInstanceOf[LoadField].from
       case false => field
     }
     cfg.mapBlocks { b =>
