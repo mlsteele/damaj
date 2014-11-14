@@ -18,7 +18,11 @@ private class Inline(program: IR2.Program) {
     val tempGen = new TempVarGen(newLocals)
     val newCFG = method.cfg.mapBlocks { b =>
       b.stmts.flatMap {
-        case c:Call if c.method.isInlineable => inlineCall(c, tempGen)
+        case c:Call if c.method.isInlineable => {
+          val inlinedCFG = inlineCall(c, tempGen)
+          Grapher.graph(method, "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
+          List(c)
+        }
         case s:Statement => List(s)
       }
     }
@@ -31,8 +35,8 @@ private class Inline(program: IR2.Program) {
     )
   }
 
-  def inlineCall(call: Call, tempGen: TempVarGen) : List[Statement] = {
-    return List()
+  def inlineCall(call: Call, tempGen: TempVarGen) : CFG = {
+    return new CFG(List(), List(), Map())
   }
 
   private implicit class InlineableMethod(method: Method) {
