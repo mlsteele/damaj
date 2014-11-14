@@ -9,5 +9,46 @@ object Inline {
 
 private class Inline(program: IR2.Program) {
   import IR2._
+  import TempVarGen._
+
   def transformProgram() = program
+
+  def transformMethod(method: Method) : Method = {
+    val newLocals = method.locals.copy()
+    val tempGen = new TempVarGen(newLocals)
+    val newCFG = method.cfg.mapBlocks { b =>
+      b.stmts.flatMap {
+        case c:Call if c.method.isInlineable => inlineCall(c, tempGen)
+        case s:Statement => List(s)
+      }
+    }
+    return Method(
+      method.id,
+      method.params,
+      newLocals,
+      newCFG,
+      method.returnType
+    )
+  }
+
+  def inlineCall(call: Call, tempGen: TempVarGen) : List[Statement] = {
+    return List()
+  }
+
+  private implicit class InlineableMethod(method: Method) {
+    def isInlineable(): Boolean = {
+      method.cfg.blocks.foreach {
+        _.stmts.foreach {
+          case Call(id, args) if id == method.id => return false
+          case _ =>
+        }
+      }
+      return true
+    }
+  }
+
+  private implicit class CallMethod(call: Call) {
+    def method() : Method = program.methods.find(m => m.id == call.id).get
+  }
+
 }
