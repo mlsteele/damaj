@@ -46,6 +46,4 @@ object UnreachableCodeElim extends Transformation {
       method.returnType
     )
   }
-
-  private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 }

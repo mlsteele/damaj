@@ -77,6 +77,4 @@ object DeadCodeElim {
       case _ => false
     }
   }
-
-  private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 }

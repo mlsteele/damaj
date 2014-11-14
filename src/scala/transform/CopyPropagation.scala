@@ -90,6 +90,4 @@ object CopyPropagation {
       }
     }
   }
-
-  private implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 }

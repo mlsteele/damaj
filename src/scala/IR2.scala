@@ -15,7 +15,6 @@ object IR2 {
     )
   }
 
-  // TODO(miles): what is this? Get rid of it probably..
   case class Field(id: ID, size: Option[Long]) {
     override def toString() = "%s%s".format(id,
       size match {
@@ -46,6 +45,8 @@ object IR2 {
       "Block %s\n  %s".format(uuid, stmtString)
     }
   }
+
+  implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
