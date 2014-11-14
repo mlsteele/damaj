@@ -21,62 +21,36 @@ private class Inline(program: IR2.Program) {
   def transformMethod(method: Method) : Method = {
     val newLocals = method.locals.copy()
     val tempGen = new TempVarGen(newLocals, "~inline")
-    // keeps track of which calls should be replaced with what CFG
-    var blockToCFG: Map[Block, CFG] = Map()
+    // Find every method call, and possibly inline it
     method.cfg.blocks.foreach { b =>
       b.stmts.foreach {
         // If it's an inlineable method call, add this inlined cfg to our map
         case c:Call if c.isMethodCall() && c.method.isInlineable() => {
           val inlinedCFG = inlineCall(c, tempGen, None)
           Grapher.graph(method.copy(cfg=inlinedCFG), "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
-          blockToCFG += b -> inlinedCFG
+          return transformMethod(Method(
+            method.id,
+            method.params,
+            newLocals,
+            method.cfg.replaceBlock(b, inlinedCFG),
+            method.returnType
+          ))
         }
         case Assignment(to, c:Call) if c.isMethodCall() && c.method.isInlineable() => {
           val inlinedCFG = inlineCall(c, tempGen, Some(to))
           Grapher.graph(method.copy(cfg=inlinedCFG), "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
-          blockToCFG += b -> inlinedCFG
+          return transformMethod(Method(
+            method.id,
+            method.params,
+            newLocals,
+            method.cfg.replaceBlock(b, inlinedCFG),
+            method.returnType
+          ))
         }
         case _ => 
       }
     }
-    // Replace all of the edges leading out of the original block with an edge leading out of the inlined CFG's start
-    var newEdges = method.cfg.edges
-    newEdges.foreach {case (b, e) => blockToCFG.get(b) match {
-      case Some(inlinedCFG) => {
-        newEdges -= b
-        newEdges += inlinedCFG.start -> e
-        newEdges ++= inlinedCFG.edges
-      }
-      case None => //not a call, don't replace
-    }}
-
-    // Replace all edges leading TO the original block with an edge leading to the inlined CFG's start
-    newEdges = newEdges.mapValues {
-      case e@Edge(toBlock) => blockToCFG.get(toBlock) match {
-        case Some(inlinedCFG) => Edge(inlinedCFG.start)
-        case None => e
-      }
-      case f@Fork(cond, leftBlock, rightBlock) => {
-        val (newLeft, newRight) = (blockToCFG.get(leftBlock).map(_.start), blockToCFG.get(rightBlock).map(_.start))
-        Fork(cond, newLeft.getOrElse(leftBlock), newRight.getOrElse(rightBlock))
-      }
-    }
-
-    // Replace all edges coming OUT of the original block with an edge coming out of the inlined CFG's end
-    blockToCFG.foreach {case (block, inlinedCFG) => {
-      // retreive the block's original outgoing edge from the original CFG
-      val edge = method.cfg.edges(block)
-      newEdges += inlinedCFG.end -> edge
-    }}
-
-    val newCFG = method.cfg
-    return Method(
-      method.id,
-      method.params,
-      newLocals,
-      new CFG(newCFG.start, newCFG.end, newEdges),
-      method.returnType
-    )
+    return method
   }
 
   // Returns the CFG to insert in place of the call
@@ -162,7 +136,7 @@ private class Inline(program: IR2.Program) {
   private implicit class EnhancedCFG(cfg: CFG) {
     def replaceBlock(block: Block, inlined:CFG) : CFG = {
       var newEdges = cfg.edges ++ inlined.edges
-      // Replace all edges leading to the original block with edges going to the inlined cfg's start
+      // Replace all edges leading IN to the original block with edges going to the inlined cfg's start
       newEdges = newEdges.mapValues {
         case Edge(to) => if (to == block) Edge(inlined.start) else Edge(to)
         case Fork(cond, left, right) => if (left == block && right == block) {
@@ -175,7 +149,13 @@ private class Inline(program: IR2.Program) {
           Fork(cond, left, right)
         }
       }
-      return cfg
+      // Replace the edge leading OUT of the original block with an edge coming out of the inlined cfg's end
+      newEdges = newEdges.map {case (b, e) => {
+        if (b == block) (inlined.end, e) else (b, e)
+      }}
+      val newStart = if (cfg.start == block) inlined.start else cfg.start
+      val newEnd = if (cfg.end == block) inlined.end else cfg.end
+      new CFG(newStart, newEnd, newEdges)
     }
   }
 
