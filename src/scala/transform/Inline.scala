@@ -61,7 +61,19 @@ private class Inline(program: IR2.Program) {
     // For each method arg referenced in the original cfg, replace it with the load passed to the call
     for (i <- (0 to call.args.length - 1)) call.args(i) match {
       case Left(_) => // this shouldn't happen
-      case Right(load) =>
+      case Right(load) => {
+        cfg = renameVar(call.method.params.getFields(i), load, cfg)
+      }
+    }
+    // Replace all returns with an assignment to the result variable
+    result match {
+      case None =>
+      case Some(resultVar) => cfg = cfg.mapBlocks { b =>
+        b.stmts.map {
+          case Return(Some(ret)) => Assignment(resultVar, ret)
+          case s:Statement => s
+        }
+      }
     }
     return cfg
   }
