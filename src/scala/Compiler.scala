@@ -30,6 +30,7 @@ object Compiler {
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
   val peep        :Optimization =  ("peep", PeepholeAlgebra(_))
+  val inline      :Optimization =  ("inline", Inline(_))
 
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
@@ -38,11 +39,13 @@ object Compiler {
     copyprop,
     deadcode,
     unreachable,
-    peep
+    peep,
+    inline
   )
 
   // Optimizations first run on the raw code
   val recipePre: List[Optimization] = List(
+    inline,
     copyprop,
     deadcode,
     unreachable
