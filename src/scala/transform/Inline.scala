@@ -159,4 +159,24 @@ private class Inline(program: IR2.Program) {
     }
   }
 
+  private implicit class EnhancedCFG(cfg: CFG) {
+    def replaceBlock(block: Block, inlined:CFG) : CFG = {
+      var newEdges = cfg.edges ++ inlined.edges
+      // Replace all edges leading to the original block with edges going to the inlined cfg's start
+      newEdges = newEdges.mapValues {
+        case Edge(to) => if (to == block) Edge(inlined.start) else Edge(to)
+        case Fork(cond, left, right) => if (left == block && right == block) {
+          Fork(cond, inlined.start, inlined.start)
+        } else if (left == block) {
+          Fork(cond, inlined.start, right)
+        } else if (right == block) {
+          Fork(cond, left, inlined.start)
+        } else {
+          Fork(cond, left, right)
+        }
+      }
+      return cfg
+    }
+  }
+
 }
