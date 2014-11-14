@@ -29,6 +29,7 @@ object Compiler {
   val copyprop    :Optimization =  ("copyprop", CopyPropagation(_))
   val deadcode    :Optimization =  ("deadcode", DeadCodeElimMulti(_))
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
+  val peep        :Optimization =  ("peep", PeepholeAlgebra(_))
 
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
@@ -36,7 +37,8 @@ object Compiler {
     cse,
     copyprop,
     deadcode,
-    unreachable
+    unreachable,
+    peep
   )
 
   // Optimizations first run on the raw code
@@ -51,7 +53,8 @@ object Compiler {
     cse,
     copyprop,
     deadcode,
-    unreachable
+    unreachable,
+    peep
   )
 
   // Optimizations run before passing to the AsmGen
