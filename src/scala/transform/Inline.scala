@@ -39,12 +39,35 @@ private class Inline(program: IR2.Program) {
         case _ => 
       }
     }
+    // Replace all of the edges leading out of the original block with an edge leading out of the inlined CFG's start
+    var newEdges = method.cfg.edges
+    newEdges.foreach {case (b, e) => blockToCFG.get(b) match {
+      case Some(inlinedCFG) => {
+        newEdges -= b
+        newEdges += inlinedCFG.start -> e
+        newEdges ++= inlinedCFG.edges
+      }
+      case None => //not a call, don't replace
+    }}
+
+    // Replace all edges leading TO the original block with an edge leading to the inlined CFG's start
+    newEdges = newEdges.mapValues {
+      case e@Edge(toBlock) => blockToCFG.get(toBlock) match {
+        case Some(inlinedCFG) => Edge(inlinedCFG.start)
+        case None => e
+      }
+      case f@Fork(cond, leftBlock, rightBlock) => {
+        val (newLeft, newRight) = (blockToCFG.get(leftBlock).map(_.start), blockToCFG.get(rightBlock).map(_.start))
+        Fork(cond, newLeft.getOrElse(leftBlock), newRight.getOrElse(rightBlock))
+      }
+    }
+
     val newCFG = method.cfg
     return Method(
       method.id,
       method.params,
       newLocals,
-      newCFG,
+      new CFG(newCFG.start, newCFG.end, newEdges),
       method.returnType
     )
   }
