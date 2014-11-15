@@ -326,11 +326,11 @@ object CFGFactory {
 
   def nopBlock(): Block = IR2.Block(List())
 
-  def dummy(st: SymbolTable): CFG = {
+  def dummy(): CFG = {
     val b = nopBlock()
     new CFG(b, b, Map[IR2.Block, IR2.Transition]())
   }
 
   def chain(cfgs: TraversableOnce[CFG], st: SymbolTable): CFG =
-    cfgs.fold(dummy(st))(_ ++ _)
+    cfgs.fold(dummy)(_ ++ _)
 }

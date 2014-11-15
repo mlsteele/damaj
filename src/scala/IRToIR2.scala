@@ -57,7 +57,7 @@ class IR2Builder(program: ProgramIR) {
     val newCtx = Context(Some(block.fields), ctx.continueTo, ctx.breakTo)
     block.stmts
       .map(stmt => convertStatement(stmt, newCtx))
-      .fold(CFGFactory.dummy(block.fields))(_ ++ _)
+      .fold(CFGFactory.dummy())(_ ++ _)
   }
  
   def convertStatement(statement: IR.Statement, ctx: Context): CFG = statement match {
@@ -80,7 +80,7 @@ class IR2Builder(program: ProgramIR) {
 
       case forb:IR.For => 
         assert(false, "For was not preprocessed away!")
-        CFGFactory.dummy(ctx.symbols.get)
+        CFGFactory.dummy()
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
         val startCFG = CFGFactory.chain(
