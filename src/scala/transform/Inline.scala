@@ -59,7 +59,7 @@ private class Inline(program: IR2.Program) {
     var cfg = call.method.cfg
     // For each occurence of a variable in the original method, replace it with a temp
     for (oldField <- oldFields) {
-      val newVar = tempGen.newIntVar()
+      val newVar = tempGen.newVarLike(oldField)
       cfg = renameVar(oldField, LoadField(newVar), cfg)
     }
     // For each method arg referenced in the original cfg, replace it with the load passed to the call
@@ -91,7 +91,7 @@ private class Inline(program: IR2.Program) {
       case true => newLoad.asInstanceOf[LoadField].from
       case false => field
     }
-    cfg.mapBlocks { b =>
+    val newCFG = cfg.mapBlocks { b =>
       b.stmts.map {
         case Assignment(to, expr) => {
           val newRight = expr match {
@@ -108,6 +108,12 @@ private class Inline(program: IR2.Program) {
         case Return(ret) => Return(ret.map(rload))
       }
     }
+    // Rename vars in forks too..
+    val newEdges = newCFG.edges.mapValues {
+      case Fork(cond, left, right) => Fork(rload(cond), left, right)
+      case e:Edge => e
+    }
+    return new CFG(newCFG.start, newCFG.end, newEdges)
   }
 
   private implicit class InlineableMethod(method: Method) {
@@ -115,6 +121,7 @@ private class Inline(program: IR2.Program) {
       method.cfg.blocks.foreach {
         _.stmts.foreach {
           case Call(id, args) if id == method.id => return false
+          case Assignment(_, Call(id, args)) if id == method.id => return false
           case _ =>
         }
       }

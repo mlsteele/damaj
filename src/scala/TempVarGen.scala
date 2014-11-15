@@ -32,6 +32,14 @@ object TempVarGen {
       }
     }
 
+    def newVarLike(field: FieldSymbol) : FieldSymbol = {
+      val sym = field.copy(id = newVarName())
+      table.addSymbol(sym) match {
+        case None => return sym
+        case _    => assert(false, "Duplicate temporary variable created somehow."); return sym
+      }
+    }
+
     // Generates a variable with the same type as the given expression
     def newVarLike(expr: Expr) : FieldSymbol = newVar(typeOfExpr(expr))
 
