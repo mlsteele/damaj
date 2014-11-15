@@ -102,7 +102,7 @@ private class Inline(program: IR2.Program) {
       case l:Load => l
     }
     def rfield(field: FieldSymbol) : FieldSymbol = field == oldField match {
-      case true => {println("Replacing %s with %s".format(oldField.id, newLoad)); newLoad.asInstanceOf[LoadField].from}
+      case true => newLoad.asInstanceOf[LoadField].from
       case false => field
     }
     val newCFG = cfg.mapBlocks { b =>
