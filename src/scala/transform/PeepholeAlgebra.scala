@@ -23,7 +23,8 @@ object PeepholeAlgebra extends Transformation {
   private def simplify(expr: Expr): Expr = expr match {
     // 3 * 5 = 15 // constant calculation
     case BinOp(LoadLiteral(x), op:BinOpType, LoadLiteral(y)) =>
-      LoadLiteral(evalBinOp(x, op, y))
+      // Do the computation now, unless it would fail, in which case leave it for the program to fail.
+      evalBinOp(x, op, y).map(LoadLiteral(_)).getOrElse(expr)
     // x * 0 = 0
     case BinOp(LoadLiteral(0), Multiply, _             ) => LoadLiteral(0)
     case BinOp(_,              Multiply, LoadLiteral(0)) => LoadLiteral(0)
@@ -49,21 +50,22 @@ object PeepholeAlgebra extends Transformation {
   }
 
   // Evaluate binary operations on compile-time known values.
+  // Returns None if the program would fail.
   // TODO(miles): 64-bit int bounds checking.
   // TODO(miles): check edge cases, don't crash compiler. (example: divzero)
-  private def evalBinOp(left: Long, op: BinOpType, right: Long): Long = op match {
-    case Add              => left + right
-    case Subtract         => left - right
-    case Multiply         => left * right
-    case Divide           => left / right
-    case Mod              => left % right
-    case LessThan         => if (left < right) 1 else 0
-    case GreaterThan      => if (left > right) 1 else 0
-    case LessThanEqual    => if (left <= right) 1 else 0
-    case GreaterThanEqual => if (left >= right) 1 else 0
-    case Equals           => if (left == right) 1 else 0
-    case NotEquals        => if (left != right) 1 else 0
-    case And              => if ((left != 0) && (right != 0)) 1 else 0
-    case Or               => if ((left != 0) || (right != 0)) 1 else 0
+  private def evalBinOp(left: Long, op: BinOpType, right: Long): Option[Long] = op match {
+    case Add              => Some(left + right)
+    case Subtract         => Some(left - right)
+    case Multiply         => Some(left * right)
+    case Divide           => if (right != 0) Some(left / right) else None
+    case Mod              => Some(left % right)
+    case LessThan         => if (left < right) Some(1) else Some(0)
+    case GreaterThan      => if (left > right) Some(1) else Some(0)
+    case LessThanEqual    => if (left <= right) Some(1) else Some(0)
+    case GreaterThanEqual => if (left >= right) Some(1) else Some(0)
+    case Equals           => if (left == right) Some(1) else Some(0)
+    case NotEquals        => if (left != right) Some(1) else Some(0)
+    case And              => if ((left != 0) && (right != 0)) Some(1) else Some(0)
+    case Or               => if ((left != 0) || (right != 0)) Some(1) else Some(0)
   }
 }
