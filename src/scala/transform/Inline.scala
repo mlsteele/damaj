@@ -14,7 +14,8 @@ private class Inline(program: IR2.Program) {
   import FunctionalUtils._
 
   def transformProgram() = program.copy(
-    methods = program.methods.map(transformMethod),
+    // delete any inlineable methods
+    methods = program.methods.filter {m => !m.isInlineable},
     main = transformMethod(program.main)
   )
 
@@ -63,6 +64,7 @@ private class Inline(program: IR2.Program) {
     paramFieldMap.foreach {case (oldParam, newParam) => {
       cfg = renameVar(oldParam, LoadField(newParam), cfg)
     }}
+
     // Insert code to initialize each newParam variable to the call args
     var initCFG = CFGFactory.dummy()
     for ((param, i) <- call.method.params.getFields.zipWithIndex) {
