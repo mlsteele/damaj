@@ -56,31 +56,27 @@ private class Inline(program: IR2.Program) {
 
   // Returns the CFG to insert in place of the call
   def inlineCall(call: Call, tempGen: TempVarGen, result: Option[FieldSymbol]) : CFG = {
-    // Replace all references to a parameter with a temporary
-    val paramFieldMap:Map[FieldSymbol, FieldSymbol] = call.method.params.getFields.map { param =>
-      (param, tempGen.newVarLike(param))
-    }.toMap
     var cfg = call.method.cfg
-    paramFieldMap.foreach {case (oldParam, newParam) => {
-      cfg = renameVar(oldParam, LoadField(newParam), cfg)
-    }}
-
-    // Insert code to initialize each newParam variable to the call args
-    var initCFG = CFGFactory.dummy()
+    // For each occurence of a variable in the original method, replace it with a temp
+    for (oldField <- call.method.locals.getFields) {
+      val newVar = tempGen.newVarLike(oldField)
+      cfg = renameVar(oldField, LoadField(newVar), cfg)
+    }
+    // Replace all references to a parameter with a temporary
     for ((param, i) <- call.method.params.getFields.zipWithIndex) {
-      val newParamVar = paramFieldMap(param)
+      // Generate temp for each parameter
+      val newParamVar = tempGen.newVarLike(param)
+      // Rename all references to original parameter
+      cfg = renameVar(param, LoadField(newParamVar), cfg)
+      // Insert code to initialize parameter temps with call args
       val callArg = call.args(i)
       callArg match {
         case Left(_) =>
-        case Right(callLoad) => initCFG ++= CFGFactory.fromStatement(Assignment(newParamVar, callLoad))
+        case Right(callLoad) => {
+          val paramAssign = Assignment(newParamVar, callLoad)
+          cfg = CFGFactory.fromStatement(paramAssign) ++ cfg
+        }
       }
-    }
-    cfg = initCFG ++ cfg
-    val oldFields = call.method.locals.getFields
-    // For each occurence of a variable in the original method, replace it with a temp
-    for (oldField <- oldFields) {
-      val newVar = tempGen.newVarLike(oldField)
-      cfg = renameVar(oldField, LoadField(newVar), cfg)
     }
 
     // Replace all returns with an assignment to the result variable
