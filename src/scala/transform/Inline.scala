@@ -74,7 +74,7 @@ private class Inline(program: IR2.Program) {
         case Left(_) =>
         case Right(callLoad) => {
           val paramAssign = Assignment(newParamVar, callLoad)
-          cfg = CFGFactory.fromStatement(paramAssign) ++ cfg
+          cfg = CFG.fromStatement(paramAssign) ++ cfg
         }
       }
     }

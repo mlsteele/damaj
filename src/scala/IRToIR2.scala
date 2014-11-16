@@ -57,15 +57,15 @@ class IR2Builder(program: ProgramIR) {
     val newCtx = Context(Some(block.fields), ctx.continueTo, ctx.breakTo)
     block.stmts
       .map(stmt => convertStatement(stmt, newCtx))
-      .fold(CFGFactory.dummy())(_ ++ _)
+      .fold(CFG.dummy)(_ ++ _)
   }
  
   def convertStatement(statement: IR.Statement, ctx: Context): CFG = statement match {
       case IR.If(pre, condition, thenb, elseb) =>
-        val startCFG = CFGFactory.chain(
+        val startCFG = CFG.chain(
           pre.map(x => convertStatement(x, ctx)))
         val thenCFG = convertBlock(thenb, ctx)
-        val endBlock = CFGFactory.nopBlock()
+        val endBlock = CFG.nopBlock()
         val commonEdges = startCFG.edges ++ thenCFG.edges + (thenCFG.end -> Edge(endBlock))
         val edges = commonEdges ++ (elseb match {
           case Some(b) =>
@@ -80,43 +80,43 @@ class IR2Builder(program: ProgramIR) {
 
       case forb:IR.For => 
         assert(false, "For was not preprocessed away!")
-        CFGFactory.dummy()
+        CFG.dummy
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
-        val startCFG = CFGFactory.chain(
+        val startCFG = CFG.chain(
           pre.map(x => convertStatement(x, ctx)))
-        val endBlock = CFGFactory.nopBlock()
+        val endBlock = CFG.nopBlock()
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges +
             (startCFG.end -> Fork(exprToLoad(condition), blockCFG.start, endBlock)) +
             (blockCFG.end -> Edge(startCFG.start))
         new CFG(startCFG.start, endBlock, edges)
       case IR.MethodCall(s, args) =>
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
+        CFG.fromStatement(IR2.Call(s.id, args.map(convertArg)))
       case IR.CalloutCall(s, args)=> 
-        CFGFactory.fromStatement(IR2.Call(s.id, args.map(convertArg)))
+        CFG.fromStatement(IR2.Call(s.id, args.map(convertArg)))
       case IR.Assignment(Store(to, None), right) => 
-        CFGFactory.fromStatement(
-          IR2.Assignment(to, convertExpr(right)))
+      CFG.fromStatement(
+        IR2.Assignment(to, convertExpr(right)))
     case IR.Assignment(Store(to, Some(index)), right) =>
-      CFGFactory.fromStatement(
+      CFG.fromStatement(
         IR2.ArrayAssignment(to, exprToLoad(index), exprToLoad(right)))
       case _:IR.Break =>
-        val nop = CFGFactory.nopBlock()
+        val nop = CFG.nopBlock()
         // Hackity Hackity Hack
         // This does not return a well-formed CFG because break is a special snowflake.
         // TODO(jessk) make this not hacky.
-        val nop2 = CFGFactory.nopBlock()
+        val nop2 = CFG.nopBlock()
         val edges = Map[IR2.Block, IR2.Transition](nop -> Edge(ctx.breakTo.get))
         new CFG(nop, nop2, edges)
       case _:IR.Continue =>
-        val nop = CFGFactory.nopBlock()
-        val nop2 = CFGFactory.nopBlock()
+        val nop = CFG.nopBlock()
+        val nop2 = CFG.nopBlock()
         // WHY can't you use the arrow syntax on this constructor???
         val edges = Map[IR2.Block, IR2.Transition]((nop, Edge(ctx.continueTo.get)))
         new CFG(nop, nop2, edges)
       case IR.Return(e) =>
-        CFGFactory.fromStatement(IR2.Return(convertOptionExprToLoad(e)))
+        CFG.fromStatement(IR2.Return(convertOptionExprToLoad(e)))
   }
 
   def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Load] = arg match {

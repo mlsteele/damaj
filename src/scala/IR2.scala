@@ -46,6 +46,7 @@ object IR2 {
     }
   }
 
+  // Implicitly convert a list of statements to a block
   implicit def stmtsToBlock(stmts: List[Statement]) : Block = Block(stmts)
 
   // in IR2, Statements can not contain control flow.
@@ -315,7 +316,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
   */
 }
 
-object CFGFactory {
+object CFG {
   import IR2._
 
   def fromStatement(stmt: IR2.Statement): CFG = {
