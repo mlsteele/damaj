@@ -317,7 +317,6 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
 object CFGFactory {
   import IR2._
-  import SymbolTable._
 
   def fromStatement(stmt: IR2.Statement): CFG = {
     val block = Block(List(stmt))
@@ -331,6 +330,6 @@ object CFGFactory {
     new CFG(b, b, Map[IR2.Block, IR2.Transition]())
   }
 
-  def chain(cfgs: TraversableOnce[CFG], st: SymbolTable): CFG =
+  def chain(cfgs: TraversableOnce[CFG]): CFG =
     cfgs.fold(dummy)(_ ++ _)
 }
