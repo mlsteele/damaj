@@ -151,6 +151,11 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     new CFG(start, rhs.end, newEdges)
   }
 
+  def +(block: Block): CFG = {
+    val newEdges = edges + (end -> Edge(block))
+    new CFG(start, block, newEdges)
+  }
+
   private def findBlocks(): Set[Block] = {
     var collector = Set[Block]()
     collector += start
@@ -316,7 +321,19 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
     new CFG(bTrans(start), bTrans(end), newEdges)
   }
-  
+
+  def flatMapBlocks(func: Block => List[Block]): CFG = {
+    val bTrans:Map[Block, CFG] = blocks.map { b =>
+      val cfgs = func(b).map(CFG.fromBlock)
+      b -> CFG.chain(cfgs)
+    }.toMap
+    var newCFG = this
+    bTrans.foreach {case (b, cfg) =>
+      newCFG = newCFG.replaceBlock(b, cfg)
+    }
+    return newCFG
+  }
+
   override def toString: String = {
     "CFG(\n  %s)".format(
       blocks.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  "))
