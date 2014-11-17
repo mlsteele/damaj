@@ -13,7 +13,7 @@ object PeepholeAlgebra extends Transformation {
   override def transform(cfg: CFG): CFG = cfg.mapBlocks(transform)
 
   def transform(block: Block): Block =
-    block.copy(stmts = block.stmts.map(transform))
+    Block(block.stmts.map(transform))
 
   def transform(stmt: Statement): Statement = stmt match {
     case x:Assignment      => x.copy(right = simplify(x.right))

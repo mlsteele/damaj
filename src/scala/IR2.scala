@@ -33,17 +33,17 @@ object IR2 {
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
-  case class Block(stmts: List[Statement]) {
+  class Block(val stmts: List[Statement]) {
     val uuid = SlugGenerator.id(this)
-    override def equals(that:Any):Boolean = that match {
-      case that: Block => this eq that
-      case _ => false
-    }
-    override def hashCode = 31 * uuid.hashCode
+
     override def toString() = {
       val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
       "Block %s\n  %s".format(uuid, stmtString)
     }
+  }
+
+  object Block {
+    def apply(stmts: List[Statement]) = new Block(stmts)
   }
 
   // Implicitly convert a list of statements to a block
