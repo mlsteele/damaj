@@ -34,10 +34,9 @@ object IR2 {
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
   class Block(val stmts: List[Statement]) {
-    val uuid = SlugGenerator.id(this)
-
     override def toString() = {
       val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
+      val uuid = SlugGenerator.id(this)
       "Block %s\n  %s".format(uuid, stmtString)
     }
   }
@@ -101,7 +100,7 @@ object IR2 {
 
   sealed trait Transition
   case class Edge(to: Block) extends Transition {
-    override def toString() = "Edge to %s".format(to.uuid)
+    override def toString() = "Edge to %s".format(SlugGenerator.id(to))
   }
   case class Fork(condition: Load, ifTrue: Block, ifFalse: Block) extends Transition {
     override def toString() = "Fork condition: %s\nTrue jump: %s\nFalse jump: %s".format(
