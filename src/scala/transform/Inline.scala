@@ -15,7 +15,12 @@ private class Inline(program: IR2.Program) {
 
   def transformProgram() = program.copy(
     // delete any inlineable methods
-    methods = program.methods.filter {m => !m.isInlineable},
+    methods = program.methods.flatMap {m => m.isInlineable match {
+      // Delete any methods which can be inlined
+      case true => List()
+      // Perform inline optimization on body of all other methods
+      case false => List(transformMethod(m))
+    }},
     main = transformMethod(program.main)
   )
 
@@ -94,10 +99,10 @@ private class Inline(program: IR2.Program) {
 
   def renameVar(oldField: FieldSymbol, newLoad: Load, cfg: CFG) : CFG = {
     def rload(load: Load) : Load = load match {
-      case LoadField(field) if field == oldField => newLoad
+      case LoadField(field) if field.id == oldField.id => newLoad
       case l:Load => l
     }
-    def rfield(field: FieldSymbol) : FieldSymbol = field == oldField match {
+    def rfield(field: FieldSymbol) : FieldSymbol = field.id == oldField.id match {
       case true => newLoad.asInstanceOf[LoadField].from
       case false => field
     }
