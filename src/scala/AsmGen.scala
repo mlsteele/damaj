@@ -366,7 +366,7 @@ class AsmGen(ir2: IR2.Program) {
         jge("._exit1") \
         cmp(0 $, reg_arridx) \
         jl("._exit1")
-      case None => "nop"
+      case None => ""
     }
 
     val offset = symbols.varOffset(id)
