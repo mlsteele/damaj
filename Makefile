@@ -1,7 +1,7 @@
-.PHONY: java_classes scala_classes antlr_classes fsc_reset docs repl clean
+.PHONY: all java_classes scala_classes antlr_classes fsc_reset docs repl scala-test clean
 all: fsc_reset scala_classes
 
-CLASSPATH = build:vendor/antlr.jar
+CLASSPATH = build:vendor/antlr.jar:vendor/scalatest_2.11-2.2.1.jar
 SCALAC_FLAGS = -cp $(CLASSPATH) -deprecation -feature -language:implicitConversions -Xlint $(WARNINGS)
 WARNINGS = \
 	-Ywarn-dead-code \
@@ -68,6 +68,10 @@ docs: doc/semantic_checker/Lab2.pdf	doc/codegen/CodeGeneration.pdf	doc/data_flow
 # Runs the scala REPL with our files added to the path
 repl:
 	CLASSPATH=$(CLASSPATH) scala -deprecation -feature -language:implicitConversions
+
+# Runs scala unit tests
+scala-test:
+	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.ExampleSpec
 
 clean:
 	fsc -reset
