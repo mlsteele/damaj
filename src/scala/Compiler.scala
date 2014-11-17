@@ -267,6 +267,11 @@ object Compiler {
         Grapher.graph(ir2, "raw")
       }
       ir2
+    }.map{ir2 => 
+      if(CLI.debug) {
+        section("Falloff detection")
+      }
+      FalloffDetection(ir2)
     }.map { ir2 =>
       if (CLI.debug) {
         section("Optimization")
