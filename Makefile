@@ -71,7 +71,7 @@ repl:
 
 # Runs scala unit tests
 scala-test:
-	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.ExampleSpec
+	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.IR2Spec
 
 clean:
 	fsc -reset
