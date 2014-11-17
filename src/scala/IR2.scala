@@ -269,6 +269,36 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     }
   }
 
+  /*
+   * Inserts a CFG in place of the given block.
+   * All edges that would have lead to the original block now lead to the inserted CFG.
+   * All edges that would have come out of the original block now lead out of the inserted CFG.
+   * The original block will no longer exist.
+   */
+  def replaceBlock(block: Block, inlined:CFG) : CFG = {
+    var newEdges = this.edges ++ inlined.edges
+    // Replace all edges leading IN to the original block with edges going to the inlined cfg's start
+    newEdges = newEdges.mapValues {
+      case Edge(to) => if (to == block) Edge(inlined.start) else Edge(to)
+      case Fork(cond, left, right) => if (left == block && right == block) {
+        Fork(cond, inlined.start, inlined.start)
+      } else if (left == block) {
+        Fork(cond, inlined.start, right)
+      } else if (right == block) {
+        Fork(cond, left, inlined.start)
+      } else {
+        Fork(cond, left, right)
+      }
+    }
+    // Replace the edge leading OUT of the original block with an edge coming out of the inlined cfg's end
+    newEdges = newEdges.map {case (b, e) => {
+      if (b == block) (inlined.end, e) else (b, e)
+    }}
+    val newStart = if (this.start == block) inlined.start else this.start
+    val newEnd = if (this.end == block) inlined.end else this.end
+    new CFG(newStart, newEnd, newEdges)
+  }
+
   /* Apply a transform to all blocks and return a new CFG */
   def mapBlocks(func: Block => Block): CFG = {
     // Translation from old blocks to new blocks
