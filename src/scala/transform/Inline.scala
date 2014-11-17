@@ -25,13 +25,13 @@ private class Inline(program: IR2.Program) {
   )
 
   def transformMethod(method: Method) : Method = {
-    val newLocals = method.locals.copy()
-    val tempGen = new TempVarGen(newLocals, "~inline")
     // Find every method call, and possibly inline it
     method.cfg.blocks.foreach { b =>
       b.stmts.foreach {
         // If it's an inlineable method call, add this inlined cfg to our map
         case c:Call if c.isMethodCall() && c.method.isInlineable() => {
+          val newLocals = method.locals.copy()
+          val tempGen = new TempVarGen(newLocals, "~%s_inline".format(c.id))
           val inlinedCFG = inlineCall(c, tempGen, None)
           Grapher.graph(method.copy(cfg=inlinedCFG), "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
           return transformMethod(Method(
@@ -43,6 +43,8 @@ private class Inline(program: IR2.Program) {
           ))
         }
         case Assignment(to, c:Call) if c.isMethodCall() && c.method.isInlineable() => {
+          val newLocals = method.locals.copy()
+          val tempGen = new TempVarGen(newLocals, "~%s_inline".format(c.id))
           val inlinedCFG = inlineCall(c, tempGen, Some(to))
           Grapher.graph(method.copy(cfg=inlinedCFG), "%s.inliner.%s-call.inlined".format(method.id, c.method.id))
           return transformMethod(Method(
