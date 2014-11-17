@@ -84,6 +84,17 @@ private class Inline(program: IR2.Program) {
       }
     }
 
+    // Add an explicit edge from each return statement to the end block,
+    // unless the block is the cfg's end
+    cfg ++= CFG.fromBlock(CFG.nopBlock)
+    val returnEdges = cfg.blocks.flatMap {
+      b => b.stmts.flatMap {
+        case r:Return if b != cfg.end => List((b, Edge(cfg.end)))
+        case _                        => List()
+      }
+    }
+    cfg = new CFG(cfg.start, cfg.end, cfg.edges ++ returnEdges)
+
     // Replace all returns with an assignment to the result variable
     result match {
       case None =>

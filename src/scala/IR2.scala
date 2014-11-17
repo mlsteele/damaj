@@ -324,6 +324,11 @@ object CFG {
     new CFG(block, block, Map[IR2.Block, IR2.Transition]())
   }
 
+  def fromBlock(block: IR2.Block): CFG = {
+    new CFG(block, block, Map())
+  }
+
+
   def nopBlock(): Block = IR2.Block(List())
 
   def dummy(): CFG = {
