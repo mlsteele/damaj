@@ -21,6 +21,13 @@ object FalloffDetection {
   }
 
   private def insertFalloffDetection(method: Method) : Method = {
-    method
+    val errorBlock = List(
+      Call("printf", List(Left(StrLiteral("*** RUNTIME ERROR ***: Control fell off non-void method")))),
+      Call("exit",   List(Right(LoadLiteral(-2))))
+    )
+    val realEnd = CFG.nopBlock()
+    method.copy(
+      cfg = method.cfg ++ CFG.fromBlock(errorBlock) ++ CFG.fromBlock(realEnd)
+    )
   }
 }
