@@ -44,17 +44,17 @@ object CopyPropagation {
     // Use reaching definitions info to replace all loads occuring in statements with earlier-defined loads
     val newCFG = (new CFG(method.cfg.start, method.cfg.end, newEdges)).mapBlocks { b =>
       val fcc = followCopyChain(method, reachingBefore(b), _:Load)
+      val fccArg = followCopyChain(method, reachingBefore(b), _:Load, true)
       b.stmts.map {
         case Assignment(field, right) => right match {
           case load:Load                            => Assignment(field, fcc(load))
           case ArrayAccess(arrayField, index)       => Assignment(field, ArrayAccess(arrayField, fcc(index)))
           case BinOp(left, op, right)               => Assignment(field, BinOp(fcc(left), op, fcc(right)))
           case UnaryOp(op, right)                   => Assignment(field, UnaryOp(op, fcc(right)))
-            // TODO: only copy args if going to a method call
-          case Call(id, args)                       => Assignment(field, Call(id, args.map(_.map(fcc))))
+          case Call(id, args)                       => Assignment(field, Call(id, args.map(_.map(fccArg))))
         }
         case ArrayAssignment(field, index, right) => ArrayAssignment(field, fcc(index), fcc(right))
-        case Call(id, args) => Call(id, args.map(_.map(fcc)))
+        case Call(id, args) => Call(id, args.map(_.map(fccArg)))
         case Return(ret) => Return(ret.map(fcc))
       }
     }
@@ -69,7 +69,7 @@ object CopyPropagation {
 
   // Follows the trail of reaching definitions to try to replace the
   // given load with an earlier defined variable or constant
-  private def followCopyChain(method: Method, reachingDefs: Set[Assignment], load: Load) : Load = load match {
+  private def followCopyChain(method: Method, reachingDefs: Set[Assignment], load: Load, isCallArg: Boolean = false) : Load = load match {
     // Copy propagation ends when you reach a literal
     case _:LoadLiteral => load
     case LoadField(from) => {
@@ -81,7 +81,7 @@ object CopyPropagation {
       assignsThis.head.right match {
         case constant:LoadLiteral => constant
           // If otherVar is a parameter, we still need the local load in case this load will be passed to another function
-        case otherVar:LoadField   => method.params.symbols.contains(otherVar.from) match {
+        case otherVar:LoadField   => isCallArg && method.params.symbols.contains(otherVar.from) match {
           case true => load
           case false => followCopyChain(method, reachingDefs, otherVar)
         }
