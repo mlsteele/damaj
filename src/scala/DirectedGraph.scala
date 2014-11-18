@@ -48,6 +48,12 @@ object DirectedGraph {
     /**
       * inEdges: Maps a node to all the edges going into the node
       * outEdges: Maps a node to all the edges going out of the node
+      * 
+      * Example usage to get all the outgoing edges of a node:
+      * graph.outEdges(n)
+      * 
+      * ^ the above works because Map implements
+      * apply(), so you can use maps as if they were functions.
       */
     lazy val (inEdges, outEdges): (EdgeMap, EdgeMap) = {
       var inEdgeMap: EdgeMap = Map().withDefaultValue(Set())
