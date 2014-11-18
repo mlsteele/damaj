@@ -33,7 +33,12 @@ object DirectedGraph {
       def -->(to: N) : DirectedEdge[N, Unit] = DirectedEdge(from, to, ())
     }
   }
- 
+
+  /**
+    * Convenience conversion for making a graph with only one edge.
+    */
+  implicit def edgeToGraph[N, E](edge: DirectedEdge[N, E]) : Set[DirectedEdge[N, E]] = Set(edge)
+
   /**
     * Because DirectedGraph is actually just an implicit conversion
     * from Set, you can use all of the normal Set operations, like
