@@ -35,16 +35,34 @@ object DirectedGraph {
   }
 
   /**
-    * Convenience conversion for making a graph with only one edge.
+    * ==================================================
+    * EXAMPLE USAGE for a graph with no extra edge data:
+    * ==================================================
+    * import DirectedGraph._
+    * import Unlabeled._
+    * graph: DirectedGraph[Int, Unit] = (1 --> 2) + (2 --> 3) + (2 --> 4)
+    * println(graph.outEges(2))
+    * 
+    * Because a DirectedGraph is literally just a set, you can use all
+    * of the normal Set operations, like +, ++, union, intersect, map,
+    * filter, etc...
     */
-  implicit def edgeToGraph[N, E](edge: DirectedEdge[N, E]) : Set[DirectedEdge[N, E]] = Set(edge)
+  type DirectedGraph[N, E] = Set[DirectedEdge[N, E]]
 
   /**
-    * Because DirectedGraph is actually just an implicit conversion
-    * from Set, you can use all of the normal Set operations, like
-    * +: ++, map, filter...
+    * Typed synonym for an empty graph.
     */
-  implicit class DirectedGraph[N, E](edges: Set[DirectedEdge[N, E]]){
+  def emptyGraph[N, E]() : DirectedGraph[N, E] = Set()
+
+  /**
+    * Convenience conversion for making a graph with only one edge.
+    */
+  implicit def edgeToGraph[N, E](edge: DirectedEdge[N, E]) : DirectedGraph[N, E] = Set(edge)
+
+  /**
+    * Adds a bunch of useful methods to DirectedGraph objects
+    */
+  implicit class DirectedGraphOps[N, E](graph: DirectedGraph[N, E]) {
     type Edge = DirectedEdge[N, E]
     type EdgeMap = Map[N, Set[Edge]]
 
@@ -63,7 +81,7 @@ object DirectedGraph {
       var inEdgeMap: EdgeMap = Map().withDefaultValue(Set())
       var outEdgeMap: EdgeMap = Map().withDefaultValue(Set())
       var nodeSet : Set[N] = Set()
-      edges.foreach { e =>
+      graph.foreach { e =>
         // Update outgoing edges
         outEdgeMap += e.from -> (outEdgeMap(e.from) + e)
         inEdgeMap  += e.to   -> (inEdgeMap (e.to  ) + e)
@@ -74,25 +92,22 @@ object DirectedGraph {
     }
 
     /**
-      * Applies a function to all nodes in the graph.  TODO: This
-      * function is implemented in a way such that functions can be
-      * repeatedly called on the same node. This is only a problem if
-      * the function is impure, or we care about performance.
+      * Applies a function to all nodes in the graph.
+      * 
+      * TODO: This function is implemented in a way such that
+      * functions can be repeatedly called on the same node. This is
+      * only a problem if the function is impure, or we care about
+      * performance.
       */
-    def mapNodes[N2](f: N => N2) : Set[DirectedEdge[N2, E]] = edges.map {
+    def mapNodes[N2](f: N => N2) : DirectedGraph[N2, E] = graph.map {
       case DirectedEdge(a, b, value) => DirectedEdge(f(a), f(b), value)
     }
 
     /**
       * Applies a function to all of the edges values in the graph.
       */
-    def mapEdgeValues[E2](f: E => E2): Set[DirectedEdge[N, E2]] = edges.map {
+    def mapEdgeValues[E2](f: E => E2): DirectedGraph[N, E2] = graph.map {
       case DirectedEdge(a, b, value) => DirectedEdge(a, b, f(value))
     }
   }
-
-  /**
-    * Typed synonym for an empty graph.
-    */
-  def emptyGraph[N, E]() : Set[DirectedEdge[N, E]] = Set()
 }
