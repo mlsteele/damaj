@@ -85,4 +85,9 @@ object DirectedGraph {
       case DirectedEdge(a, b, value) => DirectedEdge(a, b, f(value))
     }
   }
+
+  /**
+    * Typed synonym for an empty graph.
+    */
+  def emptyGraph[N, E]() : Set[DirectedEdge[N, E]] = Set()
 }
