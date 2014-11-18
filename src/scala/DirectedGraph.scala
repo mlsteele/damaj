@@ -36,10 +36,10 @@ object DirectedGraph {
  
   /**
     * Because DirectedGraph is actually just an implicit conversion
-    * from List, you can use all of the normal List operations, like
+    * from Set, you can use all of the normal Set operations, like
     * +: ++, map, filter...
     */
-  implicit class DirectedGraph[N, E](edges: List[DirectedEdge[N, E]]){
+  implicit class DirectedGraph[N, E](edges: Set[DirectedEdge[N, E]]){
     type Edge = DirectedEdge[N, E]
     type EdgeMap = Map[N, Set[Edge]]
 
@@ -74,14 +74,14 @@ object DirectedGraph {
       * repeatedly called on the same node. This is only a problem if
       * the function is impure, or we care about performance.
       */
-    def mapNodes[N2](f: N => N2) : DirectedGraph[N2, E] = edges.map {
+    def mapNodes[N2](f: N => N2) : Set[DirectedEdge[N2, E]] = edges.map {
       case DirectedEdge(a, b, value) => DirectedEdge(f(a), f(b), value)
     }
 
     /**
       * Applies a function to all of the edges values in the graph.
       */
-    def mapEdgeValues[E2](f: E => E2): DirectedGraph[N, E2] = edges.map {
+    def mapEdgeValues[E2](f: E => E2): Set[DirectedEdge[N, E2]] = edges.map {
       case DirectedEdge(a, b, value) => DirectedEdge(a, b, f(value))
     }
   }
