@@ -34,7 +34,12 @@ object DirectedGraph {
     }
   }
  
-  case class DirectedGraph[N, E] (val edges: List[DirectedEdge[N, E]]) {
+  /**
+    * Because DirectedGraph is actually just an implicit conversion
+    * from List, you can use all of the normal List operations, like
+    * +: ++, map, filter...
+    */
+  implicit class DirectedGraph[N, E](edges: List[DirectedEdge[N, E]]){
     type Edge = DirectedEdge[N, E]
     type EdgeMap = Map[N, Set[Edge]]
 
@@ -64,18 +69,20 @@ object DirectedGraph {
     }
 
     /**
-      * Adds an edge to the graph
+      * Applies a function to all nodes in the graph.  TODO: This
+      * function is implemented in a way such that functions can be
+      * repeatedly called on the same node. This is only a problem if
+      * the function is impure, or we care about performance.
       */
-    def +(edge: DirectedEdge[N, E]): DirectedGraph[N, E] = DirectedGraph(edges :+ edge)
+    def mapNodes[N2](f: N => N2) : DirectedGraph[N2, E] = edges.map {
+      case DirectedEdge(a, b, value) => DirectedEdge(f(a), f(b), value)
+    }
 
     /**
-      * Adds a list of edges to the graph
+      * Applies a function to all of the edges values in the graph.
       */
-    def ++(newEdges: TraversableOnce[DirectedEdge[N, E]]): DirectedGraph[N, E] = DirectedGraph(edges ++ newEdges)
-
-    /**
-      * Merges two graphs together
-      */
-    def ++(that: DirectedGraph[N, E]): DirectedGraph[N, E] = DirectedGraph(this.edges ++ that.edges)
+    def mapEdgeValues[E2](f: E => E2): DirectedGraph[N, E2] = edges.map {
+      case DirectedEdge(a, b, value) => DirectedEdge(a, b, f(value))
+    }
   }
 }
