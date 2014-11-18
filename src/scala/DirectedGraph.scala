@@ -39,13 +39,7 @@ object DirectedGraph {
     type EdgeMap = Map[N, Set[Edge]]
 
     /**
-      * All of the nodes in the graph.
-      */
-    lazy val nodes: Set[N] = edges.flatMap {
-      case DirectedEdge(from, to, _) => Set(from, to)
-    }.toSet
-
-    /**
+      * nodes: All the nodes in the graph
       * inEdges: Maps a node to all the edges going into the node
       * outEdges: Maps a node to all the edges going out of the node
       * 
@@ -55,15 +49,18 @@ object DirectedGraph {
       * ^ the above works because Map implements
       * apply(), so you can use maps as if they were functions.
       */
-    lazy val (inEdges, outEdges): (EdgeMap, EdgeMap) = {
+    lazy val (nodes, inEdges, outEdges): (Set[N], EdgeMap, EdgeMap) = {
       var inEdgeMap: EdgeMap = Map().withDefaultValue(Set())
       var outEdgeMap: EdgeMap = Map().withDefaultValue(Set())
+      var nodeSet : Set[N] = Set()
       edges.foreach { e =>
         // Update outgoing edges
         outEdgeMap += e.from -> (outEdgeMap(e.from) + e)
         inEdgeMap  += e.to   -> (inEdgeMap (e.to  ) + e)
+        nodeSet += e.from
+        nodeSet += e.to
       }
-      (inEdgeMap, outEdgeMap)
+      (nodeSet, inEdgeMap, outEdgeMap)
     }
 
     /**
