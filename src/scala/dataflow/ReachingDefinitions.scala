@@ -11,14 +11,16 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
 
   type T = Set[Assignment]
 
-  def initial() = Set()
-
-  def bottom() = method.cfg.blocks.flatMap {b =>
+  private val bottomVal = method.cfg.blocks.flatMap {b =>
     b.stmts.flatMap {
       case a:Assignment => List(a)
       case _ => List()
     }
   }.toSet
+
+  def initial() = Set()
+
+  def bottom() = bottomVal
 
   def direction() = Forward
 
