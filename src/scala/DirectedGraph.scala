@@ -109,5 +109,12 @@ object DirectedGraph {
     def mapEdgeValues[E2](f: E => E2): DirectedGraph[N, E2] = graph.map {
       case DirectedEdge(a, b, value) => DirectedEdge(a, b, f(value))
     }
+
+    /**
+      * Removes a node and all of its connections from the graph.
+      */
+    def -(node: N): DirectedGraph[N, E] = graph.filter {
+      case DirectedEdge(a, b, _) => node != a && node != b
+    }
   }
 }
