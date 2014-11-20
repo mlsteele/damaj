@@ -5,63 +5,22 @@ object Uncondense extends Transformation {
   import IR2._
 
   override def transform(method: Method) : Method = {
-    val cfg = method.cfg
+    var cfg = method.cfg
     for (block <- cfg.blocks) {
       // Check if the block multiple statements
-      block.stmts match {
-        case (first :: rest) if (rest.length >= 1) => {
-          val firstBlock = Block(List(first))
-          val secondBlock = Block(rest)
-
-          val newInEdges:EdgeMap = reassignInEdges(block, firstBlock, cfg)
-          val newOutEdges:EdgeMap = reassignOutEdges(block, secondBlock, newInEdges)
-
-          // Remove old block from edge map
-          val newEdges = (newInEdges ++ newOutEdges - block) +
-            (firstBlock -> Edge(secondBlock)) 
-
-          // If the start or end blocks were replaced, make sure to deal with it
-          val newCFG = new CFG(
-            if (block == cfg.start) firstBlock else cfg.start,
-            if (block == cfg.end) secondBlock else cfg.end,
-            newEdges)
-          val newMethod = Method(
-            method.id,
-            method.params,
-            method.locals,
-            newCFG,
-            method.returnType
-          )
-          return transform(newMethod)
+      val stmts = block.stmts
+      (stmts.length > 1) match {
+        case true => {
+          // Spit up statements into a list of single-statement blocks
+          val newBlocks:List[CFG] = block.stmts.map{s => CFG.fromBlock(Block(List(s)))}
+          // Replace this block with the list-of-statements-cfg
+          cfg = cfg.replaceBlock(block, CFG.chain(newBlocks))
         }
         case _ =>
       }
     }
-    return method
-  }
-
-  private def reassignInEdges(oldBlock:Block, newBlock:Block, cfg:CFG) : Map[Block, Transition] = {
-    val edgesToRemove:Set[Block] = cfg.reverseEdges(oldBlock)
-    val edgesToAdd:Map[Block, Transition] = edgesToRemove.map( from => cfg.edges(from) match {
-        case Edge(o) => 
-          from -> Edge(newBlock)
-        case Fork(c, l, r) =>
-          if (l == oldBlock) {
-            from -> Fork(c, newBlock, r)
-          } else {
-            from -> Fork(c, l, newBlock)
-          }
-      }
-    ).toMap
-    (cfg.edges -- edgesToRemove) ++ edgesToAdd
-  }
-
-  private def reassignOutEdges(oldBlock:Block, newBlock:Block, edgemap:Map[Block, Transition]):Map[Block, Transition] = {
-    edgemap.get(oldBlock) match {
-      case None => 
-        edgemap
-      case Some(t) => 
-        (edgemap - oldBlock) + (newBlock -> t)
-    }
+    return method.copy(
+      cfg=cfg
+    )
   }
 }
