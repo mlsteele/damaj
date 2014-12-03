@@ -26,9 +26,11 @@ class AsmGen(ir2: IR2.Program) {
   // Generates local labels
   val labelGenerator = new LabelGenerator()
   // TODO(miles): reserve more stuff
-  labelGenerator.reserve("main")
   labelGenerator.reserve("PUSH_ALL")
   labelGenerator.reserve("POP_ALL")
+  labelGenerator.reserve(".data")
+  labelGenerator.reserve("._exit1")
+  labelGenerator.reserve("._exit2")
   // Store all string literals used in the program.
   val strings = new StringStore()
   // Keeps track of what Blocks have been assembled and their label.
@@ -90,6 +92,8 @@ class AsmGen(ir2: IR2.Program) {
       case _ => jmp("._exit2")
     }
     val body = generateCFG(m.cfg, m.locals, m.id + "_end") \ controlCheck
+
+    labelGenerator.reserve(m.id)
     return method(m.id, evenNumLocals, body)
   }
 
@@ -464,8 +468,10 @@ class LabelGenerator {
   private var taken = Set[String]()
   private var counter = 0
 
-  def reserve(lbl: String): Unit =
+  def reserve(lbl: String): Unit = {
+    assert(!taken.contains(lbl), s"Lable double-reserve $lbl")
     taken += lbl.toLowerCase
+  }
 
   def nextLabel(): String = nextLabel("")
 
