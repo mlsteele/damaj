@@ -30,7 +30,6 @@ class AsmGen(ir2: IR2.Program) {
   labelGenerator.reserve("POP_ALL")
   labelGenerator.reserve(".data")
   labelGenerator.reserve("._exit1")
-  labelGenerator.reserve("._exit2")
   // Store all string literals used in the program.
   val strings = new StringStore()
   // Keeps track of what Blocks have been assembled and their label.
@@ -45,7 +44,6 @@ class AsmGen(ir2: IR2.Program) {
 
     val methods = ir2.methods.map(generateMethod).mkString("\n\n")
     val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
-    val control_runoff_error = "*** RUNTIME ERROR ***: Control fell off non-void method"
     val exits =
       labl("._exit1") \
       - "PUSH_ALL" \
@@ -53,13 +51,6 @@ class AsmGen(ir2: IR2.Program) {
       - call("printf") \
       - "POP_ALL" \
       - mov(-1 $, argregs(0)) \
-      - call("exit") \
-      labl("._exit2") \
-      - "PUSH_ALL" \
-      - mov(strings.put("control_runoff_err", control_runoff_error) $, argregs(0)) \
-      - call("printf") \
-      - "POP_ALL" \
-      - mov(-2 $, argregs(0)) \
       - call("exit")
 
     val bss = ".data"\
@@ -86,12 +77,7 @@ class AsmGen(ir2: IR2.Program) {
     // ABI requires even number of locals.. or something.
     val evenNumLocals = numLocals + (numLocals % 2)
 
-    // Defend against control falling off the edge of the method.
-    val controlCheck = m.returnType match {
-      case DTVoid => "" // cool, no return needed
-      case _ => jmp("._exit2")
-    }
-    val body = generateCFG(m.cfg, m.locals, m.id + "_end") \ controlCheck
+    val body = generateCFG(m.cfg, m.locals, m.id + "_end")
 
     labelGenerator.reserve(m.id)
     return method(m.id, evenNumLocals, body)
