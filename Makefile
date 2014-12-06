@@ -72,6 +72,7 @@ repl:
 # Runs scala unit tests
 scala-test:
 	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.IR2Spec
+	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.CFGSpec
 
 clean:
 	fsc -reset

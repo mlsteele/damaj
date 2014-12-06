@@ -120,6 +120,8 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
 
   /* All blocks reachable from start */
   lazy val blocks:Set[Block] = findBlocks()
+
+  lazy val dominates:Map[Block, Set[Block]] = findDominators()
   
   /* Looks up and returns the predecessors of `block` */
   def predecessors(block:Block):Set[Block] = reverseEdges get block match {
@@ -171,6 +173,30 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
     assert(collector.contains(start), "start not in blocks")
     assert(collector.contains(end), "end not in blocks")
     return collector
+  }
+
+  private def findDominators(): Map[Block, Set[Block]] = {
+    val initialMap:Map[Block, Set[Block]] = findBlocks.map{ block:Block =>
+      edges.get(block) match {
+        case None => (block -> Set[Block]())
+        case Some(Edge(next)) => (block -> Set(next))
+        case Some(Fork(_, l, r)) => (block -> Set(l, r))
+      }
+    }.toMap
+    
+    def applyTransitivity(partialMap:Map[Block, Set[Block]]) = partialMap map {
+      case (dominator, dominatees) =>
+        val newDominatees:Set[Block] = dominatees.flatMap(block => partialMap(block))
+        (dominator, dominatees union newDominatees - dominator)
+    }
+
+    def iterate(partialMap:Map[Block, Set[Block]]): Map[Block, Set[Block]] = {
+      val newMap = applyTransitivity(partialMap)
+      if (partialMap == newMap) newMap
+      else iterate(newMap)
+    }
+    
+    iterate(initialMap)
   }
 
   /* Condense every pair of blocks a->b in `this` where a has one edge out
