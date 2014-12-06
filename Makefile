@@ -73,6 +73,7 @@ repl:
 scala-test:
 	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.IR2Spec
 	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.CFGSpec
+	CLASSPATH=$(CLASSPATH) scala org.scalatest.run compile.GraphColorSpec
 
 clean:
 	fsc -reset
