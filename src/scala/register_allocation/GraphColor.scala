@@ -13,8 +13,8 @@ object GraphColor {
   // X: type for nodes
   // C: type for colors
   // nodes: list of nodes in the graph
-  // interference: whether two nodes are connected
-  // degree: the number of edges connected to a node
+  // neighbors: function that returns the neighbors of a node
+  // colors: set of colors to use
   def color[X, C](nodes: Set[X], neighbors: X => Set[X], colors: Seq[C]): Map[X, C] = {
     val ncolors: Int                = colors.size
     var activeNodes: Set[X]         = nodes
