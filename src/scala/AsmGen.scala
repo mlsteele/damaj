@@ -1,16 +1,8 @@
 package compile;
 
-// Example Usage:
-//   val asm = new AsmGen(ir2).asm
-class AsmGen(ir2: IR2.Program) {
+// Companion object for AsmGen class
+object AsmGen {
   import AsmDSL._
-  import scala.language.postfixOps
-  import scala.math.max
-  import IRShared._
-  import SymbolTable._
-  import IR2._
-
-  type ST = SymbolTable
 
   // Registers used for passing arguments to functions.
   val argregs = List(rdi, rsi, rdx, rcx, r8, r9)
@@ -22,6 +14,23 @@ class AsmGen(ir2: IR2.Program) {
   val reg_flagtarget = "%al" // Target byte reg for set ops. Bottom of %rax.
   val reg_divquo = rax // Division input and quotient
   val reg_divrem = rdx // Division input and remainder
+
+  val special_regs: Seq[String] = List(reg_arridx, reg_transfer, reg_opresult, rax, reg_divquo, reg_divrem)
+  val free_regs: Seq[String] = cpu_regs.filter{!special_regs.contains(_)}
+}
+
+// Example Usage:
+//   val asm = new AsmGen(ir2).asm
+class AsmGen(ir2: IR2.Program) {
+  import AsmDSL._
+  import AsmGen._
+  import scala.language.postfixOps
+  import scala.math.max
+  import IRShared._
+  import SymbolTable._
+  import IR2._
+
+  type ST = SymbolTable
 
   // Generates local labels
   val labelGenerator = new LabelGenerator()
@@ -507,6 +516,8 @@ object AsmDSL {
        r8, r9, r10, r11, r12, r13, r14, r15) =
       ("%rax", "%rbx", "%rcx", "%rdx", "%rbp", "%rsp", "%rsi", "%rdi",
        "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15")
+  val cpu_regs: Seq[String] = List(rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
+                               r8, r9, r10, r11, r12, r13, r14, r15)
 
   // instructions
   def mov(a: String, b: String): String = s"movq $a, $b"
