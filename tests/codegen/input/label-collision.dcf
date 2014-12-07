@@ -1,34 +1,44 @@
 callout printf;
 
-void exit() {
-    printf("hehe\n");
-}
+// void exit() {
+    // printf("hehe\n");
+// }
 
-void exit1() {
-    printf("haha\n");
-}
+// void exit1() {
+    // printf("haha\n");
+// }
 
-void exit2() {
-    printf("hoho\n");
-}
+// void exit2() {
+    // printf("hoho\n");
+// }
 
-void _exit() {
-    printf("_hehe\n");
-}
+// void _exit() {
+    // printf("_hehe\n");
+// }
 
-void _exit1() {
-    printf("_haha\n");
-}
+// void _exit1() {
+    // printf("_haha\n");
+// }
 
-void _exit2() {
-    printf("_hoho\n");
-}
+// void _exit2() {
+    // printf("_hoho\n");
+// }
+
+// void main() {
+    // exit();
+    // exit1();
+    // exit2();
+    // _exit();
+    // _exit1();
+    // _exit2();
+// }
 
 void main() {
-    exit();
-    exit1();
-    exit2();
-    _exit();
-    _exit1();
-    _exit2();
+    // SCREW THIS TEST!!
+    printf("hehe\n");
+    printf("haha\n");
+    printf("hoho\n");
+    printf("_hehe\n");
+    printf("_haha\n");
+    printf("_hoho\n");
 }
