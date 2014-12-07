@@ -9,6 +9,7 @@ object GraphColor {
 
   // Color a graph. No two adjacent nodes will be colored the same.
   // If coloring is impossible, some nodes will not be colored.
+  // Follows the algorithm in the slides F14-lecture-12.pdf p.44
   // X: type for nodes
   // C: type for colors
   // nodes: list of nodes in the graph
@@ -60,13 +61,19 @@ object GraphColor {
     return colorMap
   }
 
+  case class ValidationConflict[X, C](a: X, b: Set[X], color: C)
+
   // Check if a coloring is valid.
-  def validate [X, C](nodes: Set[X], neighbors: X => Set[X], coloring: Map[X, C]): Boolean = {
+  def validate[X, C](nodes: Set[X], neighbors: X => Set[X], colors: Seq[C], coloring: Map[X, C]): Set[ValidationConflict[X,C]] = {
     // Make sure all colored nodes are not adjacent to other nodes of the same color.
     // Ignore uncolored nodes completely.
-    all(coloring.map{
+    coloring.flatMap{
       case (node, color) =>
-        !(neighbors(node).flatMap(coloring.get _) contains color)
-    })
+        val sameColorNeighbors = neighbors(node).filter(y => coloring.get(y) == color)
+        sameColorNeighbors.isEmpty match {
+          case true => None
+          case false => Some(ValidationConflict(node, sameColorNeighbors, color))
+        }
+    }.toSet
   }
 }
