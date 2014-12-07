@@ -26,9 +26,7 @@ object IR2 {
 
   // symbols is the parameter symbol table.
   case class Method(id: ID, params: SymbolTable, locals: SymbolTable, cfg: CFG, returnType:DType ) {
-    override def toString() = "%s %s (%s) {\n  %s\n  %s}".format(returnType, id,
-      params.toString,
-      cfg.toString.split('\n').mkString("\n  "))
+    override def toString() = "%s %s()".format(returnType, id)
   }
 
   // Not the same as an IR block! Cannot contain any control flow statements.
