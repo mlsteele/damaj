@@ -1,6 +1,8 @@
 package compile;
 
 // Companion object for AsmGen class
+// Example Usage:
+//   val asm = AsmGen(ir2)
 object AsmGen {
   import AsmDSL._
 
@@ -15,13 +17,17 @@ object AsmGen {
   val reg_divquo = rax // Division input and quotient
   val reg_divrem = rdx // Division input and remainder
 
-  val special_regs: Seq[String] = List(reg_arridx, reg_transfer, reg_opresult, rax, reg_divquo, reg_divrem)
-    .filter{ !argregs.contains(_) }
-  val free_regs: Seq[String] = cpu_regs.filter{!special_regs.contains(_)}
+  // Registers not available for register allocation
+  val reserved_regs: Seq[String] = List(rsp, rbp) ++
+    List(reg_arridx, reg_transfer, reg_opresult, rax, reg_divquo, reg_divrem) ++
+    argregs
+  val free_regs: Seq[String] = cpu_regs.filter{!reserved_regs.contains(_)}
+
+  def apply(program: IR2.Program): String =
+    new AsmGen(program).asm
 }
 
-// Example Usage:
-//   val asm = new AsmGen(ir2).asm
+// Helper for AsmGen object.
 class AsmGen(ir2: IR2.Program) {
   import AsmDSL._
   import AsmGen._

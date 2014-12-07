@@ -312,10 +312,10 @@ object Compiler {
     }.map { ir2 =>
       if (CLI.debug) section("Register Allocation")
       RegisterAllocation(ir2)
+      ir2
     }.map { rar =>
       if (CLI.debug) section("Generating Assembly")
-      // TODO(miles->anpere): use rar.mappings as well.
-      new AsmGen(rar.program).asm
+      AsmGen(rar)
     }.map { asm =>
       if (CLI.debug) section("Writing to output")
       outFile.print(asm)

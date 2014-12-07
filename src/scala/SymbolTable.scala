@@ -54,7 +54,8 @@ object SymbolTable {
   case class RegisterOffset(index: Int) extends Offset
 
   class SymbolTable (var parent: Option[SymbolTable]) {
-    var symbols:List[Symbol] = List();
+    var symbols: List[Symbol] = List()
+    var registerAssignments: Option[Map[FieldSymbol, RegisterOffset]] = None
 
     def this() = this(None)
     def this(p: SymbolTable) = this(Some(p))
@@ -99,6 +100,11 @@ object SymbolTable {
     }
 
     def isLocalTable() : Boolean = !isMethodTable && !isGlobalTable
+
+    def installRegisterAssignments(ra: Map[FieldSymbol, RegisterOffset]) = {
+      assert(registerAssignments.isDefined == false)
+      registerAssignments = Some(ra)
+    }
 
     /**
      * Adds a symbol to the table
@@ -187,11 +193,18 @@ object SymbolTable {
 
     def varOffset(id: ID) : Offset = lookupSymbolExtra(id) match {
       case Some((field:FieldSymbol, table)) => {
+        val maybeRegister: Option[RegisterOffset] = registerAssignments.flatMap(_.get(field))
+        if (maybeRegister.isDefined) {
+          return maybeRegister.get
+        }
+
         var offset: Int = 0;
         breakable {for (s <- table.symbols) s match {
           case f:FieldSymbol => {
             if (f == field) break
-            offset += f.size.getOrElse(1L).toInt
+            if (!registerAssignments.flatMap(_.get(f)).isDefined) {
+              offset += f.size.getOrElse(1L).toInt
+            }
           }
           case _ =>
         }}
@@ -224,6 +237,9 @@ object SymbolTable {
         case _ => None
       }
     }.flatten
+
+    def getScalarFields: List[FieldSymbol] =
+      getFields.filter{ !_.size.isDefined }
 
     def getMethods: List[MethodSymbol] = symbols.map{
       _ match {
