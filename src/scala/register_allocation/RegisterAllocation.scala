@@ -22,8 +22,8 @@ object RegisterAllocation {
     //val liveAfter = results.inputs
     //val liveBefore = results.outputs
     
-    // lazy everything is connected
-    val nodes = (method.params.getFields ++ method.locals.getFields).toSet
+    // lazy everything is connected. ignore arrays
+    val nodes = method.locals.getFields.filter{ !_.size.isDefined }.toSet
     def connected(node:FieldSymbol) = nodes
 
     GraphColor.color(nodes, connected, freeregs)
