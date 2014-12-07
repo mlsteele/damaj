@@ -14,10 +14,10 @@ object RegisterAllocation {
   // Mutates the methods symbol table
   private def installAllocationsForMethod(method:Method): Unit = {
     val coloring = allocateForMethod(method)
-    Console.err.println("method: %s.id".format(method.id))
-    Console.err.println(coloring.map{
-      case (r, c) => "%s -> %s (%s)".format(r.id, c.index, AsmGen.free_regs(c.index))
-    }.mkString("\n"))
+    // Console.err.println("method: %s.id".format(method.id))
+    // Console.err.println(coloring.map{
+      // case (r, c) => "%s -> %s (%s)".format(r.id, c.index, AsmGen.free_regs(c.index))
+    // }.mkString("\n"))
     method.locals.installRegisterAssignments(coloring)
   }
   
