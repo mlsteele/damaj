@@ -2,12 +2,17 @@ package compile
 
 object Inline {
   import IR2._
+
+  // Do not inline methods with more than this many blocks.
+  val blockNumberThreshold: Int = 128
+
   def apply(program: Program) : Program = {
     return (new Inline(program)).transformProgram()
   }
 }
 
 private class Inline(program: IR2.Program) {
+  import Inline.blockNumberThreshold
   import IR2._
   import TempVarGen._
   import SymbolTable._
@@ -146,14 +151,15 @@ private class Inline(program: IR2.Program) {
 
   private implicit class InlineableMethod(method: Method) {
     def isInlineable(): Boolean = {
-      method.cfg.blocks.foreach {
-        _.stmts.foreach {
-          case Call(id, args) if id == method.id => return false
-          case Assignment(_, Call(id, args)) if id == method.id => return false
-          case _ =>
+      val valid = all(method.cfg.blocks.map{
+        _.stmts.map {
+          case Call(id, args) if id == method.id => false
+          case Assignment(_, Call(id, args)) if id == method.id => false
+          case _ => true
         }
-      }
-      return true
+      }.flatten)
+      val aGoodIdea = (method.cfg.blocks.size < blockNumberThreshold)
+      return valid && aGoodIdea
     }
   }
 
