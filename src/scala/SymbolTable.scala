@@ -42,9 +42,7 @@ object SymbolTable {
 
   case class Conflict(first: Symbol, second: Symbol)
 
-  sealed abstract trait Offset {
-    def index : Int
-  }
+  sealed abstract trait Offset;
 
   // Represents an offset from the base pointer
   case class LocalOffset(index: Int) extends Offset
@@ -52,6 +50,8 @@ object SymbolTable {
   case class ArgOffset(index: Int) extends Offset
   // Represents an offset into the global vars
   case class GlobalOffset(index: Int) extends Offset
+  // Represents a spot in a register
+  case class RegisterOffset(index: Int) extends Offset
 
   class SymbolTable (var parent: Option[SymbolTable]) {
     var symbols:List[Symbol] = List();

@@ -16,6 +16,7 @@ object AsmGen {
   val reg_divrem = rdx // Division input and remainder
 
   val special_regs: Seq[String] = List(reg_arridx, reg_transfer, reg_opresult, rax, reg_divquo, reg_divrem)
+    .filter{ !argregs.contains(_) }
   val free_regs: Seq[String] = cpu_regs.filter{!special_regs.contains(_)}
 }
 
@@ -29,7 +30,6 @@ class AsmGen(ir2: IR2.Program) {
   import IRShared._
   import SymbolTable._
   import IR2._
-  import RegisterAllocation._
 
   type ST = SymbolTable
 
@@ -376,17 +376,22 @@ class AsmGen(ir2: IR2.Program) {
         // Local Scalar
         val off = -8 * (offIdx + 1)
         (rbp offset off)
-      case (false, ArgOffset(offIdx)) if offIdx < argregc =>
-        // Scalar Argument in a register
-        argregs(offIdx)
-      case (false, ArgOffset(offIdx)) =>
-        // Scalar Argument on the stack
-        val off = 8 * (offIdx - argregc + 2)
-        (rbp offset off)
+      case (false, ArgOffset(offIdx)) => offIdx < argregc match {
+        case true =>
+          // Scalar Argument in a arg register
+          argregs(offIdx)
+        case false =>
+          // Scalar Argument on the stack
+          val off = 8 * (offIdx - argregc + 2)
+          (rbp offset off)
+      }
       case (false, GlobalOffset(offIdx)) => {
         // Scalar Global
         "(decaf_global_%s)".format(id)
       }
+      case (false, RegisterOffset(offIdx)) =>
+        // Scalar Argument in a register
+        free_regs(offIdx)
       case (true, LocalOffset(offIdx)) =>
         // Local Array
         val arraySize = symbols.lookupSymbol(id).get.asInstanceOf[FieldSymbol].size.get
@@ -400,6 +405,7 @@ class AsmGen(ir2: IR2.Program) {
         arrayAccess("decaf_global_%s".format(id), "", reg_arridx, 8)
       }
       case (true, _:ArgOffset) => throw new AsmPreconditionViolated("Arrays cannot be parameters")
+      case (true, _:RegisterOffset) => throw new AsmPreconditionViolated("Arrays cannot be in registers")
     }
 
     WhereVar(setup, asmLocation)
