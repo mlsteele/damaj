@@ -8,7 +8,7 @@ object FunctionalUtils {
   /**
     * Checks if all of the booleans in the list are true
     */
-  def all(conds: List[Boolean]) : Boolean = conds.filter(_==false).length == 0
+  def all(conds: Traversable[Boolean]) : Boolean = conds.filter(_==false).isEmpty
 
   /**
     * An enhanced Either type that implements map and flatMap

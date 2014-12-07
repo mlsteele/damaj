@@ -3,6 +3,7 @@ package compile
 object GraphColor {
   import collection.mutable.Stack
   import scala.util.control.Breaks._
+  import FunctionalUtils.all
 
   def debug(msg: String) = Console.err.println(msg)
 
@@ -23,17 +24,17 @@ object GraphColor {
     def activeDegree(node: X): Int =
       (neighbors(node) intersect activeNodes).size
 
-    debug("color starting with %s nodes and %s colors".format(nodes.size, ncolors))
-    debug("initial nodes: %s".format(nodes))
+    // debug("color starting with %s nodes and %s colors".format(nodes.size, ncolors))
+    // debug("initial nodes: %s".format(nodes))
     breakable { while(true) {
       // Push all nodes n where: degree(n) < ncolors
       breakable { while(true) {
-        debug("considering: %s".format(activeNodes.map{ x => "%s:%s".format(x, activeDegree(x)) }))
+        // debug("considering: %s".format(activeNodes.map{ x => "%s:%s".format(x, activeDegree(x)) }))
 
         val easyNodes: Set[X] = activeNodes.filter{ x => activeDegree(x) < ncolors }
         if (easyNodes.isEmpty) break
 
-        debug("pushing nodes: %s".format(easyNodes))
+        // debug("pushing nodes: %s".format(easyNodes))
         easyNodes.foreach(nodeStack.push _)
         activeNodes --= easyNodes
       } }
@@ -44,7 +45,7 @@ object GraphColor {
       // Discard (spill) a node.
       val spilled: X = activeNodes.head
       activeNodes -= spilled
-      debug("discarding node: %s".format(spilled))
+      // debug("discarding node: %s".format(spilled))
     } }
 
     // Now there are no nodes but those on the stack.
@@ -57,5 +58,15 @@ object GraphColor {
     }
 
     return colorMap
+  }
+
+  // Check if a coloring is valid.
+  def validate [X, C](nodes: Set[X], neighbors: X => Set[X], coloring: Map[X, C]): Boolean = {
+    // Make sure all colored nodes are not adjacent to other nodes of the same color.
+    // Ignore uncolored nodes completely.
+    all(coloring.map{
+      case (node, color) =>
+        !(neighbors(node).flatMap(coloring.get _) contains color)
+    })
   }
 }
