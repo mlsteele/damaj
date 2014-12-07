@@ -304,23 +304,21 @@ object Compiler {
       }
       tempIR
     }.map { ir2 =>
-      if (CLI.debug) section("Condensation")
+      // NOTE: this is just for readability when debugging graphs, passes on original
+      if (CLI.debug) section("Condensation (for graphing only)")
       val condensed = Condense.transform(ir2)
       if (CLI.debug) Grapher.graph(condensed, "final")
-      condensed
+      ir2
     }.map { ir2 =>
+      if (CLI.debug) section("Register Allocation")
+      RegisterAllocation(ir2)
+    }.map { rar =>
       if (CLI.debug) section("Generating Assembly")
-      new AsmGen(ir2).asm
+      // TODO(miles->anpere): use rar.mappings as well.
+      new AsmGen(rar.program).asm
     }.map { asm =>
       if (CLI.debug) section("Writing to output")
       outFile.print(asm)
     }.isDefined
-    // }.map { ir2 =>
-    //   if (CLI.debug) section("Generating Assembly")
-    //   new AsmGen(ir2).asm
-    // }.map { asm =>
-    //   if (CLI.debug) section("Writing to output")
-    //   outFile.print(asm)
-    // }.isDefined
   }
 }
