@@ -20,18 +20,27 @@ object RegisterAllocation {
     // }.mkString("\n"))
     method.locals.installRegisterAssignments(coloring)
   }
-  
-  // Uses graph coloring to get register assignments
+
   private def allocateForMethod(method:Method): Map[FieldSymbol, RegisterOffset] = {
-    //val results = (new LiveVariables(method)).analyze()
-    //val liveAfter = results.inputs
-    //val liveBefore = results.outputs
-    
+    val results = (new LiveVariables(method)).analyze()
+    val liveAfter = results.inputs
+    val liveBefore = results.outputs
+
     // Allocate for all scalar non-arg fields.
     val nodes = method.locals.getScalarFields.toSet
-    // Conservatively assume everything is connected.
-    def neighbors(node:FieldSymbol) = nodes -- Set(node)
+
+    // Every pair that is live at the same time is connected in this graph
+    var connections:Map[FieldSymbol, Set[FieldSymbol]] = nodes.map{ _ -> Set[FieldSymbol]() }.toMap
+    List(liveBefore, liveAfter).foreach{ _.foreach{ case (block, loadSet) =>
+      loadSet.foreach{ load =>
+        val currentNeighbors = connections(load.from)
+        val newNeighbors = loadSet.map(_.from) - load.from
+        connections = connections + (load.from -> (currentNeighbors ++ newNeighbors))
+      }
+    }}
+
     val colors = (new Range(0, free_regs.size, 1)).map{ RegisterOffset(_) }
+    def neighbors(node:FieldSymbol) = connections(node)
 
     GraphColor.color[FieldSymbol, RegisterOffset](nodes, neighbors, colors)
   }
