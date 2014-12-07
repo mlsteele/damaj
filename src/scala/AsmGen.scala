@@ -29,6 +29,7 @@ class AsmGen(ir2: IR2.Program) {
   import IRShared._
   import SymbolTable._
   import IR2._
+  import RegisterAllocation._
 
   type ST = SymbolTable
 
