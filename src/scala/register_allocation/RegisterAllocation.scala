@@ -33,9 +33,11 @@ object RegisterAllocation {
     var connections:Map[FieldSymbol, Set[FieldSymbol]] = nodes.map{ _ -> Set[FieldSymbol]() }.toMap
     List(liveBefore, liveAfter).foreach{ _.foreach{ case (block, loadSet) =>
       loadSet.foreach{ load =>
-        val currentNeighbors = connections(load.from)
-        val newNeighbors = loadSet.map(_.from) - load.from
-        connections = connections + (load.from -> (currentNeighbors ++ newNeighbors))
+        if (connections.get(load.from).isDefined) {
+          val currentNeighbors = connections(load.from)
+          val newNeighbors = loadSet.map(_.from) - load.from
+          connections += (load.from -> (currentNeighbors ++ newNeighbors))
+        }
       }
     }}
 
