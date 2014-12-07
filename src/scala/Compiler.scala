@@ -31,6 +31,7 @@ object Compiler {
   val unreachable :Optimization =  ("unreachable", UnreachableCodeElim(_))
   val peep        :Optimization =  ("peep", PeepholeAlgebra(_))
   val inline      :Optimization =  ("inline", Inline(_))
+  val regs        :Optimization =  ("regs", RegisterAllocation(_))
 
   def removeEmptyBlocks(program: IR2.Program) : IR2.Program = Uncondense(Condense(program))
 
@@ -40,7 +41,8 @@ object Compiler {
     deadcode,
     unreachable,
     peep,
-    inline
+    inline,
+    regs
   )
 
   // Optimizations first run on the raw code
@@ -64,7 +66,8 @@ object Compiler {
   val recipePost: List[Optimization] = List(
     copyprop,
     unreachable,
-    deadcode
+    deadcode,
+    regs
   )
 
   var outFile = Console.out
@@ -310,12 +313,8 @@ object Compiler {
       if (CLI.debug) Grapher.graph(condensed, "final")
       ir2
     }.map { ir2 =>
-      if (CLI.debug) section("Register Allocation")
-      RegisterAllocation(ir2)
-      ir2
-    }.map { rar =>
       if (CLI.debug) section("Generating Assembly")
-      AsmGen(rar)
+      AsmGen(ir2)
     }.map { asm =>
       if (CLI.debug) section("Writing to output")
       outFile.print(asm)

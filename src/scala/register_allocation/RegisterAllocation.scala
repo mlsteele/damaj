@@ -6,7 +6,10 @@ object RegisterAllocation {
   import AsmGen.free_regs
 
   // Mutates program.
-  def apply(program:Program): Unit = allocateRegisters(program)
+  def apply(program:Program): Program = {
+    allocateRegisters(program)
+    return program
+  }
 
   private def allocateRegisters(program:Program): Unit =
     (program.main +: program.methods).foreach(installAllocationsForMethod)
