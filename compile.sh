@@ -5,7 +5,7 @@ runcompiler() {
 }
 
 compile() {
-    gcc -o $2 $1
+    gcc -o $2 -Ltests/optimizer/lib $1 -l6035 -lpthread
 }
 
 if [[ -z "$1" ]]; then
