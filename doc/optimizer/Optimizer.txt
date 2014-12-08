@@ -311,7 +311,8 @@
 
 * Latent Issues
 ** Label Collisions
-  TODO maybe write about label collisions
+  We have an non-deterministic issue where some methods named ~_exit2~ or some similar name cause the compiler to output programs that will not compile.
+  We tried to address this but found the issue hard to track down. We suspect the culprit is some code that was meant to eliminate just this issue, malfunctioning.
 
 * CFG Graph Generation
     A visual representation of the cfg we generate is a very useful debugging tool. 
