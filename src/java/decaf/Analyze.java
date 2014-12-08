@@ -7,7 +7,7 @@ import java.util.Vector;
  * interface to getting distance vector information for accessing a
  * single-dimensional arrays in nested loops. As part of the analysis a simple
  * interface for solving linear Diophantine equations is included.
- *
+ * 
  * @author 6.035 Staff (<tt>6.035-staff@mit.edu</tt>)
  */
 
@@ -42,7 +42,7 @@ public class Analyze {
 
   /**
    * Solves Diophantine equation <tt>c1*x+c2*y+c3=0</tt>
-   *
+   * 
    * @param c1
    * @param c2
    * @param c3
@@ -69,7 +69,7 @@ public class Analyze {
   /**
    * Solves linear equation <tt>c1*x+c2*y+c3=0</tt> for x with all other
    * values known. Solution must be integer!
-   *
+   * 
    * @param c1
    * @param c2
    * @param c3
@@ -85,7 +85,7 @@ public class Analyze {
 
   /**
    * Finds GCD (greatest common divisor) using the Euclid method
-   *
+   * 
    * @param x >
    *            0
    * @param y >
@@ -108,7 +108,7 @@ public class Analyze {
    * passed in form of [c_1, c_2, ..., c_n], so that c_1*i+c_2*j+...+c_n
    * is the index accessed;i,j,k are the loop variables and c_k are
    * integer constants
-   *
+   * 
    * @param firstIndex
    * @param secondIndex
    * @return vector distance information in form of an AccessPattern. null
