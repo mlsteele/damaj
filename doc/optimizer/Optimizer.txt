@@ -27,10 +27,18 @@
   Alternatively, you can use ~compile.sh~ to compile and run a program.
   ~./compile.sh tests/codegen/input/01-callout.dcf~
   This will assemble the program into ~tmp/out.S~, print the assembly, create an executable at ~tmp/out~,
-  and run the executable, printing its output as well.
+  and run the executable, printing its output as well. This will not work for programs which need to be
+  linked to external libraries, for those please use ~run.sh~ or another script.
   
 * Optimizations
-  When all optimizations are enabled, they run in the order presented below.
+  Some of the optimizations below were previously described in `doc/data_flow/DataFlowAnalysis.pdf`.
+  They are described here again because many described before were disabled and have since been enabled.
+  
+  Most optimizations use analyses from `src/scala/dataflow`.
+
+** Interface
+
+  TODO describe the interface
 
 ** Common Subexpression Elimination
     Operates on: Set of Expressions
@@ -53,6 +61,10 @@
   Notice that CSE temps are generated for the expressions ~0~, ~a+b~, and ~c+d~, and also that ~c+d~
   appropriately is available for the last statement after it became available in each input branch. 
 
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
 ** Unreachable Code Elimination
     Unreachable code elimination, located in ~src/scala/transform/UnreachableCodeElim.scala~, 
     deletes portions of code which can never be reached. It consumes the Reachable analysis. Any 
@@ -60,6 +72,10 @@
     nop blocks are cleaned up in a later pass by the Condenser.
 
     Here is an example of UCE at work. Note that the blocks after the return in the if are not cleared because they could occur, but the blocks after the definitive return are cleared.
+
+    TODO convince the reader that the optimization is beneficial
+    TODO convince the reader that the optimization is general
+    TODO convince the reader that the optimization is correct
 
 ** Dead Code Elimination
   If there is an assignment to a dead variable, it is first checked for whether it is a method call. 
@@ -80,6 +96,14 @@
   [[./after_deadcode_example.png]]
 
   Notice that the dead statements have been removed (the now-empty blocks will be removed in a later step).
+
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
+** Order
+
+  TODO The order in which optimizations are applied.
 
 * CFG Graph Generation
     A visual representation of the cfg we generate is a very useful debugging tool. 
