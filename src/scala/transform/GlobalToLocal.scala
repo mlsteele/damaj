@@ -6,6 +6,7 @@ object GlobalToLocal extends Transformation {
   import ExprDependencies._
 
   override def apply(ir: Program):Program = {
+    var program = ir;
     // Figures out which globals are used in which methods
     val globalsUsed : Map[Method, Set[FieldSymbol]] = (ir.main :: ir.methods).map {m => m -> globalsUsedByMethod(m)}.toMap
 
@@ -23,12 +24,13 @@ object GlobalToLocal extends Transformation {
         val method = methods.head
         // Remove it from the global symbol table
         method.locals.globalTable.removeSymbol(global)
+        program = program.copy(fields = program.fields.filterNot(_ == global))
         // Insert it into the method's symbol table
         method.locals.addSymbol(global)
       }
     }
 
-    return ir
+    return program
   }
 
   private def globalsUsedByMethod(method: Method) : Set[FieldSymbol] = {
@@ -44,6 +46,11 @@ object GlobalToLocal extends Transformation {
 
     method.cfg.blocks.foreach { b =>
       b.stmts.foreach {
+        case Assignment(left, ArrayAccess(arrayField, arrayIndex)) => {
+          maybeAddField(left)
+          maybeAddField(arrayField)
+          maybeAddLoad(arrayIndex)
+        }
         case Assignment(left, right) => {
           maybeAddField(left)
           right.dependencies().foreach(maybeAddLoad)
