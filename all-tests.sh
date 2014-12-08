@@ -27,6 +27,7 @@ tests/codegen-hidden/test.sh
 
 echo "all-tests: running dataflow tests"
 tests/dataflow/test.sh
+tests/dataflow-hidden/test.sh
 
 echo "all-tests: running optimizer tests"
 tests/optimizer/test.sh
