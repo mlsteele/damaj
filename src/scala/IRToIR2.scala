@@ -82,7 +82,7 @@ class IR2Builder(program: ProgramIR) {
       case IR.While(pre, condition, block, max) =>
         assert(max == None, "While didn't preprocess out max!")
         val startCFG = CFG.chain(
-          pre.map(x => convertStatement(x, ctx)))
+          pre.map(x => convertStatement(x, ctx))) ++ CFG.fromBlock(CFG.nopBlock(true))
         val endBlock = CFG.nopBlock()
         val blockCFG = convertBlock(block, Context(ctx.symbols, Some(startCFG.start), Some(endBlock)))
         val edges = startCFG.edges ++ blockCFG.edges +

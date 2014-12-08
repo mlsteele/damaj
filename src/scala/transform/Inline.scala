@@ -93,7 +93,7 @@ private class Inline(program: IR2.Program) {
 
     // Add an explicit edge from each return statement to the end block,
     // unless the block is the cfg's end
-    cfg ++= CFG.fromBlock(CFG.nopBlock)
+    cfg ++= CFG.fromBlock(CFG.nopBlock())
     val returnEdges = cfg.blocks.flatMap {
       b => b.stmts.flatMap {
         case r:Return if b != cfg.end => List((b, Edge(cfg.end)))
@@ -106,10 +106,10 @@ private class Inline(program: IR2.Program) {
     result match {
       case None =>
       case Some(resultVar) => cfg = cfg.mapBlocks { b =>
-        b.stmts.map {
+        Block(b.stmts.map {
           case Return(Some(ret)) => Assignment(resultVar, ret)
           case s:Statement => s
-        }
+        }, b.loopHead)
       }
     }
     return cfg

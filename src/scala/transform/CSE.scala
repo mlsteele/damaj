@@ -56,7 +56,7 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
     val statements = block.stmts.flatMap{ stmt =>
       transform(stmt, avail)
     }
-    return Block(statements)
+    return Block(statements, block.loopHead)
   }
 
   private def transform(stmt: Statement, available: T): List[Statement] = {

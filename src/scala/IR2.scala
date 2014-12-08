@@ -31,7 +31,7 @@ object IR2 {
 
   // Not the same as an IR block! Cannot contain any control flow statements.
   // The lecture notes from 10/9 explain the idea.
-  class Block(val stmts: List[Statement]) {
+  class Block(val stmts: List[Statement], val loopHead:Boolean = false) {
     override def toString() = {
       val stmtString = stmts.map(_.toString.split('\n').mkString("\n  ")).mkString("\n  ")
       val uuid = SlugGenerator.id(this)
@@ -40,7 +40,7 @@ object IR2 {
   }
 
   object Block {
-    def apply(stmts: List[Statement]) = new Block(stmts)
+    def apply(stmts: List[Statement], loopHead:Boolean = false) = new Block(stmts, loopHead)
   }
 
   // Implicitly convert a list of statements to a block
@@ -243,7 +243,7 @@ class CFG(val start: IR2.Block, val end: IR2.Block, val edges: IR2.EdgeMap) {
         case Some(Edge(next)) => newCFG.reverseEdges(next).size match {
           case 1 => // condense `block` and `next`
             // Constraint: `block` and `next` have the same symbol table
-            val newBlock = Block(block.stmts ++ next.stmts)
+            val newBlock = Block(block.stmts ++ next.stmts, block.loopHead || next.loopHead)
             val newStartBlock = (newCFG.start == block) match {
               case true => newBlock
               case _ => newCFG.start
@@ -399,7 +399,7 @@ object CFG {
   }
 
 
-  def nopBlock(): Block = IR2.Block(List())
+  def nopBlock(loopHead:Boolean = false): Block = IR2.Block(List(), loopHead)
 
   def dummy(): CFG = {
     val b = nopBlock()

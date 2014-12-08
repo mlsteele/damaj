@@ -62,9 +62,12 @@ class GraphGen(cfg: CFG, annotate : Option[IR2.Block => String], title: String){
         nodePrint(cfg.start.toString)
       case false =>
         val entries = pairs.flatMap(generateEdges)
+        val loopHeads=pairs.filter{ case (block, edge) => block.loopHead }.map{ pair =>
+          nodeColor(pair._1.toString, "yellow")
+        }
         val start   = nodeColor(cfg.start.toString, "lightgreen")
         val end     = nodeColor(cfg.end.toString, "plum")
-        (entries :+ start :+ end).mkString("\n\n")
+        (entries ++ loopHeads :+ start :+ end).mkString("\n\n")
     }
     val annotations = cfg.blocks.toList.flatMap(annotateBlock).mkString("\n\n")
     return file(edges ++ annotations)

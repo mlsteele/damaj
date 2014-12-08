@@ -31,7 +31,7 @@ object DeadCodeElim {
     Grapher.graph(method, "deadcode.live", Some(annotate(_)))
 
     val newCFG = method.cfg.mapBlocks { b =>
-      b.stmts.flatMap {
+      Block(b.stmts.flatMap {
         // If an assignment contains a call, we can eliminate the
         // variable, but we can't eliminate the call, because it might
         // have side-effects
@@ -55,7 +55,7 @@ object DeadCodeElim {
         case ass:ArrayAssignment => List(ass) //don't kill for now
         case c:Call => List(c)
         case r:Return => List(r)
-      }
+      }, b.loopHead)
     }
 
     return Method(method.id,

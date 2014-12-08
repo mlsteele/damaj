@@ -36,7 +36,7 @@ object UnreachableCodeElim extends Transformation {
     }
 
     val newCFG = (new CFG(cfg.start, cfg.end, simplifiedForks)).mapBlocks { b =>
-      b.stmts.filter {s => reachableBefore(b)}
+      Block(b.stmts.filter {s => reachableBefore(b)}, b.loopHead)
     }
 
     return Method(method.id,

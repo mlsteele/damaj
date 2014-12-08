@@ -11,7 +11,7 @@ object Uncondense extends Transformation {
       block.stmts match {
         case (first :: rest) if (rest.length >= 1) => {
           val firstBlock = Block(List(first))
-          val secondBlock = Block(rest)
+          val secondBlock = Block(rest, block.loopHead)
 
           val newInEdges:EdgeMap = reassignInEdges(block, firstBlock, cfg)
           val newOutEdges:EdgeMap = reassignOutEdges(block, secondBlock, newInEdges)

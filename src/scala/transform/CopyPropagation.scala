@@ -45,7 +45,7 @@ object CopyPropagation {
     val newCFG = (new CFG(method.cfg.start, method.cfg.end, newEdges)).mapBlocks { b =>
       val fcc = followCopyChain(method, reachingBefore(b), _:Load)
       val fccArg = followCopyChain(method, reachingBefore(b), _:Load, true)
-      b.stmts.map {
+      Block(b.stmts.map {
         case Assignment(field, right) => right match {
           case load:Load                            => Assignment(field, fcc(load))
           case ArrayAccess(arrayField, index)       => Assignment(field, ArrayAccess(arrayField, fcc(index)))
@@ -56,7 +56,7 @@ object CopyPropagation {
         case ArrayAssignment(field, index, right) => ArrayAssignment(field, fcc(index), fcc(right))
         case Call(id, args) => Call(id, args.map(_.map(fccArg)))
         case Return(ret) => Return(ret.map(fcc))
-      }
+      }, b.loopHead)
     }
 
     return Method(method.id,
