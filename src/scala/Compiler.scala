@@ -98,7 +98,7 @@ object Compiler {
       case Some(file) => new java.io.PrintStream(new java.io.FileOutputStream(file))
     }
     if (CLI.infile == null || !(new java.io.File(CLI.infile).exists)){
-        Console.err.println(CLI.infile + ": No such file or directory")
+        Console.err.println(CLI.infile + ": No sruh file or directory")
         System.exit(1)
     }
     CLI.target match {
