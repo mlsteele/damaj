@@ -156,7 +156,51 @@
 
 ** Order
 
-  TODO The order in which optimizations are applied.
+  The order in which optimizations are run is critical to the operation of the compiler.
+  For example, Common Subexpression Elimination generates extra variables which Copy Propogation can clean up,
+  this Copy Propogation should always be run at some point after the last Common Subexpression Elimination pass.
+  Another example, Dead Code Elimination should not be run first and only first because other optimizations may
+  cause dead code to appear that Dead Code Elimination should have the chance to eliminate.
+
+  Optimizations are organized into three ordered lists. A ~PRE~ list, a ~LOOP~ list, and a ~POST~ list.
+  These can be seen in ~Compiler.scala~ as variables with the ~recipe~ prefix. First every pass
+  in the the ~PRE~ list is run in order, then passes in ~LOOP~ are run twice in order, and then passes in ~POST~ are run.
+
+  We have found 2 iterations of ~LOOP~ to yield a reasonable tradeoff between performance and compilation time.
+
+  Here are the optimizations and a brief justification of their place in the organization:
+*** PRE
+  Optimizations first run on the raw code
+
+  - Inlining - Opportunities for inlining are unlikely to be created by later optimizations, so just run it first so that the other optimizations are able to consider larger methods, hopefully finding more to do.
+  - Global Localization - Many other optimizations to do not treat globals, so doing this first enables other optimizations to work on variables they would not otherwise.
+  - Copy Propogation
+  - Dead Code Elimination
+  - Unreachable Code Elimination - CP, DCE, and UCE all strictly reduce the amount of code that exists, so running them initially helps to eliminate user and automatically introduced redundancy which improves the speed of other optimizations such as Common Subexpression Elimination that introduce more code.
+
+*** LOOP
+  Optimizations run repeatedly on the code
+
+  - Common Subexpression Elimination
+  - Copy Propogation - Copy Propogation and Common Subexpression Elimination have a symbiotic relationship and
+                       do well to be run in a loop more than once.
+  - Dead Code Elimination
+  - Unreachable Code Elimination - DCE and UCE eliminate code to reduce the running time of the other optimizations,
+                                   enabling more optimizations to be run in a timely manner.
+  - Algebraic Peephole - Peephole optimizations can occur as a result of Copy Propogation and can produce expressions that Common Subexpression Elimination can help,
+                         thus it is run in a loop to produce and consume from other optimizations.
+
+*** POST
+  Optimizations run before passing to the AsmGen
+
+  - Copy Propogation
+  - Unreachable Code Elimination
+  - Dead Code Elimination - CP, UCE, DCE are the part of the loop that reduce the amount of code, spin down by running these near to last.
+  - Register Allocation - Since our RA has does not modify the code at except for assigning registers, it only makes to run this last.
+
+  The compiler is designed to be run with all optimizations turned on.
+  We did not make it a priority to run the optimizations in optimal order when some of them are turned,
+  so the it just does the normal ordering but skips the disabled optimizations every time through.
 
 * CFG Graph Generation
     A visual representation of the cfg we generate is a very useful debugging tool. 
