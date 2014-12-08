@@ -64,50 +64,47 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
     stmt match {
       case a@Assignment(left, right) =>
         val se = speedyExpr(right, available)
-        se.setup.toList :+ a.copy(right = se.load)
+        val post = se.storeTo.toList.map{
+          f => Assignment(f, LoadField(left))
+        }
+        a.copy(right = se.use) +: post.toList
+
       case a@ArrayAssignment(left, index, right) =>
         val se = speedyExpr(right, available)
-        se.setup.toList :+ a.copy(right = se.load)
-      case Call(target, args) =>
-        val setups = args.flatMap{
-          case Left(strlit) => None
-          case Right(expr)  => speedyExpr(expr, available).setup
+        val post = se.storeTo.map{ f =>
+          ArrayAssignment(f, index, LoadField(left))
         }
+        // Dangerous cast se.use to a Load.
+        // This is 'safe' because `right` with which `se` was built was a Load,
+        // and speedyExpr does not return more complicated expressions.
+        a.copy(right = se.use.asInstanceOf[Load]) +: post.toList
 
-        val newArgs = args.map{
-          case Left(strlit) => Left(strlit)
-          case Right(expr) => Right(speedyExpr(expr, available).load)
-        }
-
-        setups :+ Call(target, newArgs)
-      case Return(Some(expr)) =>
-        val se = speedyExpr(expr, available)
-        se.setup.toList :+ Return(Some(se.load))
-      case r@Return(None) => List(r)
+      // Calls have only Load arguments (and strings), so would not benefit from CSE.
+      case c:Call => List(c)
+      // Return return only a Load, so would not benefit from CSE.
+      case r:Return => List(r)
     }
   }
 
   // Represents a variable which might be accessed through a carrier.
-  // setup might include an assignment to save the value into a carrier for later.
-  // setup must happen right before expr is valid.
-  case class SpeedyExpr(setup: Option[Statement], load: Load)
+  // post might be an assignment to save the value into a carrier for later.
+  // post MUST happen right after expr is valid.
+  case class SpeedyExpr(use: Expr, storeTo: Option[FieldSymbol])
 
   // Use stored expression if one is available according to the analysis,
   // (NOT according to carriers, which doesn't respect non-linear programs)
-  // Otherwise, store computed value in case anyone wants to use it later.
+  // Otherwise, store computed value in carrier in case anyone wants to use it later.
   private def speedyExpr(expr: Expr, available: T): SpeedyExpr =
     (expr, available(expr)) match {
       case (expr:Load, _) =>
-        // Don't bother loading Loads from carriers.
-        // That wouldn't be any speedier.
-        SpeedyExpr(None, expr)
+        // Don't bother loading Loads from carriers. That wouldn't be any speedier.
+        SpeedyExpr(expr, None)
       case (_, true) =>
         // Load from carrier instead of doing calculation again.
-        SpeedyExpr(None, carriers.load(expr))
+        SpeedyExpr(carriers.load(expr), None)
       case (_, false) =>
-        // Store for later and do original assignment.
-        val setup = Assignment(carriers.of(expr), expr)
-        SpeedyExpr(Some(setup), carriers.load(expr))
+        // Output original expression, but demand it be stored in a carrier after.
+        SpeedyExpr(expr, Some(carriers.of(expr)))
     }
 
   // Helper that keeps track of which vars hold which exprs.
