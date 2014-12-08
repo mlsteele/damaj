@@ -173,7 +173,11 @@
 
 ** Method Inlining
 
-  
+  Method Inlining is an optimization that takes the CFG of a method call and replaces the call with the CFG.
+  This enables other optimizations to apply to the CFG that would otherwise have been blocked by the fact
+  that the code was in multiple CFGs.
+  There is a heuristic of 128 statements that is a maximum for code inlining. Inlining huge methods
+  results in intractibly slow compilation speed because of the scale of the combined graph.
 
   TODO describe optimization
   TODO convince the reader that the optimization is beneficial
@@ -203,6 +207,44 @@
 ** Register Allocation
 
   When run without Register Allocation, all variables end up stored on the stack.
+
+  Here is an example to demonstrate the effect of register allocation.
+  Consider a simple program with no other optimizations in effect.
+  #+BEGIN_EXAMPLE
+  int main() {
+      int a, b;
+      a = 4;
+      b = a;
+      return 0;
+  }
+  #+END_EXAMPLE
+
+  Without register allocation, a part of the compiled assembly results in this code.
+  Which has two memory five memory accesses.
+  #+BEGIN_EXAMPLE
+    movq $0, -8(%rbp) # zero a
+  ._node_1_block:
+    movq $0, -16(%rbp) # zero b
+  ._node_2_block:
+    movq $4, -8(%rbp) # a = 4
+  ._node_3_block:
+    movq -8(%rbp), %r11 # use a transfer register
+    movq %r11, -16(%rbp) # to move a to b
+  #+END_EXAMPLE
+
+  In contrast, regiser allocation notices that these values don't interfere in this particular program,
+  and puts them both in ~rbx~.
+  #+BEGIN_EXAMPLE
+    movq $0, %rbx
+  ._node_1_block:
+    movq $0, %rbx
+  ._node_2_block:
+    movq $4, %rbx
+  ._node_3_block:
+    movq %rbx, %r11
+    movq %r11, %rbx
+  #+END_EXAMPLE
+  This cuts down memory access to zero and maximizes the number of available registers (useful in programs with more registers)
 
   TODO describe optimization
   TODO convince the reader that the optimization is beneficial
