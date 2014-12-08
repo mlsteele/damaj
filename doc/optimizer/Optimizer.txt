@@ -28,69 +28,6 @@
   ~./compile.sh tests/codegen/input/01-callout.dcf~
   This will assemble the program into ~tmp/out.S~, print the assembly, create an executable at ~tmp/out~,
   and run the executable, printing its output as well.
-
-* Dataflow Analyses
-  Relevant files: ~src/scala/dataflow/*~
-  
-  There is a trait ~Analysis~ from which all analyses inherit. It uses the worklist algorithm.
-  Every analysis runs a transfer function on each block in a CFG. At this point in the analysis,
-  every block contains at most one statement. Later, we will have analyses that run after condensing
-  basic blocks in the CFG.
-
-  Each type of analysis outputs an analysis result, parameterized by the specific type used for the analysis.
-
-** Available Expressions
-  Used in: Common Subexpression Elimination
-
-  Operates on: Set of Expressions
-
-  Available Expressions is a forward-running algorithm that determines whether each expression is available
-  after each block. For every expression it sees, it checks whether the expression is pure. Right now, 
-  every method call is declared not pure, but later we may have a finer-grained evaluation of method purity.
-
-  If the expression is not pure, it is not a candidate for availability, its value is not cached, and all
-  global variables are declared unavailable after the expression.
-
-  If the expression is pure, then it becomes available.
-
-  Whenever there is an assignment, the target of the assignment becomes unavailable, as do all expressions
-  that use it.
-
-** Live Variables
-  Used in: Dead Code Elimination
-
-  Operates on: Set of Variables.
-
-  Live Variables Analysis is a backward-running algorithm that determines whether a variable will be used
-  at each point in the program. 
-
-  In every expression, every variable used in the expression is considered alive.
-
-  The conditions of CFG forks are special-cased because otherwise the block that sets up the condition's
-  temp variable will end up deleting it right before it is evaluated. This is because the condition of forks
-  are not actually part of any block.
-
-  In assignment statements, the destination of the assignment is no longer considered live (unless it is
-  also in the right side of the assignment expression).
-
-** Reachable
-  Used in: Unreachable Code Elimination
-
-  Operates on: Booleans
-
-  Reachable is a forward-running algorithm that consideres a block unreachable if the output of the previous
-  block was unreachable. A block's output becomes unreachable if it contains a return statement.
-
-** Reaching Definitions
-  Unused as of yet. Will be used for constant propagation.
-
-  Operates on: Set of Assignment statements.
-
-  Reaching definitions is a forward-running algorithm which determines which assignments are still used
-  at a given point.
-
-  For each assignment statement, previous assignments to the same variable are removed from the set,
-  then the current assignment is added to the set.
   
 * Optimizations
   When all optimizations are enabled, they run in the order presented below.
