@@ -124,10 +124,30 @@
   TODO convince the reader that the optimization is correct
 
 ** Copy Propogation
-  TODO describe DCE
-  TODO convince the reader that the optimization is beneficial
-  TODO convince the reader that the optimization is general
+  Copy Propagation uses the analysis of Reaching Definitions. For every use of a variable, it tries to
+  replace that with the last value the variable was assigned (along every path to the current line, 
+  hence reaching definitions). We have implemented a simple version that doesn't do a replacement if more
+  than one path assigned a value, although it could be modified to make sure that each path assigns the same
+  value, and then copy propagate. When there is a viable copy propagation (the right hand side of the reaching
+  assignment is a single variable or constant), it is not done if the target value is a parameter and the 
+  target asignee is a call argument, because we want to explicitly load parameters into local variables when 
+  setting up a call. This is the only specially handled edge case.
+
+  We know copy propagation is beneficial and general because it is one we learned in class. Furthermore,
+  its main benefit is in causing unnecessary temps to become unused, so they can be deleted.
   TODO convince the reader that the optimization is correct
+
+  As an example, take this sample code from ~tests/optimizer/input/noise_median.dcf~ in the method ~read~. 
+  After the simplification steps that generated 13 temp variables, there was some code that looked like
+  this:
+
+  ~t0 = rows; ... i = t7; ... t6 = i < t0;~
+
+  After running copy prop, it looked like this:
+  
+  ~t0 = rows; ... i = t7; ... t6 = t7 < rows;~
+
+  At that point, t0 was not used anywhere and was able to be eliminated.
 
 ** Algebraic Peephole
   TODO describe optimization
