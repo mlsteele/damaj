@@ -205,7 +205,25 @@
   TODO convince the reader that the optimization is correct
 
 ** Register Allocation
+  Relevant files: ~src/scala/register_allocation/*~
 
+  When run without Register Allocation, all variables end up stored on the stack. 
+  We add the ability to store varibles in registers instead of the stack. The registers we use are
+  rbx, r12, r13, r14, and r15. We save the others for things like moving stack variables in and other
+  things. This could be improved by changing ~AsmGen.scala~ to better use those registers, and by
+  dynamically allocating variables instead of assigning one variable to one register for the length of
+  the method.
+
+  Our method of register allocation uses Live Variables analysis. When two variables are live at the same 
+  time, they interfere. From this we construct an interference graph of variables. We try to color this graph.
+  TODO describe graph coloring
+  Any nodes that cannot be colored by this method will be used from the stack, as previously all the variables
+  were.
+
+  Our version of register allocation is conservative because it uses only registers that are not used by
+  any other part of the program. It moves variables to and from the "operation registers" when it does a
+  calculation. This is a simplification that makes register allocation more clearly correct, and still faster
+  because register accesses are faster than stack accesses.
   When run without Register Allocation, all variables end up stored on the stack.
 
   Here is an example to demonstrate the effect of register allocation.
@@ -246,10 +264,6 @@
   #+END_EXAMPLE
   This cuts down memory access to zero and maximizes the number of available registers (useful in programs with more registers)
 
-  TODO describe optimization
-  TODO convince the reader that the optimization is beneficial
-  TODO convince the reader that the optimization is general
-  TODO convince the reader that the optimization is correct
 
 ** Not Implemented
 
