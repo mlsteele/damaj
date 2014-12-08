@@ -295,12 +295,12 @@ class AsmGen(ir2: IR2.Program) {
     val stackArgs = stackArgsUnrounded + (stackArgsUnrounded % 2)
 
     comment("calling %s".format(ir.id)) \
-    "PUSH_ALL" \
+    "PUSH_AS_CALLER" \
     sub((stackArgs * 8) $, rsp) ? s"reserve space for $stackArgs stack args" \
     argMovs \
     call(ir.id) \
     add((stackArgs * 8) $, rsp) ? s"free space from stack args" \
-    "POP_ALL"
+    "POP_AS_CALLER"
   }
 
   def generateReturn(ir: Return, symbols: ST, returnTo: String): String = ir.value match {
@@ -584,19 +584,18 @@ object AsmDSL {
     - push(rbp) \
     - mov(rsp, rbp) ? "set bp" \
     - sub(stackbytes $, rsp) ? s"reserve space for $stackvars locals" \
-    - "PUSH_ALL" \
+    - "PUSH_AS_CALLEE" \
     body \
     labl(label + "_end") \
-    - "POP_ALL" \
+    - "POP_AS_CALLEE" \
     - add(stackbytes $, rsp) ? s"free space from locals" \
     - pop(rbp) \
     - ret
   }
 
   def file(bss: String, text: String, data: String): String = {
-    define_push_all \
+    define_common_macros \
     "" \
-    define_pop_all \
     bss \
     "" \
     ".text" \
@@ -608,13 +607,8 @@ object AsmDSL {
     ""
   }
 
-  // We push all registers in following order:
-  // (rax, rbx, rcx, rdx, rbp, rsp, rsi, rdi,
-  // r8, r9, r10, r11, r12, r13, r14, r15)
-  // and pop in reverse order
-
-  // This must push an even number of quads to keep rsp 16byte aligned.
-  def define_push_all: String =
+  def define_common_macros: String =
+    // PUSH_ALL and POP_ALL must push an even number of quads to keep rsp 16byte aligned.
     ".macro PUSH_ALL" \
     - push(rbx) \
     - push(rcx) \
@@ -632,10 +626,8 @@ object AsmDSL {
     - push(r14) \
     - push(r15) \
     - push(r15) \ // duplicate for alignment
-    ".endm"
-
-  // This must pop an even number of quads to keep rsp 16byte aligned.
-  def define_pop_all: String =
+    ".endm" \
+    "" \
     ".macro POP_ALL" \
     - pop(r15) \ // duplicate for alignment
     - pop(r15) \
@@ -652,6 +644,46 @@ object AsmDSL {
     - pop(rbp) \
     - pop(rdx) \
     - pop(rcx) \
+    - pop(rbx) \
+    ".endm" \
+    "" \
+    ".macro PUSH_AS_CALLER" \
+    - push(rcx) \
+    - push(rdx) \
+    - push(rsi) \
+    - push(rdi) \
+    - push(r8) \
+    - push(r9) \
+    - push(r10) \
+    - push(r11) \
+    ".endm" \
+    "" \
+    ".macro POP_AS_CALLER" \
+    - pop(r11) \
+    - pop(r10) \
+    - pop(r9) \
+    - pop(r8) \
+    - pop(rdi) \
+    - pop(rsi) \
+    - pop(rdx) \
+    - pop(rcx) \
+    ".endm" \
+    "" \
+    ".macro PUSH_AS_CALLEE" \
+    - push(rbx) \
+    - push(rbp) \
+    - push(r12) \
+    - push(r13) \
+    - push(r14) \
+    - push(r15) \
+    ".endm" \
+    "" \
+    ".macro POP_AS_CALLEE" \
+    - pop(r15) \
+    - pop(r14) \
+    - pop(r13) \
+    - pop(r12) \
+    - pop(rbp) \
     - pop(rbx) \
     ".endm"
 }
