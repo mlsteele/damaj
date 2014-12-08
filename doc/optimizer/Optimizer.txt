@@ -150,12 +150,31 @@
   At that point, t0 was not used anywhere and was able to be eliminated.
 
 ** Algebraic Peephole
-  TODO describe optimization
+
+  Algebraic peephole optimizations are a set of very local optimizations that operate at the statement level.
+  Expressions in assignments are compared to a list of known patterns and replaced.
+  Assigns in our IR can not contain method calls so this optimization is not at risk eliminating side-effects
+  which would violate the semantics of the program for example ~x()*0 -> 0~.
+  Algebraic Peephole can simplify the algebraic identities (in both orders where appropriate):
+  - ~x*0 -> 0~
+  - ~x*1 -> x~
+  - ~x/1 -> x~
+  - ~x+0 -> x~
+  - ~x-0 -> x~
+  - ~0/x -> 0~
+  
+  When both operand values are known at compile time, the compiler will replace the expression with the constant result.
+  The optimizations preserves the semantics of array out of bound failures and divide by zero errors.
+  There may be a bug that causes the compiler to crash if integer overflow occurs during static evaluation. This should be fixed in the next version.
+
   TODO convince the reader that the optimization is beneficial
   TODO convince the reader that the optimization is general
   TODO convince the reader that the optimization is correct
 
 ** Method Inlining
+
+  
+
   TODO describe optimization
   TODO convince the reader that the optimization is beneficial
   TODO convince the reader that the optimization is general
