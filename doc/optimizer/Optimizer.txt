@@ -101,6 +101,12 @@
   TODO convince the reader that the optimization is general
   TODO convince the reader that the optimization is correct
 
+** Dead Code Elimination
+  TODO describe DCE
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
 ** Order
 
   TODO The order in which optimizations are applied.
