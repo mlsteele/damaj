@@ -253,12 +253,13 @@
 
 ** Not Implemented
 
-  List Scheduling, Instruction Selection, Data Parallelization
-  TODO explain why we did not implement these
-  TODO For each optimization that you decide not to implement, you
-       must convince the reader that the optimization would not be beneficial given your generated code
-       for the given benchmarks and our target architecture.
-       (^ that seems like not our reasons.)
+  We did not implement List Scheduling, Instruction Selection, or Data Parallelization.
+  We did this not because we did not think that they were necessary, but because of time pressure.
+  After finishing register allocation, we think that Data Parallelization would be the most beneficial
+  optimization to do for the optimization tests which involve image processing and are very parallelizable.
+  List Scheduling and Instruction Selection would be beneficial for programs with smaller windows of parallelization,
+  but Data Parallelization could provide access to multiple cores. We will try to accomplish Data Parallelization
+  for the compiler Derby.
 
 ** Order
 
