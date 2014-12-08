@@ -101,7 +101,7 @@
   TODO convince the reader that the optimization is general
   TODO convince the reader that the optimization is correct
 
-** Dead Code Elimination
+** Copy Propogation
   TODO describe DCE
   TODO convince the reader that the optimization is beneficial
   TODO convince the reader that the optimization is general
