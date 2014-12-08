@@ -107,6 +107,53 @@
   TODO convince the reader that the optimization is general
   TODO convince the reader that the optimization is correct
 
+** Algebraic Peephole
+  TODO describe optimization
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
+** Inlining
+  TODO describe optimization
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
+** Global Localization
+
+  Global Localization turns globals into locals.
+  The motivation for this optimization is that many of our other optimizations remain conservative
+  by not operating on gloabls. This is because globals are harder to reason about due to their
+  sharing beyond the scope of the method.
+
+  Global Localization works by examining which globals are used by which methods, identifying
+  globals used by only one method, and moving the global into that methods local symbol table.
+
+  Global Localization is not beneficial by itself, but enables other optimizations which avoid
+  operating on globals to operate on those variables after they have been localized.
+  Global Localization is made more powerful in some cases by inlining, because inlining
+  can cause a global that was used by 2 methods to be uesd by only 1 after inlining, thus GL can operate on the global.
+
+  TODO example
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
+** Register Allocation
+  TODO describe optimization
+  TODO convince the reader that the optimization is beneficial
+  TODO convince the reader that the optimization is general
+  TODO convince the reader that the optimization is correct
+
+** Not Implemented
+
+  List Scheduling, Instruction Selection, Data Parallelization
+  TODO explain why we did not implement these
+  TODO For each optimization that you decide not to implement, you
+       must convince the reader that the optimization would not be beneficial given your generated code
+       for the given benchmarks and our target architecture.
+       (^ that seems like not our reasons.)
+
 ** Order
 
   TODO The order in which optimizations are applied.
