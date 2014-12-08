@@ -38,7 +38,29 @@
 
 ** Interface
 
-  TODO describe the interface
+  To run the compiler with optimizations use the flag ~-O all~ or ~--opt=all~. This will run all implemented
+  optimizations with the order specified in the Order section.
+  The availabe optimizations are listed below as well as in the ~optimizations~ value in ~src/scala/Compiler.scala~.
+
+
+  | Short Name    | Full Name                        | Source File                     |
+  |---------------+----------------------------------+---------------------------------|
+  | cse           | Common Subexpression Elimination | ~CSE~                           |
+  | copyprop      | Copy Propagation                 | ~CopyPropagation~               |
+  | deadcode      | Dead Code Elimination            | ~DeadCodeElimMulti~             |
+  | unreachable   | Unreachable Code Elimination     | ~UnreachableCodeElim~           |
+  | peep          | Algebraic Peephole               | ~PeepholeAlgebra~               |
+  | inline        | Method Inlining                  | ~Inline~                        |
+  | localize      | Localization                     | ~GlobalToLocal~                 |
+  | regs          | Register Allocation              | ~src/scala/register_allocation~ |
+
+  Source File in the table to a ~.scala~ file in ~src/scala/transform~. There are more transformations
+  in that directory that are necessarily utilities but not optimizations.
+
+  Multiple optimizations can also be specified with ~--opt=cse,copyprop~ but note that the order listed in the option
+  will not have any effect and that the optimizations may be run more than once. If using debug mode, you can tell
+  which optimizations were run, how many times, and in what order by looking at stderr or the graph files generated
+  in ~tmp/~.
 
 ** Common Subexpression Elimination
     Operates on: Set of Expressions
@@ -113,7 +135,7 @@
   TODO convince the reader that the optimization is general
   TODO convince the reader that the optimization is correct
 
-** Inlining
+** Method Inlining
   TODO describe optimization
   TODO convince the reader that the optimization is beneficial
   TODO convince the reader that the optimization is general
@@ -131,7 +153,7 @@
 
   Global Localization is not beneficial by itself, but enables other optimizations which avoid
   operating on globals to operate on those variables after they have been localized.
-  Global Localization is made more powerful in some cases by inlining, because inlining
+  Global Localization is made more powerful in some cases by Method Inlining, because inlining
   can cause a global that was used by 2 methods to be uesd by only 1 after inlining, thus GL can operate on the global.
 
   TODO example
@@ -140,6 +162,9 @@
   TODO convince the reader that the optimization is correct
 
 ** Register Allocation
+
+  When run without Register Allocation, all variables end up stored on the stack.
+
   TODO describe optimization
   TODO convince the reader that the optimization is beneficial
   TODO convince the reader that the optimization is general
@@ -201,6 +226,10 @@
   The compiler is designed to be run with all optimizations turned on.
   We did not make it a priority to run the optimizations in optimal order when some of them are turned,
   so the it just does the normal ordering but skips the disabled optimizations every time through.
+
+* Latent Issues
+** Label Collisions
+  TODO maybe write about label collisions
 
 * CFG Graph Generation
     A visual representation of the cfg we generate is a very useful debugging tool. 
