@@ -63,7 +63,8 @@ fsc_reset:
 doc/%.pdf: doc/%.txt
 	emacs -q -file $< --batch -f org-mode -f org-export-as-pdf
 
-docs: doc/semantic_checker/Lab2.pdf	doc/codegen/CodeGeneration.pdf	doc/data_flow/DataFlowAnalysis.pdf
+docs: doc/semantic_checker/Lab2.pdf doc/codegen/CodeGeneration.pdf doc/data_flow/DataFlowAnalysis.pdf doc/optimizer/Optimizer.pdf
+
 
 # Runs the scala REPL with our files added to the path
 repl:
