@@ -216,7 +216,11 @@
 
   Our method of register allocation uses Live Variables analysis. When two variables are live at the same 
   time, they interfere. From this we construct an interference graph of variables. We try to color this graph.
-  TODO describe graph coloring
+
+  We used the coloring method from the slides in class. Push all nodes whose degree is less than the number of colors onto a stack.
+  When all nodes have degree less than the number of colors, spill a node onto the program stack and eliminate it from the graph.
+  Pop the nodes off the stack one by one, assigning colors that do not conflict with their neighbors.
+
   Any nodes that cannot be colored by this method will be used from the stack, as previously all the variables
   were.
 
