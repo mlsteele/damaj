@@ -42,8 +42,8 @@ class AsmGen(ir2: IR2.Program) {
   // Generates local labels
   val labelGenerator = new LabelGenerator()
   // TODO(miles): reserve more stuff
-  labelGenerator.reserve("PUSH_ALL")
-  labelGenerator.reserve("POP_ALL")
+  labelGenerator.reserve("PUSH_AS_CALLER")
+  labelGenerator.reserve("PUSH_AS_CALLEE")
   labelGenerator.reserve(".data")
   labelGenerator.reserve("._exit1")
   // Store all string literals used in the program.
@@ -62,10 +62,10 @@ class AsmGen(ir2: IR2.Program) {
     val array_oob_error = "*** RUNTIME ERROR ***: Array out of Bounds access"
     val exits =
       labl("._exit1") \
-      - "PUSH_ALL" \
+      - "PUSH_AS_CALLER" \
       - mov(strings.put("array_oob_err", array_oob_error) $, argregs(0)) \
       - call("printf") \
-      - "POP_ALL" \
+      - "PUSH_AS_CALLEE" \
       - mov(-1 $, argregs(0)) \
       - call("exit")
 
@@ -608,45 +608,7 @@ object AsmDSL {
   }
 
   def define_common_macros: String =
-    // PUSH_ALL and POP_ALL must push an even number of quads to keep rsp 16byte aligned.
-    ".macro PUSH_ALL" \
-    - push(rbx) \
-    - push(rcx) \
-    - push(rdx) \
-    - push(rbp) \
-    - push(rsp) \
-    - push(rsi) \
-    - push(rdi) \
-    - push(r8) \
-    - push(r9) \
-    - push(r10) \
-    - push(r11) \
-    - push(r12) \
-    - push(r13) \
-    - push(r14) \
-    - push(r15) \
-    - push(r15) \ // duplicate for alignment
-    ".endm" \
-    "" \
-    ".macro POP_ALL" \
-    - pop(r15) \ // duplicate for alignment
-    - pop(r15) \
-    - pop(r14) \
-    - pop(r13) \
-    - pop(r12) \
-    - pop(r11) \
-    - pop(r10) \
-    - pop(r9) \
-    - pop(r8) \
-    - pop(rdi) \
-    - pop(rsi) \
-    - pop(rsp) \
-    - pop(rbp) \
-    - pop(rdx) \
-    - pop(rcx) \
-    - pop(rbx) \
-    ".endm" \
-    "" \
+    // Pushes before calls must push an even number of quads to keep rsp 16byte aligned.
     ".macro PUSH_AS_CALLER" \
     - push(rcx) \
     - push(rdx) \
