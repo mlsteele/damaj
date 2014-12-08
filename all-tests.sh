@@ -31,3 +31,6 @@ tests/dataflow-hidden/test.sh
 
 echo "all-tests: running optimizer tests"
 tests/optimizer/test.sh
+
+echo "all-tests: running derby tests"
+tests/derby/test.sh
