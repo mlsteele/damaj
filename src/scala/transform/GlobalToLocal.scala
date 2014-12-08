@@ -21,12 +21,17 @@ object GlobalToLocal extends Transformation {
     // Now, figure out which globals are only used by one method, and move it into that method's symbol table
     globalsUsedInverse.foreach { case (global, methods) =>
       if (methods.size == 1) {
-        val method = methods.head
-        // Remove it from the global symbol table
-        method.locals.globalTable.removeSymbol(global)
-        program = program.copy(fields = program.fields.filterNot(_ == global))
-        // Insert it into the method's symbol table
-        method.locals.addSymbol(global)
+        global.size match {
+          case Some(size) if size > 1000 => // don't move arrays that are huge, can overflow stack
+          case _ => {
+            val method = methods.head
+            // Remove it from the global symbol table
+            method.locals.globalTable.removeSymbol(global)
+            program = program.copy(fields = program.fields.filterNot(_ == global))
+            // Insert it into the method's symbol table
+            method.locals.addSymbol(global)
+          }
+        }
       }
     }
 
@@ -66,6 +71,10 @@ object GlobalToLocal extends Transformation {
         }
         case Return(ret) => ret.foreach(maybeAddLoad)
       }
+    }
+    method.cfg.edges.values.foreach {
+      case Fork(cond, _, _) => maybeAddLoad(cond)
+      case _ =>
     }
     return used
   }
