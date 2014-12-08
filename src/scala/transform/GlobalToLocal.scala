@@ -17,7 +17,16 @@ object GlobalToLocal extends Transformation {
       }
     }
 
-    println(globalsUsedInverse)
+    // Now, figure out which globals are only used by one method, and move it into that method's symbol table
+    globalsUsedInverse.foreach { case (global, methods) =>
+      if (methods.size == 1) {
+        val method = methods.head
+        // Remove it from the global symbol table
+        method.locals.globalTable.removeSymbol(global)
+        // Insert it into the method's symbol table
+        method.locals.addSymbol(global)
+      }
+    }
 
     return ir
   }

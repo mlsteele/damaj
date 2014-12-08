@@ -129,6 +129,10 @@ object SymbolTable {
         }
       }
     }
+
+    def removeSymbol (symbol: Symbol) = {
+      symbols = symbols.filterNot(_ == symbol)
+    }
     
     /**
      * Adds a list of symbols to a table, returns a list of conflicts if there were any.
@@ -186,12 +190,6 @@ object SymbolTable {
             return List()
           }
         }
-      }
-    }
-
-    def removeSymbol(s: Symbol) = {
-      symbols = symbols filter {
-        _ != s
       }
     }
 

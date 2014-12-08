@@ -70,7 +70,7 @@ class AsmGen(ir2: IR2.Program) {
       - call("exit")
 
     val bss = ".data"\
-      ir2.fields.flatMap { f:Field =>
+      ir2.fields.flatMap { f:FieldSymbol =>
         labl("decaf_global_%s".format(f.id))\
         - ".zero %d".format(f.size.getOrElse(1L)*8)\
         ""

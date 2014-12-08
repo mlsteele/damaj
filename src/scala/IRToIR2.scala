@@ -23,7 +23,7 @@ class IR2Builder(program: ProgramIR) {
 
   def convertProgram(ir: IR.ProgramIR): IR2.Program = {
     val fields = ir.symbols.symbols.flatMap(_ match {
-      case f:FieldSymbol => Some(convertField(f))
+      case f:FieldSymbol => Some(f)
       case _ => None
     })
 
@@ -43,8 +43,6 @@ class IR2Builder(program: ProgramIR) {
     IR2.Program(fields, mainMethod, methods)
   }
 
-  def convertField(field: FieldSymbol): IR2.Field = Field(field.id, field.size)
-  
   def convertMethod(method: MethodSymbol): IR2.Method =
     IR2.Method(
       method.id,
