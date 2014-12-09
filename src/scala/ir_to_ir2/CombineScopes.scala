@@ -50,9 +50,10 @@ object CombineScopes {
     )
 
     case r:Return => r
+
     case b:Break => b
+
     case c:Continue => c
-    case s:SpawnThreads => s
   }
 
   def combineScopes(block: Block, table: SymbolTable) : Block = {
@@ -144,7 +145,6 @@ object CombineScopes {
       case Return(expr) => Return(expr.map(renameE))
       case b: Break => b
       case c: Continue => c
-      case s:SpawnThreads => s
     }
   }
 

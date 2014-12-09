@@ -92,7 +92,6 @@ object Elaborate {
       case b:Break => b
       case c:Continue => c
       case r:Return => r
-      case s:SpawnThreads => s
     }
   }
 }

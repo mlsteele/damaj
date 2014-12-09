@@ -21,8 +21,7 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
         case Right(e) => List(e)
       }
       case Return(Some(e)) => List(e)
-      case Return(None)    => List()
-      case _:SpawnThreads  => List()
+      case Return(None) => List()
     }
   }
 
@@ -61,7 +60,6 @@ class AvailableExpressions(override val method: IR2.Method) extends Analysis {
           case Right(e) =>  avail += e
         }
       case Return(ret) => ret.foreach{ e => if (isPure(e)) {avail += e}}
-      case s:SpawnThreads =>
     }
 
     return expungeGlobals(avail) filter {

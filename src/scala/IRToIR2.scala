@@ -115,8 +115,6 @@ class IR2Builder(program: ProgramIR) {
         new CFG(nop, nop2, edges)
       case IR.Return(e) =>
         CFG.fromStatement(IR2.Return(convertOptionExprToLoad(e)))
-      case IR.SpawnThreads(label) =>
-        CFG.fromStatement(IR2.SpawnThreads(label))
   }
 
   def convertArg(arg: Either[StrLiteral, IR.Expr]): Either[StrLiteral, IR2.Load] = arg match {

@@ -55,7 +55,6 @@ object DeadCodeElim {
         case ass:ArrayAssignment => List(ass) //don't kill for now
         case c:Call => List(c)
         case r:Return => List(r)
-        case s:SpawnThreads => List(s)
       }, b.loopHead)
     }
 

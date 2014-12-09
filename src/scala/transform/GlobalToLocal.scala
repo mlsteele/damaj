@@ -70,7 +70,6 @@ object GlobalToLocal extends Transformation {
           case Right(arg) => maybeAddLoad(arg)
         }
         case Return(ret) => ret.foreach(maybeAddLoad)
-        case s:SpawnThreads => s
       }
     }
     method.cfg.edges.values.foreach {
