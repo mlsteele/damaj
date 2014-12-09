@@ -125,7 +125,7 @@ private class Inline(program: IR2.Program) {
       case false => field
     }
     val newCFG = cfg.mapBlocks { b =>
-      b.stmts.map {
+      Block(b.stmts.map {
         case Assignment(to, expr) => {
           val newRight = expr match {
             case l:Load => rload(l)
@@ -139,7 +139,7 @@ private class Inline(program: IR2.Program) {
         case ArrayAssignment(to, index, right) => ArrayAssignment(rfield(to), rload(index), rload(right))
         case Call(id, args) => Call(id, args.map(_.map(rload)))
         case Return(ret) => Return(ret.map(rload))
-      }
+      }, b.loopHead)
     }
     // Rename vars in forks too..
     val newEdges = newCFG.edges.mapValues {
