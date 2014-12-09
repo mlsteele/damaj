@@ -231,10 +231,12 @@ object Flatten {
      * temporary variables for complex sub-expressions.
      */
     def flatten(tempGen: TempVarGen) : List[Statement] = stmt match {
+      // Assignment to scalar
       case Assignment(left@Store(_, None), right) => {
         val (stmts, finalExpr) = right.flatten(tempGen)
         return stmts :+ Assignment(left, finalExpr)
       }
+      // Assignment to array
       case Assignment(Store(from, Some(index)),  right) => {
         // Anything of the form a[b] = c gets converted to a form similar to:
         // t0 = c
