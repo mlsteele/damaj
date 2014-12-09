@@ -158,10 +158,10 @@ class AsmGen(ir2: IR2.Program) {
 
   def generateStatement(stmt: Statement, symbols: ST, returnTo: String): String = stmt match {
     case ir: Call => generateCall(ir, symbols)
-    case ir: SpawnThreads => generateSpawnThreads(ir)
     case ir: Assignment => generateAssignment(ir, symbols)
     case ir: ArrayAssignment => generateArrayAssignment(ir, symbols)
     case ir: Return => generateReturn(ir, symbols, returnTo)
+    case ir: SpawnThreads => throw new AsmPreconditionViolated("TODO(miles): implement SpawnThreads")
   }
 
   def generateArrayAssignment(assign: ArrayAssignment, symbols: ST) = assign.right match {
@@ -301,14 +301,6 @@ class AsmGen(ir2: IR2.Program) {
     argMovs \
     call(ir.id) \
     add((stackArgs * 8) $, rsp) ? s"free space from stack args" \
-    "POP_AS_CALLER"
-  }
-
-  def generateSpawnThreads(ir: SpawnThreads): String = {
-    comment("spawn threads for %s".format(ir.label)) \
-    "PUSH_AS_CALLER" \
-    mov(ir.labels, argregs(0)) \
-    call("create_and_run_threads") \
     "POP_AS_CALLER"
   }
 
