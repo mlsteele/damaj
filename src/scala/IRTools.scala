@@ -91,6 +91,7 @@ object IRPrinter {
     }
     case Break() => "break"
     case Continue() => "continue"
+    case SpawnThreads(label) => "SPAWN[%s]".format(label)
   }
 
   def printExpr(expr:Expr): String = expr match {

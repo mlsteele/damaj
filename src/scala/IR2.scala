@@ -48,6 +48,7 @@ object IR2 {
 
   // in IR2, Statements can not contain control flow.
   sealed trait Statement
+
   case class Assignment(left: FieldSymbol, right: Expr) extends Statement {
     override def toString = "%s = %s".format(left.id, right)
   }
@@ -55,6 +56,9 @@ object IR2 {
   case class ArrayAssignment(left: FieldSymbol, index: Load, right: Load) extends Statement {
     override def toString = "%s[%s] = %s".format(left.id, index, right)
   }
+
+  // Call create_and_run_threads on the function at label.
+  case class SpawnThreads(label: String) extends Statement
 
   case class Call(id: ID, args:List[Either[StrLiteral, Load]]) extends Statement with Expr {
     override def toString = {

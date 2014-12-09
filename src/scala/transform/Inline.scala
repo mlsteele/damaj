@@ -139,6 +139,7 @@ private class Inline(program: IR2.Program) {
         case ArrayAssignment(to, index, right) => ArrayAssignment(rfield(to), rload(index), rload(right))
         case Call(id, args) => Call(id, args.map(_.map(rload)))
         case Return(ret) => Return(ret.map(rload))
+        case s:SpawnThreads => s
       }, b.loopHead)
     }
     // Rename vars in forks too..

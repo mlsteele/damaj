@@ -56,6 +56,7 @@ object CopyPropagation {
         case ArrayAssignment(field, index, right) => ArrayAssignment(field, fcc(index), fcc(right))
         case Call(id, args) => Call(id, args.map(_.map(fccArg)))
         case Return(ret) => Return(ret.map(fcc))
+        case s:SpawnThreads => s
       }, b.loopHead)
     }
 

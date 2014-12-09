@@ -224,6 +224,7 @@ object Flatten {
       case Return(Some(e)) => e.isSimpleLoad()
       case Break() => true
       case Continue() => true
+      case s:SpawnThreads => true
     }
 
     /* Converts a statement (possibly simple or non-simple) into a list of

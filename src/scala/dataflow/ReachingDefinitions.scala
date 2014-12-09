@@ -38,8 +38,9 @@ class ReachingDefinitions(override val method: IR2.Method) extends Analysis {
         reaching += ass
       }
       case _:ArrayAssignment => // TODO: check if this matters or not
-      case _:Call => // don't care
-      case _:Return => // don't care
+      case _:Call         => // don't care
+      case _:Return       => // don't care
+      case _:SpawnThreads => // don't care
     }
     return reaching filter {s => !isGlobal(s.left)}
   }

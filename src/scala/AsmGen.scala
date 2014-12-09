@@ -161,6 +161,7 @@ class AsmGen(ir2: IR2.Program) {
     case ir: Assignment => generateAssignment(ir, symbols)
     case ir: ArrayAssignment => generateArrayAssignment(ir, symbols)
     case ir: Return => generateReturn(ir, symbols, returnTo)
+    case ir: SpawnThreads => throw new AsmPreconditionViolated("TODO(miles): implement SpawnThreads")
   }
 
   def generateArrayAssignment(assign: ArrayAssignment, symbols: ST) = assign.right match {

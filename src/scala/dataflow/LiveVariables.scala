@@ -53,6 +53,7 @@ class LiveVariables(override val method: IR2.Method) extends Analysis {
         case Right(e) => live ++= e.dependencies()
       }
       case Return(ret) => ret.foreach{e => live ++= e.dependencies}
+      case s:SpawnThreads =>
     }
     // Special edge case: if this block is a child of a fork, the condition var needs
     // to be live

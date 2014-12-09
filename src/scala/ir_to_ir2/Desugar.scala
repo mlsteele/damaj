@@ -254,8 +254,9 @@ object Desugar {
         val (exprStmts, finalExpr) = expr.desugar(parent, tempGen)
         return exprStmts :+ Return(Some(finalExpr))
       }
-      case Break() => List(Break())
-      case Continue() => List(Continue())
+      case b:Break => List(b)
+      case c:Continue => List(c)
+      case s:SpawnThreads => List(s)
     }
   }
 

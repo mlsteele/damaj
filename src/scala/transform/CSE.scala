@@ -84,6 +84,7 @@ class CSEHelper(method: IR2.Method, tempVarGen: TempVarGen.TempVarGen) {
         val se = speedyExpr(expr, available)
         se.setup.toList :+ Return(Some(se.load))
       case r@Return(None) => List(r)
+      case s:SpawnThreads => List(s)
     }
   }
 
